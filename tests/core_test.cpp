@@ -4,6 +4,7 @@
 #include "ScoreJson.h"
 #include "Voice.h"
 #include "Weather.h"
+#include "Devotional.h"
 using namespace retro;
 int main(){
  setenv("TZ","EST5EDT,M3.2.0,M11.1.0",1);tzset();
@@ -147,6 +148,15 @@ int main(){
    JsonDocument gj;deserializeJson(gj,"{\"results\":[{\"name\":\"Painesville\",\"latitude\":41.72449,\"longitude\":-81.24566,\"postcodes\":[\"44077\"]}]}");assert(decodeGeocode(gj,la,lo,ci)&&la=="41.7245"&&lo=="-81.2457"&&ci=="Painesville");
    JsonDocument ej;deserializeJson(ej,"{\"generationtime_ms\":0.1}");assert(!decodeGeocode(ej,la,lo,ci));assert(geocodeUrl("New York")=="https://geocoding-api.open-meteo.com/v1/search?name=New%20York&count=1&language=en&format=json");
    const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};assert(voiceContext(nf,{},1790800000,weatherSpeech(w)).find("Weather (7-day forecast): now 62 F")!=std::string::npos);}
+  // Devotional: the model reply, the NVS roundtrip, the spoken text.
+  {std::ifstream df("tests/fixtures/devotional.json");std::string fixture((std::istreambuf_iterator<char>(df)),std::istreambuf_iterator<char>());assert(!fixture.empty());
+   JsonDocument wrap;wrap["choices"][0]["message"]["content"]=fixture;Devotional d;BibleRef ref{19,119,9};
+   assert(parseDevotional(wrap,ref,"How can a young man keep his way pure? By guarding it according to Your word.",272,d)&&d.valid&&d.points.size()==3&&d.title=="Keep Your Way Pure"&&d.day==272);
+   Devotional back;assert(decodeDevotional(encodeDevotional(d),back)&&back.valid&&back.ref.verse==9&&back.points[2]==d.points[2]&&back.prayer==d.prayer);
+   const std::string speech=devotionalSpeech(d);assert(speech.find("Keep Your Way Pure")!=std::string::npos&&speech.find("Psalm 119:9 says")!=std::string::npos&&speech.find("Let's pray.")!=std::string::npos);
+   assert(devotionalRequestBody(ref,d.verse,"context").find("Verse of the day: Psalm 119:9")!=std::string::npos);assert(!decodeDevotional("",back));
+   const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};JsonDocument vj;deserializeJson(vj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read today's devotional\\\",\\\"action\\\":\\\"open_devotional\\\",\\\"read\\\":true,\\\"answer\\\":\\\"ok\\\"}\"}}]}");
+   VoiceReply vr=parseVoiceReply(vj,nf);assert(vr.ok&&vr.action==VoiceAction::OpenDevotional&&vr.read);}
   // Bible: book lookup, references, layout, verse of the day.
   assert(bibleBookIndex("John")==43&&bibleBookIndex("1 John")==62&&bibleBookIndex("First John")==62&&bibleBookIndex("Psalms")==19&&bibleBookIndex("Song of Songs")==22&&bibleBookIndex("Judg")==7&&bibleBookIndex("Jude")==65&&bibleBookIndex("Rev")==66&&bibleBookIndex("xyz")==0&&bibleBookIndex("Phil")==50);
   {BibleRef r=parseBibleRef("John 3:16");assert(r.book==43&&r.chapter==3&&r.verse==16);r=parseBibleRef("1 Corinthians 13");assert(r.book==46&&r.chapter==13&&r.verse==0);
@@ -168,5 +178,5 @@ int main(){
    VoiceReply h=parseVoiceReply(hj,nf);assert(h.ok&&h.bible.book==19&&h.bible.chapter==23);
    JsonDocument wj2;deserializeJson(wj2,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"will it rain tomorrow\\\",\\\"action\\\":\\\"open_weather\\\",\\\"answer\\\":\\\"Tomorrow looks dry, high 81 with a 30% chance of rain.\\\"}\"}}]}");
    VoiceReply wv=parseVoiceReply(wj2,nf);assert(wv.ok&&wv.action==VoiceAction::OpenWeather&&wv.answer.rfind("Tomorrow",0)==0);}
- std::cout<<"PASS: debounce, hold exclusivity, dates/DST, ESPN normalization, cache roundtrip, malformed response retention, freshness, missing scores, recent-games feed merging, Bible references/layout, weather decoding, and game-aware refresh planning\n";
+ std::cout<<"PASS: debounce, hold exclusivity, dates/DST, ESPN normalization, cache roundtrip, malformed response retention, freshness, missing scores, recent-games feed merging, Bible references/layout, weather decoding, game-aware refresh planning, and the devotional\n";
 }

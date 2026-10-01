@@ -5,11 +5,12 @@
 #include "InterRow.h"
 #include "Bible.h"
 #include "Weather.h"
+#include "Devotional.h"
 #include "Core.h"
 #include "Voice.h"
 #include "TeamLogos.h"
 namespace retro {
-enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update};
+enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional};
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
 // Launcher selections: the weather strip, the Bible row, the five score tabs, and the settings gear.
 constexpr int LAUNCH_WEATHER=0,LAUNCH_BIBLE=1,LAUNCH_TAB0=2,LAUNCH_GEAR=7,LAUNCH_COUNT=8;
@@ -31,7 +32,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -354,6 +355,19 @@ class Renderer {
    row(490,std::string("SLEEP 11PM-6:30AM: ")+(u.nightSleep?"ON":"OFF"),u.selected==5);row(550,"CHECK FOR UPDATES  (v"+u.version+")",u.selected==6);
    center(632,"DATA: ESPN / COLLEGE: FBS",2);center(664,"HOLD ROCKER TO ASK A QUESTION",2);
    center(696,(u.battery>=0?"BATTERY "+std::to_string(u.battery)+"%  -  ":std::string())+(u.storage?"SCORES SAVED":"STORAGE ERROR"),2);center(724,u.clockValid?stamp(u.now):"CONNECT WI-FI TO SET CLOCK",2);
+  }else if(u.page==Page::Devotional){ // one screen: verse, title, truth, three bullets, do it today, prayer
+   const Devotional& d=u.devotional;
+   if(!d.valid){center(300,"TODAY'S DEVOTIONAL",3);center(380,u.devotionalLoading?"WRITING IT NOW...":u.online?"COMING AT THE NEXT CHECK":"CONNECT WI-FI TO GET IT",2);center(420,"PRESS BOOT TO GO BACK",2);}
+   else{
+    bold(12,20,bibleRefLabel(d.ref),2);int y=46;
+    for(const auto& line:wrapWidth(d.verse,readWidth,456,4)){read(12,y,line);y+=READ_LINE;}
+    y+=6;c.drawFastHLine(16,y,448,0);y+=14;bold(12,y,upperText(d.title),3,0,25);y+=36;
+    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=24;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=10;};
+    section("TRUTH",d.truth,3);
+    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);int l=0;for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;l++;}}
+    y+=10;section("DO IT TODAY",d.apply,3);section("PRAY",d.prayer,3);
+    small(12,776,"PRESS: READ IT ALOUD      BOOT: BACK");
+   }
   }else if(u.page==Page::Update){ // over-the-air update: a status line, then what to do
    center(150,"UPDATE",4);{int y=300;for(const auto& line:wrapLines(u.updateNote,30,5)){center(y,line,2);y+=36;}}
    center(560,"INSTALLED: v"+u.version,2);
@@ -404,8 +418,8 @@ class Renderer {
   }else if(u.page==Page::BibleHome){ // the Bible's own home: resume, today's verse, or browse
    center(60,"BIBLE",3);smallCenter(240,96,"BEREAN STANDARD BIBLE - PUBLIC DOMAIN");
    const BibleView& b=u.bible;std::string cont="CONTINUE "+bibleRefLabel({b.book,b.chapter,0});if(b.pages.size()>1)cont+="  "+std::to_string(std::min(b.page,(int)b.pages.size()-1)+1)+"/"+std::to_string(b.pages.size());
-   row(150,cont,u.selected==0);row(220,"VERSE OF THE DAY",u.selected==1);row(290,"BOOKS",u.selected==2);
-   if(u.votd.valid()){text(12,380,bibleRefLabel(u.votd),2);int y=408;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
+   row(140,cont,u.selected==0);row(200,"VERSE OF THE DAY",u.selected==1);row(260,"TODAY'S DEVOTIONAL",u.selected==2);row(320,"BOOKS",u.selected==3);
+   if(u.votd.valid()){text(12,400,bibleRefLabel(u.votd),2);int y=428;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
    small(12,690,"HOLD THE ROCKER: \"GO TO PSALM 23\" OR \"READ JOHN 3:16\"");
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
@@ -453,7 +467,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
  }
 };
 }

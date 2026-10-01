@@ -80,9 +80,9 @@ static bool sntpStarted=false;
 static String ssid,password,tz;
 static const char* zones[]={"EST5EDT,M3.2.0,M11.1.0","CST6CDT,M3.2.0,M11.1.0","MST7MDT,M3.2.0,M11.1.0","PST8PDT,M3.2.0,M11.1.0","UTC0"};
 static const char* zoneLabels[]={"Eastern","Central","Mountain","Pacific","UTC"};
-struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update;};
-struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false;std::string note;int code=0;};
-struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[200];char weather[700];};
+struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional;uint8_t book,chapter,verse;char key[96];};
+struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false;std::string note;Devotional devotional;int code=0;};
+struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];};
 struct Key {int button;ButtonEvent event;};
 static std::string readFileText(const std::string& path);static int dayOfYear(); // Bible helpers, defined with the reader below
 
@@ -359,13 +359,14 @@ static void voiceTask(void*){
  VoiceJob job;
  for(;;){if(xQueueReceive(voiceQueue,&job,portMAX_DELAY)!=pdTRUE)continue;
   if(job.warm){if(WiFi.status()==WL_CONNECTED)voiceConnect();continue;}
-  if(job.say[0]){speakAnswer(job.say,job.key);voiceDisconnect();continue;} // USB speech test
+  if(job.say[0]&&!job.pcm){speakAnswer(job.say,job.key);voiceDisconnect();continue;} // read-aloud request (devotional, USB speech test)
   FetchResult* result=new FetchResult;result->isVoice=true;result->voice=askVoice(job);heap_caps_free(job.pcm);
   if(result->voice.ok&&(result->voice.action==VoiceAction::Fact||result->voice.action==VoiceAction::Answer)&&result->voice.lookup){ // the model flagged a present-day question: ask the web
    FetchResult* interim=new FetchResult;interim->isVoice=true;interim->voiceInterim=true;xQueueSend(resultQueue,&interim,portMAX_DELAY);
    std::string found=lookupFact(result->voice.heard,job.key);if(!found.empty())result->voice.answer=found;
   }
   bool speak=job.speak&&result->voice.ok&&(result->voice.action==VoiceAction::Answer||result->voice.action==VoiceAction::Fact||(result->voice.action==VoiceAction::OpenWeather&&!result->voice.answer.empty()));std::string answer=result->voice.answer;
+  if(result->voice.ok&&result->voice.action==VoiceAction::OpenDevotional&&result->voice.read&&job.say[0]){answer=job.say;speak=job.speak;} // the devotional text rides along in the job
   if(result->voice.ok&&result->voice.action==VoiceAction::OpenBible&&result->voice.read){ // "read me John 3:16": the words come from the chapter file, not the model
    const BibleRef r=result->voice.daily?verseOfDay(dayOfYear()):result->voice.bible;
    if(r.valid()){answer=bibleSpeakText(bibleVerses(readFileText(biblePath(r.book,r.chapter))),r);speak=job.speak&&!answer.empty();}
@@ -429,11 +430,28 @@ static bool fetchUpdate(std::string& note,bool& installed){
  Serial.printf("UPDATE installed v%s (%d bytes, %lums)\n",version.c_str(),size,(unsigned long)(millis()-t0));
  note="INSTALLED V"+version+" - RESTARTING";installed=true;return true;
 }
+// --- Today's devotional: one chat request with the verse and its neighbours; the result is cached in NVS for the day.
+static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
+ BibleRef ref;ref.book=req.book;ref.chapter=req.chapter;ref.verse=req.verse;if(!ref.valid()||!req.key[0])return false;
+ const auto verses=bibleVerses(readFileText(biblePath(ref.book,ref.chapter)));if(ref.verse<1||ref.verse>(int)verses.size())return false;
+ std::string context;for(int v=std::max(1,ref.verse-6);v<=std::min((int)verses.size(),ref.verse+6)&&context.size()<1400;v++)context+=std::to_string(v)+" "+verses[v-1]+" ";
+ NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);
+ HTTPClient http;http.setTimeout(45000);http.setConnectTimeout(10000);
+ if(!http.begin(client,"https://openrouter.ai/api/v1/chat/completions"))return false;
+ http.addHeader("Content-Type","application/json");http.addHeader("Authorization",String("Bearer ")+req.key);
+ const std::string body=devotionalRequestBody(ref,verses[ref.verse-1],context);code=http.POST((uint8_t*)body.data(),body.size());
+ if(code!=200){http.end();Serial.printf("DEVOTIONAL http=%d\n",code);return false;}
+ JsonDocument d;const bool parsed=!deserializeJson(d,http.getString());http.end();
+ tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);
+ return parsed&&parseDevotional(d,ref,verses[ref.verse-1],lt.tm_yday,out);
+}
 static void networkTask(void*){
  FetchRequest req;
  for(;;){if(xQueueReceive(requestQueue,&req,portMAX_DELAY)!=pdTRUE)continue;
   FetchResult* result=new FetchResult;result->league=req.league;result->date=req.date;result->feed=req.feed;result->team=req.team;result->game=req.game;
-  if(req.update){
+  if(req.devotional){
+   result->isDevotional=true;result->ok=fetchDevotional(req,result->devotional,result->code);
+  }else if(req.update){
    result->isUpdate=true;result->ok=fetchUpdate(result->note,result->installed);
   }else if(req.weather){
    result->isWeather=true;result->ok=fetchWeather(result->weather,result->code);
@@ -603,6 +621,13 @@ static void bibleStep(int step){
   loadBibleChapter(book,chapter);b.page=step>0?0:std::max(0,(int)b.pages.size()-1);}
  saveBiblePos();dirty=true;
 }
+static uint32_t nextDevotional=0;static bool devotionalPending=false;
+static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear()||ui.devotional.ref.book!=ui.votd.book||ui.devotional.ref.chapter!=ui.votd.chapter||ui.devotional.ref.verse!=ui.votd.verse;}
+static void requestDevotional(){
+ if(requestBusy||!ui.online||!ui.clockValid||voiceKey.isEmpty()||!ui.votd.valid())return;
+ FetchRequest r{};r.devotional=true;r.book=ui.votd.book;r.chapter=ui.votd.chapter;r.verse=ui.votd.verse;snprintf(r.key,sizeof(r.key),"%s",voiceKey.c_str());
+ if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;ui.devotionalLoading=true;nextDevotional=millis()+600000;if(ui.page==Page::Devotional)dirty=true;}
+}
 static void loadVerseOfDay(){
  const BibleRef r=verseOfDay(ui.clockValid?dayOfYear():0);const auto verses=bibleVerses(fsOK?readFileText(biblePath(r.book,r.chapter)):"");
  if(r.verse>=1&&r.verse<=(int)verses.size()){ui.votd=r;ui.votdText=verses[r.verse-1];}else{ui.votd=BibleRef{};ui.votdText.clear();}
@@ -633,7 +658,7 @@ static void finishVoice(){
    auto cut=trimSilence((const int16_t*)pcm,n/2,audio::SAMPLE_RATE);
    if(cut.first)memmove(pcm,pcm+cut.first*2,cut.second*2);
    Serial.printf("VOICE clip %u -> %u bytes after trimming silence\n",(unsigned)n,(unsigned)(cut.second*2));n=cut.second*2;
-   VoiceJob job{};job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());
+   VoiceJob job{};job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
    std::string favs;for(const auto& f:ui.favorites){std::string line=std::to_string(f.league)+"|"+f.name+"\n";if(favs.size()+line.size()>=sizeof(job.favorites))break;favs+=line;}
    snprintf(job.favorites,sizeof(job.favorites),"%s",favs.c_str());
    if(xQueueSend(voiceQueue,&job,0)==pdTRUE)ui.voice=VoiceState::Thinking;else{heap_caps_free(pcm);ui.voice=VoiceState::Error;ui.voiceNote="STILL BUSY WITH THE LAST QUESTION";}
@@ -737,6 +762,7 @@ static void goBack(){
  case Page::Home:goLauncher(LAUNCH_TAB0+ui.tab);break;
  case Page::Settings:goLauncher(LAUNCH_GEAR);break;
  case Page::BibleHome:goLauncher(LAUNCH_BIBLE);break;
+ case Page::Devotional:ui.page=Page::BibleHome;ui.selected=2;break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=6;}break;
  case Page::Launcher:break;
@@ -793,7 +819,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=7;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=1;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=7;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -837,7 +863,8 @@ static void keyAction(const Key& k){
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
- case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
+ case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
+ case Page::Devotional:if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}break;
  case Page::Bible:ui.bible.pick=ui.bible.book-1;ui.bible.pickBook=ui.bible.book;ui.page=Page::BibleBooks;break;
  case Page::BibleBooks:ui.bible.pickBook=ui.bible.pick+1;ui.bible.pick=ui.bible.pickBook==ui.bible.book?ui.bible.chapter-1:0;ui.page=Page::BibleChapters;break;
  case Page::BibleChapters:{BibleRef r;r.book=ui.bible.pickBook;r.chapter=ui.bible.pick+1;openBible(r);break;}
@@ -852,6 +879,7 @@ static void handleResults(){
    const VoiceReply& v=r->voice;
    if(!v.ok){ui.voice=VoiceState::Error;ui.voiceNote=v.error;}
    else if(v.action==VoiceAction::Answer||v.action==VoiceAction::Fact){ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer=v.answer;ui.voiceLeague=v.league;ui.voiceTeamId=v.teamId;ui.voiceTeamName=v.teamName;}
+   else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;Serial.println("VOICE opened devotional");}
    else if(v.action==VoiceAction::OpenWeather){ui.voice=VoiceState::Idle;ui.page=Page::Weather;ui.selected=0;if(!ui.weather.valid)nextWeather=0;Serial.println("VOICE opened weather");}
    else if(v.action==VoiceAction::OpenBible){ui.voice=VoiceState::Idle;openBible(v.daily?ui.votd:v.bible);Serial.printf("VOICE opened bible %s\n",bibleRefLabel(v.daily?ui.votd:v.bible).c_str());}
    else{ // go straight to the page that shows what was asked for
@@ -868,6 +896,12 @@ static void handleResults(){
    dirty=true;
   }
   delete r;return;
+ }
+ if(r->isDevotional){
+  ui.devotionalLoading=false;Serial.printf("FETCH devotional ok=%d http=%d title=%s\n",r->ok,r->code,r->devotional.title.c_str());
+  if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());}
+  if(devotionalPending){devotionalPending=false;if(refreshWake)refreshPending--;}
+  if(ui.page==Page::Devotional||ui.page==Page::BibleHome)dirty=true;delete r;return;
  }
  if(r->isUpdate){
   updateBusy=false;autoUpdateCheck=false;Serial.printf("FETCH update ok=%d installed=%d note=%s\n",r->ok,r->installed,r->note.c_str());
@@ -922,6 +956,7 @@ static void serialControl(){
  if(ch=='P'){ // PMU rail dump: DCDC enables 0x80, LDO enables 0x90/0x91, LDO voltages 0x92-0x9B, status 0x00/0x01, battery 0xA4
   Serial.print("PMU");for(uint8_t reg:{0x00,0x01,0x80,0x82,0x83,0x84,0x85,0x86,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0x9b,0xa4})Serial.printf(" %02x=%02x",reg,pmuRead(reg));Serial.println();
  }
+ if(ch=='D'){ui.devotional=Devotional{};nextDevotional=0;Serial.println("DEVOTIONAL requested");}
  if(ch=='U'){requestUpdate(true);Serial.println("UPDATE check requested");}
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
@@ -952,6 +987,7 @@ void setupApp(){
  if(fsOK)prefs.putBool("fsInit",true);ui.storage=fsOK;loadFavorites();
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
+ {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
  {Weather w;if(decodeWeatherCache(prefs.getString("weather","").c_str(),w))ui.weather=w;nextWeather=(w.valid&&time(nullptr)-w.fetched<=3000)?1:0;} // a fresh cache waits until it is stale; 0 forces a fetch
  ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();
  inputQueue=xQueueCreate(12,sizeof(Key));requestQueue=xQueueCreate(1,sizeof(FetchRequest));resultQueue=xQueueCreate(2,sizeof(FetchResult*));voiceQueue=xQueueCreate(2,sizeof(VoiceJob));
@@ -969,7 +1005,8 @@ void setupApp(){
   if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
   if(refreshWake){planRefresh(refreshMaskBits);refreshPending=__builtin_popcount(refreshMaskBits);}else{refreshMaskBits=15;refreshPending=4;}
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
-  {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;} // the 6:30 wake also looks for a new release
+  {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
+  if(refreshWake&&ui.clockValid&&!voiceKey.isEmpty()&&ui.votd.valid()&&devotionalStale()){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
   Serial.printf("WAKE cause=%d refresh=%d leagues=0x%x pending=%d tab=%d sleeps=%d battery=%d%%\n",(int)cause,refreshWake,refreshMaskBits,refreshPending,ui.tab,rtcSleeps,batteryPercent());}
  ui.now=time(nullptr);renderer.render(ui);applyTheme(canvas.getBuffer());EPD_3IN97_Display_Base(canvas.getBuffer());dirty=false;
  if(shown)memcpy(shown,canvas.getBuffer(),48000);lastFullRefresh=millis();
@@ -1002,6 +1039,7 @@ void loopApp(){
  static bool pendingVerify=true;if(pendingVerify&&((ui.online&&ui.clockValid)||now>120000)){pendingVerify=false;esp_ota_mark_app_valid_cancel_rollback();Serial.println("UPDATE build verified");}
  if(restartAt&&(int32_t)(now-restartAt)>=0&&!panelPending){Serial.println("UPDATE restarting");delay(100);ESP.restart();}
  if(autoUpdateCheck&&ui.online&&ui.clockValid&&!requestBusy)requestUpdate(false);
+ if(ui.online&&ui.clockValid&&!requestBusy&&devotionalStale()&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
  if(ui.page!=Page::Wifi&&!ui.ap&&ui.voice==VoiceState::Idle&&!audio::playing()&&!audio::recording()&&!panelPending&&!updateBusy&&!restartAt&&!pendingVerify){
   const uint32_t quiet=now-std::max(lastKeyAt,(uint32_t)0);
   if(refreshWake&&((refreshPending<=0&&!requestBusy)||now-refreshStarted>60000))idleSleep();

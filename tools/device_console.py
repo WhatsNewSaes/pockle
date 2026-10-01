@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Pixel League over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, or update."""
+"""Inspect Pixel League over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, or devotional."""
 import argparse,time,serial,pathlib
 p=argparse.ArgumentParser();p.add_argument('command',nargs='?',default='?');p.add_argument('--port',default='/dev/cu.usbmodem1101');p.add_argument('--seconds',type=float,default=8);p.add_argument('--text');args=p.parse_args()
 class PassiveSerial(serial.Serial):
@@ -45,6 +45,13 @@ elif args.command=='location': # set the weather location (ZIP or city) and refe
   if line:
    text=line.decode(errors='replace').rstrip();print(text)
    if text.startswith('FETCH weather'):break
+elif args.command=='devotional': # write today's devotional afresh and print the result
+ s.write(b'D');deadline=time.monotonic()+90
+ while time.monotonic()<deadline:
+  line=s.readline()
+  if line:
+   text=line.decode(errors='replace').rstrip();print(text)
+   if text.startswith('FETCH devotional'):break
 elif args.command=='update': # check the latest GitHub release and install it if newer
  s.write(b'U');deadline=time.monotonic()+180
  while time.monotonic()<deadline:
