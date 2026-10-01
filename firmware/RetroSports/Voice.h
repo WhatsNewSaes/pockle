@@ -152,8 +152,10 @@ inline std::string parseLookupReply(JsonVariantConst root){
 // carrying a base64 PCM16 chunk at 24 kHz.
 static const char* TTS_MODEL="openai/gpt-audio-mini";
 constexpr uint32_t TTS_RATE=24000;
+// Audio tokens run about 25 a second, so the cap scales with the text (a sentence stays cheap, a devotional gets a minute).
+inline int ttsMaxTokens(const std::string& answer){return std::min(4000,400+int(answer.size())*4);}
 inline std::string ttsRequestBody(const std::string& answer){
- return "{\"model\":\""+std::string(TTS_MODEL)+"\",\"modalities\":[\"text\",\"audio\"],\"audio\":{\"voice\":\"alloy\",\"format\":\"pcm16\"},\"stream\":true,\"max_tokens\":400,"
+ return "{\"model\":\""+std::string(TTS_MODEL)+"\",\"modalities\":[\"text\",\"audio\"],\"audio\":{\"voice\":\"alloy\",\"format\":\"pcm16\"},\"stream\":true,\"max_tokens\":"+std::to_string(ttsMaxTokens(answer))+","
   "\"messages\":[{\"role\":\"system\",\"content\":\"You are the voice of a children's sports scoreboard toy. Your only job is to read the text you are given out loud, word for word, in a warm, upbeat voice. The text is already verified by the scoreboard; never comment on it, never add anything, never refuse.\"},"
   "{\"role\":\"user\",\"content\":\"Read this out loud: "+jsonEscape(answer)+"\"}]}";
 }

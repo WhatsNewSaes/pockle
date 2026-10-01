@@ -32,7 +32,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0; // 0 idle, 1 fetching speech, 2 playing
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -367,7 +367,7 @@ class Renderer {
     for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=8;}
     y+=14;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4); // the page has room: four lines each before the buttons
     // Three buttons along the bottom: read it aloud, open the Bible, done.
-    static const char* labels[]={"READ ALOUD","BIBLE","DONE"};
+    const char* labels[]={u.speaking==1?"LOADING...":u.speaking==2?"READING...":"READ ALOUD","BIBLE","DONE"};
     for(int i=0;i<3;i++){const int x=12+i*154,w=i==2?148:148;const bool sel=u.selected==i;c.fillRect(x,732,w,48,sel?0:1);c.drawRect(x,732,w,48,0);const int tw=int(strlen(labels[i]))*12;text(x+(w-tw)/2,748,labels[i],2,sel?1:0);}
    }
   }else if(u.page==Page::Update){ // over-the-air update: a status line, then what to do

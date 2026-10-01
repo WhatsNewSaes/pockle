@@ -312,7 +312,9 @@ struct ChunkedReader {
   return n;
  }
 };
+static std::atomic<int> speakState(0); // 0 idle, 1 fetching, 2 playing; the loop mirrors it into ui.speaking
 static void speakAnswer(const std::string& answer,const char* key){
+ speakState=1;struct Done{~Done(){speakState=0;}} done;
  const std::string body=ttsRequestBody(answer);int code=0;uint32_t tStart=millis(),tConnect=0,tPost=0,tFirst=0;size_t sse=0,pcmTotal=0;std::string transcript;
  uint32_t t0=millis();voiceConnect();tConnect=millis()-t0;
  HTTPClient& http=*voiceHttp;
@@ -333,7 +335,7 @@ static void speakAnswer(const std::string& answer,const char* key){
      if(lineLen>6&&!strncmp(line,"data: ",6)){
       if(!strcmp(line+6,"[DONE]")){finished=true;}
       else{size_t got=0;transcript+=sseAudio(line,lineLen,[&](const char* b64,size_t len){got=base64Decode(b64,len,pcm,pcmCap);});
-       if(got){if(!playing){tFirst=millis()-tStart;playing=audio::playBegin(TTS_RATE);}if(playing)audio::playWrite(pcm,got&~size_t(1));pcmTotal+=got;}}
+       if(got){if(!playing){tFirst=millis()-tStart;playing=audio::playBegin(TTS_RATE);if(playing)speakState=2;}if(playing)audio::playWrite(pcm,got&~size_t(1));pcmTotal+=got;}}
      }
      lineLen=0;
     }
@@ -623,6 +625,8 @@ static void bibleStep(int step){
   loadBibleChapter(book,chapter);b.page=step>0?0:std::max(0,(int)b.pages.size()-1);}
  saveBiblePos();dirty=true;
 }
+// Opening a page with a READ ALOUD button starts the TLS handshake early, so the press itself is quicker.
+static void warmVoice(){if(voiceKey.isEmpty()||!ui.online)return;VoiceJob job{};job.warm=true;xQueueSend(voiceQueue,&job,0);}
 static uint32_t nextDevotional=0;static bool devotionalPending=false;
 static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear()||ui.devotional.ref.book!=ui.votd.book||ui.devotional.ref.chapter!=ui.votd.chapter||ui.devotional.ref.verse!=ui.votd.verse;}
 static void requestDevotional(){
@@ -861,11 +865,11 @@ static void keyAction(const Key& k){
  case Page::Wifi:if(!ui.ap)startAP();break;
  case Page::Launcher:
   if(ui.selected==LAUNCH_WEATHER){ui.page=Page::Weather;if(!ui.weather.valid)nextWeather=0;}
-  else if(ui.selected==LAUNCH_BIBLE){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;} // the Bible row opens today's devotional; BIBLE on that page opens the reader home
+  else if(ui.selected==LAUNCH_BIBLE){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();} // the Bible row opens today's devotional; BIBLE on that page opens the reader home
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
- case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
+ case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
  case Page::Devotional:
   if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
   else if(ui.selected==1){ui.page=Page::BibleHome;ui.selected=0;}
@@ -1034,6 +1038,7 @@ void loopApp(){
  if(ui.clockValid&&now-lastRtcWrite>3600000){writeRtc();lastRtcWrite=now;}
  ui.now=time(nullptr);
  if(ui.clockValid&&followToday&&ui.date!=localDate(ui.now)&&ui.page!=Page::Date&&ui.page!=Page::Detail){ui.date=localDate(ui.now);loadView();}
+ {const int s=speakState;if(s!=ui.speaking){ui.speaking=s;if(ui.page==Page::Devotional)dirty=true;}}
  static uint32_t batteryRead=0;if(!batteryRead||now-batteryRead>60000){batteryRead=now;const int b=batteryPercent();if(b!=ui.battery){ui.battery=b;if(ui.page==Page::Launcher||ui.page==Page::Settings)dirty=true;}}
  static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
  if(ui.ap){dns.processNextRequest();server.handleClient();if((finishSetup&&(int32_t)(now-finishAt)>=0)||(ui.online&&!connectionPending&&now-connectedAt>120000)||now-apStarted>600000)stopAP();}
