@@ -7,6 +7,8 @@ set -eu
 cd "$(dirname "$0")/.."
 PORT=${1:-/dev/cu.usbmodem1101}
 [ -d .tools/bible/fs/bible ] || .tools/venv/bin/python tools/build_bible.py
+# Pre-load the devotionals too (the device keeps them in sync over Wi-Fi afterwards).
+mkdir -p .tools/bible/fs/devo && cp devotionals/out/*.json .tools/bible/fs/devo/ 2>/dev/null || true
 MK=$(ls .tools/data/packages/esp32/tools/mklittlefs/*/mklittlefs | head -1)
 "$MK" -c .tools/bible/fs -p 256 -b 4096 -s 0x7E0000 .tools/bible/littlefs.bin >/dev/null
 ls -l .tools/bible/littlefs.bin | awk '{print "image "$5" bytes"}'

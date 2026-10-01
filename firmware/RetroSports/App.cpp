@@ -80,8 +80,8 @@ static bool sntpStarted=false;
 static String ssid,password,tz;
 static const char* zones[]={"EST5EDT,M3.2.0,M11.1.0","CST6CDT,M3.2.0,M11.1.0","MST7MDT,M3.2.0,M11.1.0","PST8PDT,M3.2.0,M11.1.0","UTC0"};
 static const char* zoneLabels[]={"Eastern","Central","Mountain","Pacific","UTC"};
-struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional;uint8_t book,chapter,verse;char key[96];};
-struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false;std::string note;Devotional devotional;int code=0;};
+struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional,devoSync;uint8_t book,chapter,verse;char key[96];};
+struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false,isDevoSync=false;std::string note;Devotional devotional;int fetched=0,code=0;};
 struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];};
 struct Key {int button;ButtonEvent event;};
 SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
@@ -433,19 +433,39 @@ static bool fetchUpdate(std::string& note,bool& installed){
  Serial.printf("UPDATE installed v%s (%d bytes, %lums)\n",version.c_str(),size,(unsigned long)(millis()-t0));
  note="INSTALLED V"+version+" - RESTARTING";installed=true;return true;
 }
-// --- Today's devotional: one chat request with the verse and its neighbours; the result is cached in NVS for the day.
+// --- Devotional library: every day's file from the repo mirrored on LittleFS, synced by content hash
+// (one index request, then only the days that changed, at most 40 per pass).
+static bool syncDevotionals(int& fetched,int& code){
+ fetched=0;NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);
+ HTTPClient http;http.setReuse(true);http.setTimeout(15000);http.setConnectTimeout(10000);
+ if(!http.begin(client,DEVOTIONAL_BASE_URL "index.json"))return false;
+ code=http.GET();if(code!=200){http.end();Serial.printf("DEVOSYNC index http=%d\n",code);return false;}
+ JsonDocument remote;const bool ok=!deserializeJson(remote,http.getString());http.end();if(!ok)return false;
+ JsonDocument local;deserializeJson(local,readFileText("/devo/index.json"));LittleFS.mkdir("/devo");
+ int total=0;
+ for(JsonPairConst kv:remote.as<JsonObjectConst>()){const std::string day=kv.key().c_str();const char* h=kv.value().as<const char*>();if(!h||day.size()!=5)continue;total++;
+  const char* lh=local[day].as<const char*>();const std::string path="/devo/"+day+".json";
+  if(lh&&!strcmp(lh,h)&&LittleFS.exists(path.c_str()))continue;
+  if(fetched>=40)break;
+  if(!http.begin(client,String(DEVOTIONAL_BASE_URL)+day.c_str()+".json"))continue;
+  const int c=http.GET();if(c==200){const String body=http.getString();File f=LittleFS.open(path.c_str(),"w");if(f){f.print(body);f.close();local[day]=h;fetched++;}}
+  http.end();
+ }
+ std::string out;serializeJson(local,out);File f=LittleFS.open("/devo/index.json","w");if(f){f.print(out.c_str());f.close();}
+ Serial.printf("DEVOSYNC fetched=%d of %d listed\n",fetched,total);return true;
+}
+// --- Today's devotional: the local file if the library has it, else one chat request with the verse and its neighbours.
 static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
  BibleRef ref;ref.book=req.book;ref.chapter=req.chapter;ref.verse=req.verse;if(!ref.valid())return false;
  const auto verses=bibleVerses(readFileText(biblePath(ref.book,ref.chapter)));if(ref.verse<1||ref.verse>(int)verses.size())return false;
  tm now{};time_t t=time(nullptr);localtime_r(&t,&now);
- { // the repo's file for today comes first; a 404 means the model writes one (when there is a key)
-  NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);HTTPClient http;http.setTimeout(15000);http.setConnectTimeout(10000);
-  if(http.begin(client,devotionalFileUrl(now.tm_mon+1,now.tm_mday).c_str())){code=http.GET();
-   if(code==200){const String body=http.getString();http.end();
-    auto verseFor=[&](const BibleRef& r){const auto vs=bibleVerses(readFileText(biblePath(r.book,r.chapter)));return r.verse>=1&&r.verse<=(int)vs.size()?vs[r.verse-1]:std::string();};
-    if(decodeDevotionalFile(body.c_str(),now.tm_yday,ref,verses[ref.verse-1],verseFor,out)){Serial.printf("DEVOTIONAL file %02d-%02d: %s\n",now.tm_mon+1,now.tm_mday,out.title.c_str());return true;}
-    Serial.println("DEVOTIONAL file did not parse");}
-   else{http.end();Serial.printf("DEVOTIONAL file http=%d\n",code);}}
+ { // the library's file for today comes first (no network needed); without one the model writes it (when there is a key)
+  const std::string body=readFileText(devotionalLocalPath(now.tm_mon+1,now.tm_mday));
+  if(!body.empty()){
+   auto verseFor=[&](const BibleRef& r){const auto vs=bibleVerses(readFileText(biblePath(r.book,r.chapter)));return r.verse>=1&&r.verse<=(int)vs.size()?vs[r.verse-1]:std::string();};
+   if(decodeDevotionalFile(body,now.tm_yday,ref,verses[ref.verse-1],verseFor,out)){JsonDocument idx;deserializeJson(idx,readFileText("/devo/index.json"));const char* h=idx[devotionalDayKey(now.tm_mon+1,now.tm_mday)].as<const char*>();out.hash=h?h:"";
+    Serial.printf("DEVOTIONAL file %02d-%02d: %s\n",now.tm_mon+1,now.tm_mday,out.title.c_str());return true;}
+   Serial.println("DEVOTIONAL file did not parse");}
  }
  if(!req.key[0]||req.feed)return false; // feed=true here means "file only": the model already wrote today's
  std::string context;for(int v=std::max(1,ref.verse-6);v<=std::min((int)verses.size(),ref.verse+6)&&context.size()<1400;v++)context+=std::to_string(v)+" "+verses[v-1]+" ";
@@ -464,7 +484,9 @@ static void networkTask(void*){
  FetchRequest req;
  for(;;){if(xQueueReceive(requestQueue,&req,portMAX_DELAY)!=pdTRUE)continue;
   FetchResult* result=new FetchResult;result->league=req.league;result->date=req.date;result->feed=req.feed;result->team=req.team;result->game=req.game;
-  if(req.devotional){
+  if(req.devoSync){
+   result->isDevoSync=true;result->ok=syncDevotionals(result->fetched,result->code);
+  }else if(req.devotional){
    result->isDevotional=true;result->ok=fetchDevotional(req,result->devotional,result->code);
   }else if(req.update){
    result->isUpdate=true;result->ok=fetchUpdate(result->note,result->installed);
@@ -639,9 +661,15 @@ static void bibleStep(int step){
 // Opening a page with a READ ALOUD button starts the TLS handshake early, so the press itself is quicker.
 static void warmVoice(){if(voiceKey.isEmpty()||!ui.online)return;static VoiceJob job;memset(&job,0,sizeof(job));job.warm=true;xQueueSend(voiceQueue,&job,0);}
 static uint32_t nextDevotional=0;static bool devotionalPending=false;
-// Stale: nothing for today. A model-written one is also worth re-checking against the repo (a file may have landed since).
-static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear();}
-static bool devotionalWantsFile(){return ui.devotional.valid&&ui.devotional.day==dayOfYear()&&!ui.devotional.fromFile;}
+// Today's entry in the local library index (hash), refreshed after a sync and at a new day.
+static std::string devoHashToday;static bool devoHaveToday=false;
+static void refreshDevoHash(){tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);JsonDocument idx;deserializeJson(idx,readFileText("/devo/index.json"));const char* h=idx[devotionalDayKey(lt.tm_mon+1,lt.tm_mday)].as<const char*>();devoHashToday=h?h:"";devoHaveToday=LittleFS.exists(devotionalLocalPath(lt.tm_mon+1,lt.tm_mday).c_str());}
+// Stale: nothing for today, a model-written one while the library now has today's file, or a file that changed since.
+static bool devotionalStale(){if(!ui.devotional.valid||ui.devotional.day!=dayOfYear())return true;if(ui.devotional.fromFile)return ui.devotional.hash!=devoHashToday;return devoHaveToday;}
+static bool devotionalWantsFile(){return false;}
+static uint32_t nextDevoSync=0;static bool devoSyncPending=false;static const int64_t DEVO_SYNC_S=6*3600;
+static bool devoSyncDue(){return time(nullptr)-prefs.getLong64("devosync",0)>DEVO_SYNC_S;}
+static void requestDevoSync(){if(requestBusy||!ui.online||!ui.clockValid)return;FetchRequest r{};r.devoSync=true;if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;nextDevoSync=millis()+1800000;}}
 static void requestDevotional(){
  if(requestBusy||!ui.online||!ui.clockValid||!ui.votd.valid())return;
  FetchRequest r{};r.devotional=true;r.feed=devotionalWantsFile();r.book=ui.votd.book;r.chapter=ui.votd.chapter;r.verse=ui.votd.verse;snprintf(r.key,sizeof(r.key),"%s",voiceKey.c_str());
@@ -924,6 +952,12 @@ static void handleResults(){
   }
   delete r;return;
  }
+ if(r->isDevoSync){
+  Serial.printf("FETCH devosync ok=%d fetched=%d http=%d\n",r->ok,r->fetched,r->code);
+  if(r->ok){prefs.putLong64("devosync",time(nullptr));refreshDevoHash();if(devotionalStale())nextDevotional=0;if(r->fetched>=40)nextDevoSync=millis()+5000;} // more to do: go again shortly
+  if(devoSyncPending){devoSyncPending=false;if(refreshWake)refreshPending--;}
+  delete r;return;
+ }
  if(r->isDevotional){
   ui.devotionalLoading=false;Serial.printf("FETCH devotional ok=%d http=%d title=%s\n",r->ok,r->code,r->devotional.title.c_str());
   if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());
@@ -985,6 +1019,7 @@ static void serialControl(){
   Serial.print("PMU");for(uint8_t reg:{0x00,0x01,0x80,0x82,0x83,0x84,0x85,0x86,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0x9b,0xa4})Serial.printf(" %02x=%02x",reg,pmuRead(reg));Serial.println();
  }
  if(ch=='D'){ui.devotional=Devotional{};nextDevotional=0;Serial.println("DEVOTIONAL requested");}
+ if(ch=='Y'){prefs.putLong64("devosync",0);nextDevoSync=0;Serial.println("DEVOSYNC requested");}
  if(ch=='U'){requestUpdate(true);Serial.println("UPDATE check requested");}
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
@@ -1034,7 +1069,8 @@ void setupApp(){
   if(refreshWake){planRefresh(refreshMaskBits);refreshPending=__builtin_popcount(refreshMaskBits);}else{refreshMaskBits=15;refreshPending=4;}
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
-  if(refreshWake&&ui.clockValid&&ui.votd.valid()&&(devotionalStale()||devotionalWantsFile())){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
+  refreshDevoHash();if(refreshWake&&ui.clockValid&&devoSyncDue()){devoSyncPending=true;refreshPending++;} // the library sync rides on a wake every six hours
+  if(refreshWake&&ui.clockValid&&ui.votd.valid()&&devotionalStale()){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
   Serial.printf("WAKE cause=%d refresh=%d leagues=0x%x pending=%d tab=%d sleeps=%d battery=%d%%\n",(int)cause,refreshWake,refreshMaskBits,refreshPending,ui.tab,rtcSleeps,batteryPercent());}
  ui.now=time(nullptr);renderer.render(ui);applyTheme(canvas.getBuffer());EPD_3IN97_Display_Base(canvas.getBuffer());dirty=false;
  if(shown)memcpy(shown,canvas.getBuffer(),48000);lastFullRefresh=millis();
@@ -1058,7 +1094,7 @@ void loopApp(){
  if(ui.clockValid&&followToday&&ui.date!=localDate(ui.now)&&ui.page!=Page::Date&&ui.page!=Page::Detail){ui.date=localDate(ui.now);loadView();}
  {const int s=speakState;if(s!=ui.speaking){ui.speaking=s;if(ui.page==Page::Devotional)dirty=true;}}
  static uint32_t batteryRead=0;if(!batteryRead||now-batteryRead>60000){batteryRead=now;const int b=batteryPercent();if(b!=ui.battery){ui.battery=b;if(ui.page==Page::Launcher||ui.page==Page::Settings)dirty=true;}}
- static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();nextDevotional=0;if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
+ static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();refreshDevoHash();nextDevotional=0;if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
  if(ui.ap){dns.processNextRequest();server.handleClient();if((finishSetup&&(int32_t)(now-finishAt)>=0)||(ui.online&&!connectionPending&&now-connectedAt>120000)||now-apStarted>600000)stopAP();}
  handleResults();serialControl();Key k;while(xQueueReceive(inputQueue,&k,0)==pdTRUE){keyAction(k);lastKeyAt=now;refreshWake=false;}
  if(voiceDemoRelease&&(int32_t)(now-voiceDemoRelease)>=0){voiceDemoRelease=0;keyAction({2,ButtonEvent::ReleaseHold});}
@@ -1068,7 +1104,8 @@ void loopApp(){
  static bool pendingVerify=true;if(pendingVerify&&((ui.online&&ui.clockValid)||now>120000)){pendingVerify=false;esp_ota_mark_app_valid_cancel_rollback();Serial.println("UPDATE build verified");}
  if(restartAt&&(int32_t)(now-restartAt)>=0&&!panelPending){Serial.println("UPDATE restarting");delay(100);ESP.restart();}
  if(autoUpdateCheck&&ui.online&&ui.clockValid&&!requestBusy)requestUpdate(false);
- if(ui.online&&ui.clockValid&&!requestBusy&&(devotionalStale()||devotionalWantsFile())&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
+ if(ui.online&&ui.clockValid&&!requestBusy&&devoSyncDue()&&(int32_t)(now-nextDevoSync)>=0)requestDevoSync();
+ if(ui.online&&ui.clockValid&&!requestBusy&&devotionalStale()&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
  if(ui.page!=Page::Wifi&&!ui.ap&&ui.voice==VoiceState::Idle&&!audio::playing()&&!audio::recording()&&!panelPending&&!updateBusy&&!restartAt&&!pendingVerify){
   const uint32_t quiet=now-std::max(lastKeyAt,(uint32_t)0);
   if(refreshWake&&((refreshPending<=0&&!requestBusy)||now-refreshStarted>60000))idleSleep();

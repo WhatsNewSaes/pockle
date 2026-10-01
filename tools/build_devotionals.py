@@ -30,7 +30,7 @@ Limits keep it to one screen: title 40 characters, truth 140, each bullet 90, ap
 The device fetches devotionals/out/MM-DD.json from the repo's main branch each day; a day with no
 file falls back to a devotional the model writes on the device.
 """
-import argparse, datetime, json, os, pathlib, re, sys, urllib.request
+import argparse, datetime, hashlib, json, os, pathlib, re, sys, urllib.request
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 SRC=ROOT/'devotionals';OUT=SRC/'out'
 LIMITS={'title':40,'truth':140,'point':90,'apply':200,'prayer':160}
@@ -123,6 +123,8 @@ def main():
   errs=validate(f.name,d)
   if errs:bad+=1;print(f'{f.name}:');[print('  -',e) for e in errs];continue
   (OUT/f.name.replace('.md','.json')).write_text(json.dumps(d,ensure_ascii=True,indent=1));count+=1
- print(f'exported {count} devotional(s) to {OUT.relative_to(ROOT)}'+(f', {bad} with problems' if bad else ''))
+ index={f.stem:hashlib.sha1(f.read_bytes()).hexdigest()[:8] for f in sorted(OUT.glob('??-??.json'))}
+ (OUT/'index.json').write_text(json.dumps(index,separators=(',',':')))  # day -> content hash; the device syncs only what changed
+ print(f'exported {count} devotional(s) to {OUT.relative_to(ROOT)} (index of {len(index)})'+(f', {bad} with problems' if bad else ''))
  sys.exit(1 if bad else 0)
 if __name__=='__main__':main()

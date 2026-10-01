@@ -9,9 +9,13 @@
 // by the model once a day and cached in NVS: a title, one truth, three bullets,
 // something to do today, and a one-line prayer.
 namespace retro {
-struct Devotional { int day=-1; BibleRef ref; std::string verse,title,truth,apply,prayer; std::vector<std::string> points; bool valid=false,fromFile=false; };
+struct Devotional { int day=-1; BibleRef ref; std::string verse,title,truth,apply,prayer,hash; std::vector<std::string> points; bool valid=false,fromFile=false; };
 // Where the day's file lives: devotionals/out/MM-DD.json on the repo's main branch, written by tools/build_devotionals.py.
-inline std::string devotionalFileUrl(int month,int day){char b[96];snprintf(b,sizeof(b),"https://raw.githubusercontent.com/WhatsNewSaes/pockle/main/devotionals/out/%02d-%02d.json",month,day);return b;}
+#define DEVOTIONAL_BASE_URL "https://raw.githubusercontent.com/WhatsNewSaes/pockle/main/devotionals/out/"
+inline std::string devotionalFileUrl(int month,int day){char b[112];snprintf(b,sizeof(b),DEVOTIONAL_BASE_URL "%02d-%02d.json",month,day);return b;}
+// The local copy on LittleFS, kept in sync with the repo: /devo/MM-DD.json plus /devo/index.json (day -> content hash).
+inline std::string devotionalLocalPath(int month,int day){char b[24];snprintf(b,sizeof(b),"/devo/%02d-%02d.json",month,day);return b;}
+inline std::string devotionalDayKey(int month,int day){char b[8];snprintf(b,sizeof(b),"%02d-%02d",month,day);return b;}
 inline std::string devotionalSystemPrompt(){
  return "You write a one-screen daily devotional for kids aged 7 to 13, shown on a small e-paper device and read aloud. "
   "You are given the verse of the day (Berean Standard Bible) and a little of its chapter for context. Reply with strict JSON: "
@@ -54,7 +58,7 @@ inline bool decodeDevotionalFile(const std::string& json,int day,const BibleRef&
 }
 // NVS cache, and the verse it was written for.
 inline std::string encodeDevotional(const Devotional& d){
- JsonDocument j;j["day"]=d.day;j["book"]=d.ref.book;j["chapter"]=d.ref.chapter;j["verse"]=d.ref.verse;j["text"]=d.verse;j["title"]=d.title;j["truth"]=d.truth;j["apply"]=d.apply;j["prayer"]=d.prayer;j["file"]=d.fromFile;
+ JsonDocument j;j["day"]=d.day;j["book"]=d.ref.book;j["chapter"]=d.ref.chapter;j["verse"]=d.ref.verse;j["text"]=d.verse;j["title"]=d.title;j["truth"]=d.truth;j["apply"]=d.apply;j["prayer"]=d.prayer;j["file"]=d.fromFile;j["hash"]=d.hash;
  JsonArray p=j["points"].to<JsonArray>();for(const auto& s:d.points)p.add(s);
  std::string out;serializeJson(j,out);return out;
 }
@@ -62,7 +66,7 @@ inline bool decodeDevotional(const std::string& json,Devotional& out){
  JsonDocument j;if(json.empty()||deserializeJson(j,json))return false;
  Devotional d;d.day=j["day"]|-1;d.ref.book=j["book"]|0;d.ref.chapter=j["chapter"]|0;d.ref.verse=j["verse"]|0;
  auto str=[&](const char* k){const char* v=j[k].as<const char*>();return std::string(v?v:"");};
- d.verse=str("text");d.title=str("title");d.truth=str("truth");d.apply=str("apply");d.prayer=str("prayer");d.fromFile=j["file"]|false;
+ d.verse=str("text");d.title=str("title");d.truth=str("truth");d.apply=str("apply");d.prayer=str("prayer");d.fromFile=j["file"]|false;d.hash=str("hash");
  for(JsonVariantConst p:j["points"].as<JsonArrayConst>()){const char* v=p.as<const char*>();if(v)d.points.push_back(v);}
  if(d.title.empty()||d.points.empty())return false;d.valid=true;out=d;return true;
 }
