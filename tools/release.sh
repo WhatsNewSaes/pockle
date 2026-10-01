@@ -17,7 +17,7 @@ cp build/RetroSports.ino.bin release/RetroSports.bin
 printf '{"version":"%s","file":"RetroSports.bin","size":%s}\n' "$VERSION" "$(stat -f %z release/RetroSports.bin)" > release/version.json
 git add -A
 git commit -q -m "Release v$VERSION" || true
-git tag "v$VERSION"
+git tag -a "v$VERSION" -m "Pixel League $VERSION"
 git push -q --follow-tags
 gh release create "v$VERSION" release/RetroSports.bin release/version.json --title "v$VERSION" --notes "$NOTES"
 echo "released v$VERSION"
