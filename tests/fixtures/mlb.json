@@ -1,0 +1,94 @@
+{
+  "events": [
+    {
+      "id": "401907965",
+      "date": "2026-09-29T18:00Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 9,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "15",
+                "displayName": "Atlanta Braves",
+                "abbreviation": "ATL"
+              },
+              "score": "5",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "22",
+                "displayName": "Philadelphia Phillies",
+                "abbreviation": "PHI"
+              },
+              "score": "3",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "Truist Park"
+          }
+        }
+      ]
+    },
+    {
+      "id": "401907896",
+      "date": "2026-09-29T21:00Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 9,
+        "type": {
+          "id": "2",
+          "name": "STATUS_IN_PROGRESS",
+          "state": "in",
+          "completed": false,
+          "description": "In Progress",
+          "detail": "Bottom 9th",
+          "shortDetail": "Bot 9th"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "18",
+                "displayName": "Houston Astros",
+                "abbreviation": "HOU"
+              },
+              "score": "3",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "4",
+                "displayName": "Chicago White Sox",
+                "abbreviation": "CHW"
+              },
+              "score": "6",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "Daikin Park"
+          }
+        }
+      ]
+    }
+  ]
+}

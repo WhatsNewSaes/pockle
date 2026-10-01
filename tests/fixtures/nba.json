@@ -1,0 +1,94 @@
+{
+  "events": [
+    {
+      "id": "401705663",
+      "date": "2025-04-01T23:30Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0.0",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "1",
+                "displayName": "Atlanta Hawks",
+                "abbreviation": "ATL"
+              },
+              "score": "113",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "22",
+                "displayName": "Portland Trail Blazers",
+                "abbreviation": "POR"
+              },
+              "score": "127",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "State Farm Arena"
+          }
+        }
+      ]
+    },
+    {
+      "id": "401705664",
+      "date": "2025-04-01T23:30Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0.0",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "18",
+                "displayName": "New York Knicks",
+                "abbreviation": "NY"
+              },
+              "score": "105",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "20",
+                "displayName": "Philadelphia 76ers",
+                "abbreviation": "PHI"
+              },
+              "score": "91",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "Madison Square Garden"
+          }
+        }
+      ]
+    }
+  ]
+}

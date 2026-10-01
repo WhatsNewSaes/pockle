@@ -1,0 +1,94 @@
+{
+  "events": [
+    {
+      "id": "401872953",
+      "date": "2026-09-27T17:00Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "2",
+                "displayName": "Buffalo Bills",
+                "abbreviation": "BUF"
+              },
+              "score": "24",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "24",
+                "displayName": "Los Angeles Chargers",
+                "abbreviation": "LAC"
+              },
+              "score": "16",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "Highmark Stadium"
+          }
+        }
+      ]
+    },
+    {
+      "id": "401872949",
+      "date": "2026-09-27T17:00Z",
+      "status": {
+        "clock": 0.0,
+        "displayClock": "0:00",
+        "period": 4,
+        "type": {
+          "id": "3",
+          "name": "STATUS_FINAL",
+          "state": "post",
+          "completed": true,
+          "description": "Final",
+          "detail": "Final",
+          "shortDetail": "Final"
+        }
+      },
+      "competitions": [
+        {
+          "competitors": [
+            {
+              "team": {
+                "id": "5",
+                "displayName": "Cleveland Browns",
+                "abbreviation": "CLE"
+              },
+              "score": "21",
+              "homeAway": "home"
+            },
+            {
+              "team": {
+                "id": "29",
+                "displayName": "Carolina Panthers",
+                "abbreviation": "CAR"
+              },
+              "score": "18",
+              "homeAway": "away"
+            }
+          ],
+          "venue": {
+            "fullName": "Huntington Bank Field"
+          }
+        }
+      ]
+    }
+  ]
+}

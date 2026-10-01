@@ -1,0 +1,10 @@
+.tools/
+build/
+backups/
+__pycache__/
+.DS_Store
+previews/device.png
+previews/*.pbm
+
+assets/logos/source/
+release/
