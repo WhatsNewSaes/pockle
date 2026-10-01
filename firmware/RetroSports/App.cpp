@@ -406,16 +406,22 @@ static bool newerVersion(const std::string& a,const std::string& b){ // a > b, "
 static bool fetchUpdate(std::string& note,bool& installed){
  installed=false;if(WiFi.status()!=WL_CONNECTED){note="NO WI-FI";return false;}
  NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);
- HTTPClient http;http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);http.setTimeout(20000);http.setConnectTimeout(10000);
+ HTTPClient http;http.setTimeout(20000);http.setConnectTimeout(10000);http.setReuse(false);
+ const char* headers[]={"Location"};http.collectHeaders(headers,1);
+ // GitHub answers with two redirects (latest -> tagged -> asset host); chase them by hand and log each hop.
+ auto open=[&](const String& first)->int{String url=first;int code=0;
+  for(int hop=0;hop<6;hop++){if(!http.begin(client,url))return -1;code=http.GET();Serial.printf("UPDATE hop %d http=%d %s\n",hop,code,url.substring(0,90).c_str());
+   if(code==301||code==302||code==303||code==307||code==308){url=http.header("Location");http.end();if(url.isEmpty())return -2;continue;}
+   return code;}
+  return -3;};
  std::string version;
- if(!http.begin(client,String(OTA_RELEASE_URL)+"version.json")){note="BAD URL";return false;}
- int code=http.GET();if(code!=200){http.end();note="NO RELEASE FOUND ("+std::to_string(code)+")";Serial.printf("UPDATE version.json http=%d\n",code);return false;}
- {JsonDocument d;if(deserializeJson(d,http.getString())){http.end();note="BAD VERSION FILE";return false;}version=d["version"].as<const char*>()?d["version"].as<const char*>():"";}
+ int code=open(String(OTA_RELEASE_URL)+"version.json");
+ if(code!=200){http.end();note="NO RELEASE FOUND ("+std::to_string(code)+")";return false;}
+ {String body=http.getString();Serial.printf("UPDATE version.json: %s\n",body.substring(0,80).c_str());JsonDocument d;if(deserializeJson(d,body)){http.end();note="BAD VERSION FILE";return false;}version=d["version"].as<const char*>()?d["version"].as<const char*>():"";}
  http.end();
  Serial.printf("UPDATE latest=%s running=%s\n",version.c_str(),FIRMWARE_VERSION);
  if(version.empty()||!newerVersion(version,FIRMWARE_VERSION)){note="UP TO DATE";return true;}
- if(!http.begin(client,String(OTA_RELEASE_URL)+"RetroSports.bin")){note="BAD URL";return false;}
- code=http.GET();const int size=http.getSize();
+ code=open(String(OTA_RELEASE_URL)+"RetroSports.bin");const int size=http.getSize();
  if(code!=200||size<=0){http.end();note="DOWNLOAD FAILED ("+std::to_string(code)+")";return false;}
  if(!Update.begin(size)){http.end();note="NO ROOM FOR UPDATE";return false;}
  const uint32_t t0=millis();const size_t written=Update.writeStream(http.getStream());http.end();
