@@ -84,6 +84,7 @@ struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[1
 struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false;std::string note;Devotional devotional;int code=0;};
 struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];};
 struct Key {int button;ButtonEvent event;};
+SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
 static std::string readFileText(const std::string& path);static int dayOfYear(); // Bible helpers, defined with the reader below
 
 // Vendor ESP-IDF driver powers the panel through PMU ALDO3 at 3.3 V.
@@ -626,7 +627,7 @@ static void bibleStep(int step){
  saveBiblePos();dirty=true;
 }
 // Opening a page with a READ ALOUD button starts the TLS handshake early, so the press itself is quicker.
-static void warmVoice(){if(voiceKey.isEmpty()||!ui.online)return;VoiceJob job{};job.warm=true;xQueueSend(voiceQueue,&job,0);}
+static void warmVoice(){if(voiceKey.isEmpty()||!ui.online)return;static VoiceJob job;memset(&job,0,sizeof(job));job.warm=true;xQueueSend(voiceQueue,&job,0);}
 static uint32_t nextDevotional=0;static bool devotionalPending=false;
 static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear()||ui.devotional.ref.book!=ui.votd.book||ui.devotional.ref.chapter!=ui.votd.chapter||ui.devotional.ref.verse!=ui.votd.verse;}
 static void requestDevotional(){
@@ -664,7 +665,7 @@ static void finishVoice(){
    auto cut=trimSilence((const int16_t*)pcm,n/2,audio::SAMPLE_RATE);
    if(cut.first)memmove(pcm,pcm+cut.first*2,cut.second*2);
    Serial.printf("VOICE clip %u -> %u bytes after trimming silence\n",(unsigned)n,(unsigned)(cut.second*2));n=cut.second*2;
-   VoiceJob job{};job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
+   static VoiceJob job;memset(&job,0,sizeof(job));job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
    std::string favs;for(const auto& f:ui.favorites){std::string line=std::to_string(f.league)+"|"+f.name+"\n";if(favs.size()+line.size()>=sizeof(job.favorites))break;favs+=line;}
    snprintf(job.favorites,sizeof(job.favorites),"%s",favs.c_str());
    if(xQueueSend(voiceQueue,&job,0)==pdTRUE)ui.voice=VoiceState::Thinking;else{heap_caps_free(pcm);ui.voice=VoiceState::Error;ui.voiceNote="STILL BUSY WITH THE LAST QUESTION";}
@@ -871,7 +872,7 @@ static void keyAction(const Key& k){
   break;
  case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
  case Page::Devotional:
-  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
+  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
   else if(ui.selected==1){ui.page=Page::BibleHome;ui.selected=0;}
   else goLauncher(LAUNCH_BIBLE);
   break;
@@ -971,7 +972,7 @@ static void serialControl(){
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
  if(ch=='K'){String value=Serial.readStringUntil('\n');value.trim();voiceKey=value;prefs.putString("orkey",voiceKey);Serial.printf("VOICE key %s (%u chars)\n",voiceKey.isEmpty()?"cleared":"saved",(unsigned)voiceKey.length());}
- if(ch=='S'){String text=Serial.readStringUntil('\n');text.trim();VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",text.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("VOICE speaking test text");}
+ if(ch=='S'){String text=Serial.readStringUntil('\n');text.trim();static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",text.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("VOICE speaking test text");}
  if(ch=='a'){keyAction({2,ButtonEvent::Hold});voiceDemoRelease=millis()+4000;Serial.println("VOICE demo: listening for 4 s");}
  if(ch=='v'){ // microphone check: 3 s of PCM as hex
   if(audio::startRecording()){delay(3000);uint8_t* pcm=nullptr;size_t n=audio::stopRecording(&pcm);
