@@ -43,7 +43,7 @@ static bool panelPending=false;
 static uint32_t panelStartedAt=0,lastKeyAt=0,lastFullRefresh=0,detailFetchedAt=0;
 static String lastDateSaved;
 // Voice: the OpenRouter key lives in NVS (set through the setup page or USB), never in source.
-static String voiceKey;
+static String voiceKey,ttsVoice="alloy";
 static QueueHandle_t voiceQueue;
 static uint32_t voiceDemoRelease=0;
 static bool voiceRecorded=false,speakReplies=true,darkMode=false,nightSleep=true;
@@ -82,7 +82,7 @@ static const char* zones[]={"EST5EDT,M3.2.0,M11.1.0","CST6CDT,M3.2.0,M11.1.0","M
 static const char* zoneLabels[]={"Eastern","Central","Mountain","Pacific","UTC"};
 struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional;uint8_t book,chapter,verse;char key[96];};
 struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false;std::string note;Devotional devotional;int code=0;};
-struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];};
+struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];};
 struct Key {int button;ButtonEvent event;};
 SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
 static std::string readFileText(const std::string& path);static int dayOfYear(); // Bible helpers, defined with the reader below
@@ -314,9 +314,9 @@ struct ChunkedReader {
  }
 };
 static std::atomic<int> speakState(0); // 0 idle, 1 fetching, 2 playing; the loop mirrors it into ui.speaking
-static void speakAnswer(const std::string& answer,const char* key){
+static void speakAnswer(const std::string& answer,const char* key,const char* voice){
  speakState=1;struct Done{~Done(){speakState=0;}} done;
- const std::string body=ttsRequestBody(answer);int code=0;uint32_t tStart=millis(),tConnect=0,tPost=0,tFirst=0;size_t sse=0,pcmTotal=0;std::string transcript;
+ const std::string body=ttsRequestBody(answer,voice);int code=0;uint32_t tStart=millis(),tConnect=0,tPost=0,tFirst=0;size_t sse=0,pcmTotal=0;std::string transcript;
  uint32_t t0=millis();voiceConnect();tConnect=millis()-t0;
  HTTPClient& http=*voiceHttp;
  if(http.begin(*voiceClient,"https://openrouter.ai/api/v1/chat/completions")){
@@ -362,7 +362,7 @@ static void voiceTask(void*){
  VoiceJob job;
  for(;;){if(xQueueReceive(voiceQueue,&job,portMAX_DELAY)!=pdTRUE)continue;
   if(job.warm){if(WiFi.status()==WL_CONNECTED)voiceConnect();continue;}
-  if(job.say[0]&&!job.pcm){speakAnswer(job.say,job.key);voiceDisconnect();continue;} // read-aloud request (devotional, USB speech test)
+  if(job.say[0]&&!job.pcm){speakAnswer(job.say,job.key,job.voice);voiceDisconnect();continue;} // read-aloud request (devotional, USB speech test)
   FetchResult* result=new FetchResult;result->isVoice=true;result->voice=askVoice(job);heap_caps_free(job.pcm);
   if(result->voice.ok&&(result->voice.action==VoiceAction::Fact||result->voice.action==VoiceAction::Answer)&&result->voice.lookup){ // the model flagged a present-day question: ask the web
    FetchResult* interim=new FetchResult;interim->isVoice=true;interim->voiceInterim=true;xQueueSend(resultQueue,&interim,portMAX_DELAY);
@@ -375,7 +375,7 @@ static void voiceTask(void*){
    if(r.valid()){answer=bibleSpeakText(bibleVerses(readFileText(biblePath(r.book,r.chapter))),r);speak=job.speak&&!answer.empty();}
   }
   xQueueSend(resultQueue,&result,portMAX_DELAY); // the screen shows the answer while the speech is fetched
-  if(speak)speakAnswer(answer,job.key);
+  if(speak)speakAnswer(answer,job.key,job.voice);
   voiceDisconnect();
  }
 }
@@ -665,7 +665,7 @@ static void finishVoice(){
    auto cut=trimSilence((const int16_t*)pcm,n/2,audio::SAMPLE_RATE);
    if(cut.first)memmove(pcm,pcm+cut.first*2,cut.second*2);
    Serial.printf("VOICE clip %u -> %u bytes after trimming silence\n",(unsigned)n,(unsigned)(cut.second*2));n=cut.second*2;
-   static VoiceJob job;memset(&job,0,sizeof(job));job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
+   static VoiceJob job;memset(&job,0,sizeof(job));job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
    std::string favs;for(const auto& f:ui.favorites){std::string line=std::to_string(f.league)+"|"+f.name+"\n";if(favs.size()+line.size()>=sizeof(job.favorites))break;favs+=line;}
    snprintf(job.favorites,sizeof(job.favorites),"%s",favs.c_str());
    if(xQueueSend(voiceQueue,&job,0)==pdTRUE)ui.voice=VoiceState::Thinking;else{heap_caps_free(pcm);ui.voice=VoiceState::Error;ui.voiceNote="STILL BUSY WITH THE LAST QUESTION";}
@@ -771,7 +771,7 @@ static void goBack(){
  case Page::BibleHome:goLauncher(LAUNCH_BIBLE);break;
  case Page::Devotional:goLauncher(LAUNCH_BIBLE);break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
- case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=6;}break;
+ case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=7;}break;
  case Page::Launcher:break;
  case Page::Bible:ui.page=Page::BibleHome;ui.selected=0;break;
  case Page::BibleBooks:ui.page=Page::Bible;ui.selected=0;break;
@@ -826,7 +826,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=7;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=8;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -862,7 +862,11 @@ static void keyAction(const Key& k){
  case Page::Date:ui.date=shiftDate(ui.date,ui.dateOffset);ui.feed=false;followToday=ui.clockValid&&ui.date==localDate(time(nullptr));ui.page=Page::Games;loadView();break;
  case Page::Detail:if(ui.selected>0&&ui.gameIndex<(int)ui.snapshot.games.size()){Game g=ui.snapshot.games[ui.gameIndex];openTeam(ui.selected==1?g.away:g.home,Page::Detail,g.id);}break;
  case Page::Favorites:if(ui.selected<(int)ui.favorites.size()){auto f=ui.favorites[ui.selected];ui.league=f.league;ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();ui.feed=true;followToday=true;Team t;t.id=f.id;t.name=f.name;openTeam(t,Page::Favorites,"");}break;
- case Page::Settings:if(ui.selected==0)startAP();else if(ui.selected==1){nextFetch=0;for(int l=0;l<4;l++)leagueFetched[l]=0;goHome();}else if(ui.selected==2)sleepScreen();else if(ui.selected==3){speakReplies=!speakReplies;prefs.putBool("speak",speakReplies);ui.speak=speakReplies;}else if(ui.selected==4){darkMode=!darkMode;prefs.putBool("dark",darkMode);ui.dark=darkMode;}else if(ui.selected==5){nightSleep=!nightSleep;prefs.putBool("night",nightSleep);ui.nightSleep=nightSleep;}else requestUpdate(true);break;
+ case Page::Settings:if(ui.selected==0)startAP();else if(ui.selected==1){nextFetch=0;for(int l=0;l<4;l++)leagueFetched[l]=0;goHome();}else if(ui.selected==2)sleepScreen();else if(ui.selected==3){speakReplies=!speakReplies;prefs.putBool("speak",speakReplies);ui.speak=speakReplies;}else if(ui.selected==4){darkMode=!darkMode;prefs.putBool("dark",darkMode);ui.dark=darkMode;}else if(ui.selected==5){nightSleep=!nightSleep;prefs.putBool("night",nightSleep);ui.nightSleep=nightSleep;}
+  else if(ui.selected==6){ // next voice, saved, and a sample line in it
+   ttsVoice=TTS_VOICES[(ttsVoiceIndex(ttsVoice.c_str())+1)%TTS_VOICE_COUNT];prefs.putString("voice",ttsVoice);ui.ttsVoice=ttsVoice.c_str();
+   if(!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));std::string name=ttsVoice.c_str();name[0]=toupper(name[0]);snprintf(job.say,sizeof(job.say),"Hi, I'm %s. Bears twenty seven, Eagles seven. For God so loved the world.",name.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());xQueueSend(voiceQueue,&job,0);}}
+  else requestUpdate(true);break;
  case Page::Wifi:if(!ui.ap)startAP();break;
  case Page::Launcher:
   if(ui.selected==LAUNCH_WEATHER){ui.page=Page::Weather;if(!ui.weather.valid)nextWeather=0;}
@@ -872,7 +876,7 @@ static void keyAction(const Key& k){
   break;
  case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
  case Page::Devotional:
-  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
+  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
   else if(ui.selected==1){ui.page=Page::BibleHome;ui.selected=0;}
   else goLauncher(LAUNCH_BIBLE);
   break;
@@ -972,7 +976,7 @@ static void serialControl(){
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
  if(ch=='K'){String value=Serial.readStringUntil('\n');value.trim();voiceKey=value;prefs.putString("orkey",voiceKey);Serial.printf("VOICE key %s (%u chars)\n",voiceKey.isEmpty()?"cleared":"saved",(unsigned)voiceKey.length());}
- if(ch=='S'){String text=Serial.readStringUntil('\n');text.trim();static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",text.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("VOICE speaking test text");}
+ if(ch=='S'){String text=Serial.readStringUntil('\n');text.trim();static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",text.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("VOICE speaking test text");}
  if(ch=='a'){keyAction({2,ButtonEvent::Hold});voiceDemoRelease=millis()+4000;Serial.println("VOICE demo: listening for 4 s");}
  if(ch=='v'){ // microphone check: 3 s of PCM as hex
   if(audio::startRecording()){delay(3000);uint8_t* pcm=nullptr;size_t n=audio::stopRecording(&pcm);
@@ -990,7 +994,7 @@ static void serialControl(){
 }
 void setupApp(){
  Serial.begin(115200);Serial.setTimeout(1000);delay(500);Serial.println("PIXEL LEAGUE v" FIRMWARE_VERSION " boot");ui.version=FIRMWARE_VERSION;
- prefs.begin("pixel-league",false);ssid=prefs.getString("ssid","");password=prefs.getString("pass","");tz=prefs.getString("tz",zones[0]);setenv("TZ",tz.c_str(),1);tzset();lastDateSaved=prefs.getString("lastDate","");voiceKey=prefs.getString("orkey","");speakReplies=prefs.getBool("speak",true);darkMode=prefs.getBool("dark",false);ui.dark=darkMode;nightSleep=prefs.getBool("night",true);ui.nightSleep=nightSleep;
+ prefs.begin("pixel-league",false);ssid=prefs.getString("ssid","");password=prefs.getString("pass","");tz=prefs.getString("tz",zones[0]);setenv("TZ",tz.c_str(),1);tzset();lastDateSaved=prefs.getString("lastDate","");voiceKey=prefs.getString("orkey","");ttsVoice=prefs.getString("voice","alloy");ui.ttsVoice=ttsVoice.c_str();speakReplies=prefs.getBool("speak",true);darkMode=prefs.getBool("dark",false);ui.dark=darkMode;nightSleep=prefs.getBool("night",true);ui.nightSleep=nightSleep;
  Wire.begin(41,42);powerUpFromSleep();panelPower(true);ui.clockValid=readRtc();audio::init();
  ui.speak=speakReplies;fsOK=LittleFS.begin(false);
  // This dedicated new filesystem partition is initialized only on first app boot.
