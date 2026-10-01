@@ -50,7 +50,7 @@ static uint8_t silence[2400];
 // by its own task, so a slow chunk never starves the codec mid-word.
 namespace {
 uint8_t* ring=nullptr;size_t ringCap=0;std::atomic<size_t> ringHead(0),ringTail(0),ringCount(0);
-std::atomic<bool> ringEnded(false),playerDone(true);uint32_t playRate=24000;
+std::atomic<bool> ringEnded(false),playerDone(true),aborted(false);uint32_t playRate=24000;
 void playerTask(void*){
  const size_t prebuffer=playRate*2*8/10; // 0.8 s before the first sample
  while(ringCount<prebuffer&&!ringEnded)vTaskDelay(pdMS_TO_TICKS(5));
@@ -58,6 +58,7 @@ void playerTask(void*){
  // silence through it first so the first word is not swallowed.
  digitalWrite(PIN_PA,HIGH);for(int i=0;i<4;i++)i2s.write(silence,sizeof(silence));
  for(;;){
+  if(aborted)break;
   size_t count=ringCount;
   if(!count){if(ringEnded)break;vTaskDelay(pdMS_TO_TICKS(3));continue;}
   size_t tail=ringTail,n=std::min({count,(size_t)4096,ringCap-tail});
@@ -70,7 +71,7 @@ void playerTask(void*){
 bool playBegin(uint32_t rate){
  if(!ready||active||busyPlaying)return false;
  if(!ring){ringCap=1536*1024;ring=(uint8_t*)heap_caps_malloc(ringCap,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!ring)return false;}
- busyPlaying=true;playRate=rate;ringHead=ringTail=ringCount=0;ringEnded=false;playerDone=false;
+ busyPlaying=true;playRate=rate;ringHead=ringTail=ringCount=0;ringEnded=false;aborted=false;playerDone=false;
  es8311_sample_frequency_config(codec,rate*256,rate);
  i2s.setPins(PIN_BCLK,PIN_WS,PIN_DOUT,PIN_DIN,PIN_MCLK);
  if(!i2s.begin(I2S_MODE_STD,rate,I2S_DATA_BIT_WIDTH_16BIT,I2S_SLOT_MODE_MONO,I2S_STD_SLOT_LEFT)){busyPlaying=false;playerDone=true;return false;}
@@ -81,13 +82,14 @@ bool playBegin(uint32_t rate){
 }
 size_t playWrite(const uint8_t* pcm,size_t bytes){
  if(!busyPlaying)return 0;size_t off=0;
- while(off<bytes){
+ while(off<bytes){if(aborted)return bytes; // dropped: the listener left
   size_t room=ringCap-ringCount;if(!room){vTaskDelay(pdMS_TO_TICKS(3));continue;}
   size_t head=ringHead,n=std::min({bytes-off,room,ringCap-head});
   memcpy(ring+head,pcm+off,n);ringHead=(head+n)%ringCap;ringCount+=n;off+=n;
  }
  return off;
 }
+void playAbort(){if(!busyPlaying)return;aborted=true;ringEnded=true;}
 void playEnd(){
  if(!busyPlaying)return;
  ringEnded=true;

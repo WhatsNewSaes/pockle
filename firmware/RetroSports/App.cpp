@@ -314,8 +314,11 @@ struct ChunkedReader {
  }
 };
 static std::atomic<int> speakState(0); // 0 idle, 1 fetching, 2 playing; the loop mirrors it into ui.speaking
+static std::atomic<bool> speakAbort(false);
+// Stops a reading in progress: the stream loop bails out and the speaker drops what is queued.
+static void stopSpeaking(){if(speakState){speakAbort=true;audio::playAbort();Serial.println("SPEAK stopped");}}
 static void speakAnswer(const std::string& answer,const char* key,const char* voice){
- speakState=1;struct Done{~Done(){speakState=0;}} done;
+ speakState=1;speakAbort=false;struct Done{~Done(){speakState=0;}} done;
  const std::string body=ttsRequestBody(answer,voice);int code=0;uint32_t tStart=millis(),tConnect=0,tPost=0,tFirst=0;size_t sse=0,pcmTotal=0;std::string transcript;
  uint32_t t0=millis();voiceConnect();tConnect=millis()-t0;
  HTTPClient& http=*voiceHttp;
@@ -329,6 +332,7 @@ static void speakAnswer(const std::string& answer,const char* key,const char* vo
    char* line=(char*)heap_caps_malloc(lineCap,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);uint8_t* pcm=(uint8_t*)heap_caps_malloc(pcmCap,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
    static uint8_t buf[2048];size_t lineLen=0;bool playing=false,finished=false;
    if(line&&pcm)while(!finished){
+    if(speakAbort){finished=true;break;}
     int n=reader.read(buf,sizeof(buf));if(n==0)break;if(n<0)continue;sse+=n;
     for(int i=0;i<n;i++){char ch=(char)buf[i];
      if(ch!='\n'){if(lineLen<lineCap-1)line[lineLen++]=ch;continue;}
@@ -341,7 +345,7 @@ static void speakAnswer(const std::string& answer,const char* key,const char* vo
      lineLen=0;
     }
    }
-   if(playing)audio::playEnd();
+   if(playing){if(speakAbort)audio::playAbort();audio::playEnd();}
    heap_caps_free(line);heap_caps_free(pcm);
   }
   http.end();
@@ -809,7 +813,7 @@ static void goBack(){
  case Page::Home:goLauncher(LAUNCH_TAB0+ui.tab);break;
  case Page::Settings:goLauncher(LAUNCH_GEAR);break;
  case Page::BibleHome:goLauncher(LAUNCH_BIBLE);break;
- case Page::Devotional:goLauncher(LAUNCH_BIBLE);break;
+ case Page::Devotional:stopSpeaking();goLauncher(LAUNCH_BIBLE);break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=7;}break;
  case Page::Launcher:break;
@@ -916,9 +920,10 @@ static void keyAction(const Key& k){
   break;
  case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
  case Page::Devotional:
-  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
-  else if(ui.selected==1){ui.page=Page::BibleHome;ui.selected=0;}
-  else goLauncher(LAUNCH_BIBLE);
+  if(ui.selected==0&&speakState){stopSpeaking();} // reading: a press stops it
+  else if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
+  else if(ui.selected==1){stopSpeaking();ui.page=Page::BibleHome;ui.selected=0;}
+  else{stopSpeaking();goLauncher(LAUNCH_BIBLE);}
   break;
  case Page::Bible:ui.bible.pick=ui.bible.book-1;ui.bible.pickBook=ui.bible.book;ui.page=Page::BibleBooks;break;
  case Page::BibleBooks:ui.bible.pickBook=ui.bible.pick+1;ui.bible.pick=ui.bible.pickBook==ui.bible.book?ui.bible.chapter-1:0;ui.page=Page::BibleChapters;break;

@@ -18,6 +18,7 @@ size_t recordedBytes();
 bool playBegin(uint32_t rate);
 size_t playWrite(const uint8_t* pcm,size_t bytes);
 void playEnd();
+void playAbort(); // drop whatever is queued and stop the speaker now; playEnd() then returns at once
 bool play(const uint8_t* pcm,size_t bytes,uint32_t rate); // convenience: begin, write, end
 bool playing();
 // Before deep sleep: codec into standby and the amplifier off. init() brings it back after wake.
