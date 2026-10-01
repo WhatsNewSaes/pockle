@@ -441,9 +441,11 @@ static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
  http.addHeader("Content-Type","application/json");http.addHeader("Authorization",String("Bearer ")+req.key);
  const std::string body=devotionalRequestBody(ref,verses[ref.verse-1],context);code=http.POST((uint8_t*)body.data(),body.size());
  if(code!=200){http.end();Serial.printf("DEVOTIONAL http=%d\n",code);return false;}
- JsonDocument d;const bool parsed=!deserializeJson(d,http.getString());http.end();
+ const String reply=http.getString();http.end();JsonDocument d;const bool parsed=!deserializeJson(d,reply);
  tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);
- return parsed&&parseDevotional(d,ref,verses[ref.verse-1],lt.tm_yday,out);
+ const bool ok=parsed&&parseDevotional(d,ref,verses[ref.verse-1],lt.tm_yday,out);
+ if(!ok)Serial.printf("DEVOTIONAL unparsed: %s\n",reply.substring(0,160).c_str());
+ return ok;
 }
 static void networkTask(void*){
  FetchRequest req;
@@ -762,7 +764,7 @@ static void goBack(){
  case Page::Home:goLauncher(LAUNCH_TAB0+ui.tab);break;
  case Page::Settings:goLauncher(LAUNCH_GEAR);break;
  case Page::BibleHome:goLauncher(LAUNCH_BIBLE);break;
- case Page::Devotional:ui.page=Page::BibleHome;ui.selected=2;break;
+ case Page::Devotional:goLauncher(LAUNCH_BIBLE);break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=6;}break;
  case Page::Launcher:break;
@@ -819,7 +821,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=1;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=7;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=7;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -859,12 +861,16 @@ static void keyAction(const Key& k){
  case Page::Wifi:if(!ui.ap)startAP();break;
  case Page::Launcher:
   if(ui.selected==LAUNCH_WEATHER){ui.page=Page::Weather;if(!ui.weather.valid)nextWeather=0;}
-  else if(ui.selected==LAUNCH_BIBLE){ui.page=Page::BibleHome;ui.selected=0;}
+  else if(ui.selected==LAUNCH_BIBLE){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;} // the Bible row opens today's devotional; BIBLE on that page opens the reader home
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
  case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1)openBible(ui.votd);else if(ui.selected==2){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
- case Page::Devotional:if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}break;
+ case Page::Devotional:
+  if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){VoiceJob job{};snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
+  else if(ui.selected==1){ui.page=Page::BibleHome;ui.selected=0;}
+  else goLauncher(LAUNCH_BIBLE);
+  break;
  case Page::Bible:ui.bible.pick=ui.bible.book-1;ui.bible.pickBook=ui.bible.book;ui.page=Page::BibleBooks;break;
  case Page::BibleBooks:ui.bible.pickBook=ui.bible.pick+1;ui.bible.pick=ui.bible.pickBook==ui.bible.book?ui.bible.chapter-1:0;ui.page=Page::BibleChapters;break;
  case Page::BibleChapters:{BibleRef r;r.book=ui.bible.pickBook;r.chapter=ui.bible.pick+1;openBible(r);break;}

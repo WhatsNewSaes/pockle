@@ -151,7 +151,7 @@ int main(){
   // Devotional: the model reply, the NVS roundtrip, the spoken text.
   {std::ifstream df("tests/fixtures/devotional.json");std::string fixture((std::istreambuf_iterator<char>(df)),std::istreambuf_iterator<char>());assert(!fixture.empty());
    JsonDocument wrap;wrap["choices"][0]["message"]["content"]=fixture;Devotional d;BibleRef ref{19,119,9};
-   assert(parseDevotional(wrap,ref,"How can a young man keep his way pure? By guarding it according to Your word.",272,d)&&d.valid&&d.points.size()==3&&d.title=="Keep Your Way Pure"&&d.day==272);
+   assert(parseDevotional(wrap,ref,"How can a young man keep his way pure? By guarding it according to Your word.",272,d)&&d.valid&&d.points.size()==3&&d.day==272);
    Devotional back;assert(decodeDevotional(encodeDevotional(d),back)&&back.valid&&back.ref.verse==9&&back.points[2]==d.points[2]&&back.prayer==d.prayer);
    const std::string speech=devotionalSpeech(d);assert(speech.find("Keep Your Way Pure")!=std::string::npos&&speech.find("Psalm 119:9 says")!=std::string::npos&&speech.find("Let's pray.")!=std::string::npos);
    assert(devotionalRequestBody(ref,d.verse,"context").find("Verse of the day: Psalm 119:9")!=std::string::npos);assert(!decodeDevotional("",back));

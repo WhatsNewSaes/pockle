@@ -361,12 +361,14 @@ class Renderer {
    else{
     bold(12,20,bibleRefLabel(d.ref),2);int y=46;
     for(const auto& line:wrapWidth(d.verse,readWidth,456,4)){read(12,y,line);y+=READ_LINE;}
-    y+=6;c.drawFastHLine(16,y,448,0);y+=14;bold(12,y,upperText(d.title),3,0,25);y+=36;
-    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=24;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=10;};
+    y+=10;c.drawFastHLine(16,y,448,0);y+=18;bold(12,y,upperText(d.title),3,0,25);y+=42;
+    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=22;};
     section("TRUTH",d.truth,3);
-    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);int l=0;for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;l++;}}
-    y+=10;section("DO IT TODAY",d.apply,3);section("PRAY",d.prayer,3);
-    small(12,776,"PRESS: READ IT ALOUD      BOOT: BACK");
+    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=8;}
+    y+=14;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4); // the page has room: four lines each before the buttons
+    // Three buttons along the bottom: read it aloud, open the Bible, done.
+    static const char* labels[]={"READ ALOUD","BIBLE","DONE"};
+    for(int i=0;i<3;i++){const int x=12+i*154,w=i==2?148:148;const bool sel=u.selected==i;c.fillRect(x,732,w,48,sel?0:1);c.drawRect(x,732,w,48,0);const int tw=int(strlen(labels[i]))*12;text(x+(w-tw)/2,748,labels[i],2,sel?1:0);}
    }
   }else if(u.page==Page::Update){ // over-the-air update: a status line, then what to do
    center(150,"UPDATE",4);{int y=300;for(const auto& line:wrapLines(u.updateNote,30,5)){center(y,line,2);y+=36;}}
@@ -395,7 +397,7 @@ class Renderer {
     const bool sel=u.selected==LAUNCH_BIBLE;const int ink=sel?1:0;if(sel)c.fillRect(12,54,456,36,0);
     std::string ref=u.votd.valid()?bibleRefLabel(u.votd):"BIBLE";
     if(ref.size()>15&&u.votd.valid())ref=upperText(bibleBooks[u.votd.book-1].abbr)+" "+std::to_string(u.votd.chapter)+":"+std::to_string(u.votd.verse); // long book names use the abbreviation here
-    text(20,60,ref,3,ink,15);text(468-8-12*12,64,"OPEN BIBLE >",2,ink);
+    text(20,60,ref,3,ink,15);text(468-8-12*12,64,"DEVOTIONAL >",2,ink);
     if(u.votd.valid()){int y=98;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
     else read(12,98,"Bible files missing: run tools/upload_bible.sh");
    }

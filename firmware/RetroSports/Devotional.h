@@ -17,10 +17,12 @@ inline std::string devotionalSystemPrompt(){
   "\"points\": [<three short bullets, each at most 55 characters, simple and concrete>], "
   "\"apply\": <one or two short sentences, at most 140 characters, something a kid can actually do today>, "
   "\"prayer\": <one sentence, at most 110 characters, starting with 'God,' or 'Jesus,'>}. "
+  "Keep it gospel-centered, not moralistic: the truth must point to what God has done for us in Jesus - His love, His death and resurrection, His grace and forgiveness - "
+  "so the kid hears first what Jesus did, and only then what we do in response; never make the lesson 'be good so God will like you'. "
   "Plain words a 7-year-old understands, warm and encouraging, no theology jargon, do not quote other Bible verses, no markdown.";
 }
 inline std::string devotionalRequestBody(const BibleRef& ref,const std::string& verse,const std::string& context){
- return "{\"model\":\""+std::string(VOICE_MODEL)+"\",\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":400,\"temperature\":0.7,"
+ return "{\"model\":\""+std::string(VOICE_MODEL)+"\",\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":1500,\"temperature\":0.7," // room for the model's thinking tokens, which count against the limit
   "\"messages\":[{\"role\":\"system\",\"content\":\""+jsonEscape(devotionalSystemPrompt())+"\"},"
   "{\"role\":\"user\",\"content\":\""+jsonEscape("Verse of the day: "+bibleRefLabel(ref,false)+" - "+verse+"\nContext: "+context)+"\"}]}";
 }
