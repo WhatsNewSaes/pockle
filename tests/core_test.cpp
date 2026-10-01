@@ -156,7 +156,12 @@ int main(){
    const std::string speech=devotionalSpeech(d);assert(speech.find("Keep Your Way Pure")!=std::string::npos&&speech.find("Psalm 119:9 says")!=std::string::npos&&speech.find("Let's pray.")!=std::string::npos);
    assert(devotionalRequestBody(ref,d.verse,"context").find("Verse of the day: Psalm 119:9")!=std::string::npos);assert(!decodeDevotional("",back));
    const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};JsonDocument vj;deserializeJson(vj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read today's devotional\\\",\\\"action\\\":\\\"open_devotional\\\",\\\"read\\\":true,\\\"answer\\\":\\\"ok\\\"}\"}}]}");
-   VoiceReply vr=parseVoiceReply(vj,nf);assert(vr.ok&&vr.action==VoiceAction::OpenDevotional&&vr.read);}
+   VoiceReply vr=parseVoiceReply(vj,nf);assert(vr.ok&&vr.action==VoiceAction::OpenDevotional&&vr.read);
+   std::ifstream ff("devotionals/out/10-01.json");std::string file((std::istreambuf_iterator<char>(ff)),std::istreambuf_iterator<char>());assert(!file.empty());
+   Devotional fd;auto verseFor=[](const BibleRef& r){return r.book==19&&r.chapter==119&&r.verse==9?std::string("How can a young man keep his way pure? By guarding it according to Your word."):std::string();};
+   assert(decodeDevotionalFile(file,273,{43,3,16},"fallback",verseFor,fd)&&fd.valid&&fd.fromFile&&fd.ref.book==19&&fd.ref.verse==9&&fd.title=="Clean Heart, Clean Path"&&fd.points.size()==3);
+   Devotional fb;assert(decodeDevotional(encodeDevotional(fd),fb)&&fb.fromFile);assert(!decodeDevotionalFile("{}",273,{43,3,16},"x",verseFor,fb));
+   assert(devotionalFileUrl(10,1)=="https://raw.githubusercontent.com/WhatsNewSaes/pockle/main/devotionals/out/10-01.json");}
   // Bible: book lookup, references, layout, verse of the day.
   assert(bibleBookIndex("John")==43&&bibleBookIndex("1 John")==62&&bibleBookIndex("First John")==62&&bibleBookIndex("Psalms")==19&&bibleBookIndex("Song of Songs")==22&&bibleBookIndex("Judg")==7&&bibleBookIndex("Jude")==65&&bibleBookIndex("Rev")==66&&bibleBookIndex("xyz")==0&&bibleBookIndex("Phil")==50);
   {BibleRef r=parseBibleRef("John 3:16");assert(r.book==43&&r.chapter==3&&r.verse==16);r=parseBibleRef("1 Corinthians 13");assert(r.book==46&&r.chapter==13&&r.verse==0);

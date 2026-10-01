@@ -435,8 +435,19 @@ static bool fetchUpdate(std::string& note,bool& installed){
 }
 // --- Today's devotional: one chat request with the verse and its neighbours; the result is cached in NVS for the day.
 static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
- BibleRef ref;ref.book=req.book;ref.chapter=req.chapter;ref.verse=req.verse;if(!ref.valid()||!req.key[0])return false;
+ BibleRef ref;ref.book=req.book;ref.chapter=req.chapter;ref.verse=req.verse;if(!ref.valid())return false;
  const auto verses=bibleVerses(readFileText(biblePath(ref.book,ref.chapter)));if(ref.verse<1||ref.verse>(int)verses.size())return false;
+ tm now{};time_t t=time(nullptr);localtime_r(&t,&now);
+ { // the repo's file for today comes first; a 404 means the model writes one (when there is a key)
+  NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);HTTPClient http;http.setTimeout(15000);http.setConnectTimeout(10000);
+  if(http.begin(client,devotionalFileUrl(now.tm_mon+1,now.tm_mday).c_str())){code=http.GET();
+   if(code==200){const String body=http.getString();http.end();
+    auto verseFor=[&](const BibleRef& r){const auto vs=bibleVerses(readFileText(biblePath(r.book,r.chapter)));return r.verse>=1&&r.verse<=(int)vs.size()?vs[r.verse-1]:std::string();};
+    if(decodeDevotionalFile(body.c_str(),now.tm_yday,ref,verses[ref.verse-1],verseFor,out)){Serial.printf("DEVOTIONAL file %02d-%02d: %s\n",now.tm_mon+1,now.tm_mday,out.title.c_str());return true;}
+    Serial.println("DEVOTIONAL file did not parse");}
+   else{http.end();Serial.printf("DEVOTIONAL file http=%d\n",code);}}
+ }
+ if(!req.key[0]||req.feed)return false; // feed=true here means "file only": the model already wrote today's
  std::string context;for(int v=std::max(1,ref.verse-6);v<=std::min((int)verses.size(),ref.verse+6)&&context.size()<1400;v++)context+=std::to_string(v)+" "+verses[v-1]+" ";
  NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(15);
  HTTPClient http;http.setTimeout(45000);http.setConnectTimeout(10000);
@@ -445,8 +456,7 @@ static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
  const std::string body=devotionalRequestBody(ref,verses[ref.verse-1],context);code=http.POST((uint8_t*)body.data(),body.size());
  if(code!=200){http.end();Serial.printf("DEVOTIONAL http=%d\n",code);return false;}
  const String reply=http.getString();http.end();JsonDocument d;const bool parsed=!deserializeJson(d,reply);
- tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);
- const bool ok=parsed&&parseDevotional(d,ref,verses[ref.verse-1],lt.tm_yday,out);
+ const bool ok=parsed&&parseDevotional(d,ref,verses[ref.verse-1],now.tm_yday,out);
  if(!ok)Serial.printf("DEVOTIONAL unparsed: %s\n",reply.substring(0,160).c_str());
  return ok;
 }
@@ -629,11 +639,13 @@ static void bibleStep(int step){
 // Opening a page with a READ ALOUD button starts the TLS handshake early, so the press itself is quicker.
 static void warmVoice(){if(voiceKey.isEmpty()||!ui.online)return;static VoiceJob job;memset(&job,0,sizeof(job));job.warm=true;xQueueSend(voiceQueue,&job,0);}
 static uint32_t nextDevotional=0;static bool devotionalPending=false;
-static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear()||ui.devotional.ref.book!=ui.votd.book||ui.devotional.ref.chapter!=ui.votd.chapter||ui.devotional.ref.verse!=ui.votd.verse;}
+// Stale: nothing for today. A model-written one is also worth re-checking against the repo (a file may have landed since).
+static bool devotionalStale(){return !ui.devotional.valid||ui.devotional.day!=dayOfYear();}
+static bool devotionalWantsFile(){return ui.devotional.valid&&ui.devotional.day==dayOfYear()&&!ui.devotional.fromFile;}
 static void requestDevotional(){
- if(requestBusy||!ui.online||!ui.clockValid||voiceKey.isEmpty()||!ui.votd.valid())return;
- FetchRequest r{};r.devotional=true;r.book=ui.votd.book;r.chapter=ui.votd.chapter;r.verse=ui.votd.verse;snprintf(r.key,sizeof(r.key),"%s",voiceKey.c_str());
- if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;ui.devotionalLoading=true;nextDevotional=millis()+600000;if(ui.page==Page::Devotional)dirty=true;}
+ if(requestBusy||!ui.online||!ui.clockValid||!ui.votd.valid())return;
+ FetchRequest r{};r.devotional=true;r.feed=devotionalWantsFile();r.book=ui.votd.book;r.chapter=ui.votd.chapter;r.verse=ui.votd.verse;snprintf(r.key,sizeof(r.key),"%s",voiceKey.c_str());
+ if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;ui.devotionalLoading=!ui.devotional.valid;nextDevotional=millis()+(r.feed?7200000:600000);if(ui.page==Page::Devotional)dirty=true;}
 }
 static void loadVerseOfDay(){
  const BibleRef r=verseOfDay(ui.clockValid?dayOfYear():0);const auto verses=bibleVerses(fsOK?readFileText(biblePath(r.book,r.chapter)):"");
@@ -914,7 +926,8 @@ static void handleResults(){
  }
  if(r->isDevotional){
   ui.devotionalLoading=false;Serial.printf("FETCH devotional ok=%d http=%d title=%s\n",r->ok,r->code,r->devotional.title.c_str());
-  if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());}
+  if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());
+   if(ui.devotional.fromFile&&ui.devotional.ref.valid()){ui.votd=ui.devotional.ref;ui.votdText=ui.devotional.verse;if(ui.page==Page::Launcher){buildLauncher();}dirty=true;}} // the file's verse is the day's verse
   if(devotionalPending){devotionalPending=false;if(refreshWake)refreshPending--;}
   if(ui.page==Page::Devotional||ui.page==Page::BibleHome)dirty=true;delete r;return;
  }
@@ -1002,7 +1015,7 @@ void setupApp(){
  if(fsOK)prefs.putBool("fsInit",true);ui.storage=fsOK;loadFavorites();
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
- {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
+ {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d)){ui.devotional=d;if(d.fromFile&&d.day==dayOfYear()&&d.ref.valid()){ui.votd=d.ref;ui.votdText=d.verse;}}}
  {Weather w;if(decodeWeatherCache(prefs.getString("weather","").c_str(),w))ui.weather=w;nextWeather=(w.valid&&time(nullptr)-w.fetched<=3000)?1:0;} // a fresh cache waits until it is stale; 0 forces a fetch
  ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();
  inputQueue=xQueueCreate(12,sizeof(Key));requestQueue=xQueueCreate(1,sizeof(FetchRequest));resultQueue=xQueueCreate(2,sizeof(FetchResult*));voiceQueue=xQueueCreate(2,sizeof(VoiceJob));
@@ -1021,7 +1034,7 @@ void setupApp(){
   if(refreshWake){planRefresh(refreshMaskBits);refreshPending=__builtin_popcount(refreshMaskBits);}else{refreshMaskBits=15;refreshPending=4;}
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
-  if(refreshWake&&ui.clockValid&&!voiceKey.isEmpty()&&ui.votd.valid()&&devotionalStale()){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
+  if(refreshWake&&ui.clockValid&&ui.votd.valid()&&(devotionalStale()||devotionalWantsFile())){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
   Serial.printf("WAKE cause=%d refresh=%d leagues=0x%x pending=%d tab=%d sleeps=%d battery=%d%%\n",(int)cause,refreshWake,refreshMaskBits,refreshPending,ui.tab,rtcSleeps,batteryPercent());}
  ui.now=time(nullptr);renderer.render(ui);applyTheme(canvas.getBuffer());EPD_3IN97_Display_Base(canvas.getBuffer());dirty=false;
  if(shown)memcpy(shown,canvas.getBuffer(),48000);lastFullRefresh=millis();
@@ -1045,7 +1058,7 @@ void loopApp(){
  if(ui.clockValid&&followToday&&ui.date!=localDate(ui.now)&&ui.page!=Page::Date&&ui.page!=Page::Detail){ui.date=localDate(ui.now);loadView();}
  {const int s=speakState;if(s!=ui.speaking){ui.speaking=s;if(ui.page==Page::Devotional)dirty=true;}}
  static uint32_t batteryRead=0;if(!batteryRead||now-batteryRead>60000){batteryRead=now;const int b=batteryPercent();if(b!=ui.battery){ui.battery=b;if(ui.page==Page::Launcher||ui.page==Page::Settings)dirty=true;}}
- static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
+ static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();nextDevotional=0;if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
  if(ui.ap){dns.processNextRequest();server.handleClient();if((finishSetup&&(int32_t)(now-finishAt)>=0)||(ui.online&&!connectionPending&&now-connectedAt>120000)||now-apStarted>600000)stopAP();}
  handleResults();serialControl();Key k;while(xQueueReceive(inputQueue,&k,0)==pdTRUE){keyAction(k);lastKeyAt=now;refreshWake=false;}
  if(voiceDemoRelease&&(int32_t)(now-voiceDemoRelease)>=0){voiceDemoRelease=0;keyAction({2,ButtonEvent::ReleaseHold});}
@@ -1055,7 +1068,7 @@ void loopApp(){
  static bool pendingVerify=true;if(pendingVerify&&((ui.online&&ui.clockValid)||now>120000)){pendingVerify=false;esp_ota_mark_app_valid_cancel_rollback();Serial.println("UPDATE build verified");}
  if(restartAt&&(int32_t)(now-restartAt)>=0&&!panelPending){Serial.println("UPDATE restarting");delay(100);ESP.restart();}
  if(autoUpdateCheck&&ui.online&&ui.clockValid&&!requestBusy)requestUpdate(false);
- if(ui.online&&ui.clockValid&&!requestBusy&&devotionalStale()&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
+ if(ui.online&&ui.clockValid&&!requestBusy&&(devotionalStale()||devotionalWantsFile())&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
  if(ui.page!=Page::Wifi&&!ui.ap&&ui.voice==VoiceState::Idle&&!audio::playing()&&!audio::recording()&&!panelPending&&!updateBusy&&!restartAt&&!pendingVerify){
   const uint32_t quiet=now-std::max(lastKeyAt,(uint32_t)0);
   if(refreshWake&&((refreshPending<=0&&!requestBusy)||now-refreshStarted>60000))idleSleep();
