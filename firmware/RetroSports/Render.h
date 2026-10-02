@@ -2,6 +2,8 @@
 #include <Adafruit_GFX.h>
 #include "InterSmall.h"
 #include "InterRead.h"
+#include "InterReadS.h"
+#include "InterReadL.h"
 #include "InterRow.h"
 #include "Bible.h"
 #include "Weather.h"
@@ -10,7 +12,7 @@
 #include "Voice.h"
 #include "TeamLogos.h"
 namespace retro {
-enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation};
+enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize};
 // A translation installed on the data partition (/bible/<code>/), from /bible/index.json.
 struct Translation { std::string code,name,shortName,license,blurb; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
@@ -22,7 +24,11 @@ constexpr int HOME_TABS=5,HOME_GEAR=5,HOME_ALL_ROW=6,HOME_PREV=6,HOME_NEXT=7,HOM
 struct BibleView { int book=43,chapter=1,page=0,verse=0,pick=0,pickBook=43; std::vector<BiblePage> pages; };
 // Reading text: Inter Medium at a 20 px em (capitals about the height of the size-2 pixel font) on 26 px lines.
 constexpr int READ_LINE=26,READ_LINES=27;
-inline int readWidth(const std::string& s){int w=0;for(unsigned char ch:s)if(ch>=32&&ch<=126)w+=InterReadGlyphs[ch-32].xAdvance;return w;}
+// The reader's three text sizes (Settings on the Bible home): Inter at 17, 20 and 24 px ems.
+struct ReadFace { const GFXfont* font; const GFXglyph* glyphs; int ascent,line,linesPerPage; const char* name; };
+static const ReadFace READ_FACES[3]={{&InterReadS,InterReadSGlyphs,InterReadSAscent,22,32,"SMALL"},{&InterRead,InterReadGlyphs,InterReadAscent,26,27,"NORMAL"},{&InterReadL,InterReadLGlyphs,InterReadLAscent,31,23,"LARGE"}};
+inline int readWidthFace(int face,const std::string& s){const GFXglyph* g=READ_FACES[face<0?1:face>2?1:face].glyphs;int w=0;for(unsigned char ch:s)if(ch>=32&&ch<=126)w+=g[ch-32].xAdvance;return w;}
+inline int readWidth(const std::string& s){return readWidthFace(1,s);}
 enum class VoiceState {Idle,Listening,Thinking,Answer,Error};
 // Where a team page came from, so BOOT returns there.
 struct Origin { Page page=Page::Home; int league=0; std::string date,gameId; bool feed=false; };
@@ -34,7 +40,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb"; // 0 idle, 1 fetching speech, 2 playing
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -84,10 +90,11 @@ class Renderer {
   s=fitSmall(clean(s,120),maxWidth);c.setFont(&InterSmall);c.setTextSize(1);c.setTextColor(color);c.setCursor(x,y+InterSmallAscent);c.print(s.c_str());c.setFont(nullptr);
  }
  // Body text for reading (see READ_LINE).
- void read(int x,int y,std::string s,int color=0,int maxWidth=456){
-  s=clean(s,400);while(!s.empty()&&readWidth(s)>maxWidth)s.pop_back();
-  c.setFont(&InterRead);c.setTextSize(1);c.setTextColor(color);c.setCursor(x,y+InterReadAscent);c.print(s.c_str());c.setFont(nullptr);
+ void readFace(int face,int x,int y,std::string s,int color=0,int maxWidth=456){
+  const ReadFace& f=READ_FACES[face<0?1:face>2?1:face];s=clean(s,400);while(!s.empty()&&readWidthFace(face,s)>maxWidth)s.pop_back();
+  c.setFont(f.font);c.setTextSize(1);c.setTextColor(color);c.setCursor(x,y+f.ascent);c.print(s.c_str());c.setFont(nullptr);
  }
+ void read(int x,int y,std::string s,int color=0,int maxWidth=456){readFace(1,x,y,s,color,maxWidth);}
  // Weather glyphs, 28 px times `s` (see weatherIcon for the numbering); `ink` is the drawing color.
  void weatherGlyph(int x,int y,int kind,int s=1,int ink=0){
   const int cx=x+14*s,cy=y+14*s,paper=ink?0:1;
@@ -357,6 +364,18 @@ class Renderer {
    row(420,std::string("SLEEP 11PM-6:30AM: ")+(u.nightSleep?"ON":"OFF"),u.selected==5);row(476,"VOICE: "+upperText(u.ttsVoice)+"  (PRESS TO HEAR)",u.selected==6);
    row(532,"BIBLE VERSION: "+upperText(u.bibleCode),u.selected==7);row(588,"CHECK FOR UPDATES  (v"+u.version+")",u.selected==8);
    center(680,(u.battery>=0?"BATTERY "+std::to_string(u.battery)+"%  -  ":std::string())+(u.storage?"SCORES SAVED":"STORAGE ERROR"),2);center(724,u.clockValid?stamp(u.now):"CONNECT WI-FI TO SET CLOCK",2);
+  }else if(u.page==Page::TextSize){ // three sizes across the top, a live sample of scripture beneath
+   bold(12,22,"TEXT SIZE",2);c.drawFastHLine(12,46,456,0);
+   for(int i=0;i<3;i++){const int x=12+i*154;const bool sel=u.textSize==i;c.fillRect(x,58,148,44,sel?0:1);c.drawRect(x,58,148,44,0);const int tw=int(strlen(READ_FACES[i].name))*12;text(x+(148-tw)/2,72,READ_FACES[i].name,2,sel?1:0);}
+   small(12,116,"UP/DOWN TO CHANGE, PRESS WHEN DONE");
+   {const int face=u.textSize<0?1:u.textSize>2?1:u.textSize;const ReadFace& f=READ_FACES[face];int y=142;
+    bold(12,y,bibleRefLabel({43,3,16}),2);y+=28;
+    const auto pages=paginateBible(bibleVerses(u.sample),[face](const std::string& s){return readWidthFace(face,s);},456,40);
+    if(!pages.empty())for(const auto& line:pages[0].lines){int x=12;if(y+f.line>740)break;
+     for(const auto& s:line.segs){if(x>12)x+=readWidthFace(face," ");const int marker=s.verse?bibleMarkerWidth(s.verse+15):0;
+      if(s.verse){c.setTextSize(1);c.setTextColor(0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse+15).c_str());}
+      readFace(face,x+marker,y+(f.line-f.ascent-4)/2,s.text,0,468-x-marker);x+=marker+readWidthFace(face,s.text);}
+     y+=f.line;}}
   }else if(u.page==Page::Translation){ // the installed translations, each with a line parents can read
    bold(12,22,"BIBLE VERSION",2);c.drawFastHLine(12,46,456,0);int y=58;
    for(size_t i=0;i<u.translations.size()&&y+140<=740;i++){const Translation& t=u.translations[i];const bool sel=u.selected==(int)i;const int ink=sel?1:0;
@@ -437,21 +456,23 @@ class Renderer {
     if(u.votd.valid()){bold(22,254,bibleRefLabel(u.votd),2,ink);int y=280;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
     else read(22,280,"The Bible files are missing",ink);
     row(210+h+16,"BOOKS OF THE BIBLE",u.selected==2);
+    // Settings section: the translation and the reader's text size.
+    const int sy=210+h+90;{std::string s=" SETTINGS ";int w=int(s.size())*12;c.fillRect(16,sy+13,448,3,0);c.fillRect(240-w/2,sy+6,w+1,16,1);text(240-w/2,sy+6,s,2);text(240-w/2+1,sy+6,s,2);}
     std::string ver=upperText(u.bibleCode);for(const auto& t:u.translations)if(t.code==u.bibleCode)ver=upperText(t.shortName.empty()?t.code:t.shortName);
-    row(210+h+76,"BIBLE VERSION: "+ver,u.selected==3); // press: the list of installed translations
+    row(sy+40,"BIBLE VERSION: "+ver,u.selected==3);row(sy+100,std::string("TEXT SIZE: ")+READ_FACES[u.textSize<0?1:u.textSize>2?1:u.textSize].name,u.selected==4);
    }
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
    text(12,24,bibleRefLabel({b.book,b.chapter,0}),2,0,24);{std::string code=upperText(u.bibleCode);text(468-12*int(code.size())-12*int(std::to_string(pages).size()+std::to_string(std::min(b.page,pages-1)+1).size()+1)-16,24,code,2);}std::string pg=std::to_string(page+1)+"/"+std::to_string(pages);text(468-int(pg.size())*12,24,pg,2);c.drawFastHLine(12,50,456,0);
    if(b.pages.empty()){center(360,"NO BIBLE FILES",3);center(420,"RUN TOOLS/UPLOAD_BIBLE.SH",2);}
-   else{int y=60;
+   else{const int face=u.textSize;const ReadFace& f=READ_FACES[face<0?1:face>2?1:face];int y=60;
     for(const auto& line:b.pages[page].lines){int x=12;
-     for(const auto& s:line.segs){if(x>12)x+=readWidth(" ");
-      const bool hl=b.verse>0&&s.of==b.verse;const int marker=s.verse?bibleMarkerWidth(s.verse):0,w=marker+readWidth(s.text);
-      if(hl)c.fillRect(x-2,y,w+4,READ_LINE,0);
-      if(s.verse){c.setTextSize(1);c.setTextColor(hl?1:0);c.setCursor(x,y+5);c.print(std::to_string(s.verse).c_str());}
-      read(x+marker,y+1,s.text,hl?1:0,468-x-marker);x+=w;}
-     y+=READ_LINE;}
+     for(const auto& s:line.segs){if(x>12)x+=readWidthFace(face," ");
+      const bool hl=b.verse>0&&s.of==b.verse;const int marker=s.verse?bibleMarkerWidth(s.verse):0,w=marker+readWidthFace(face,s.text);
+      if(hl)c.fillRect(x-2,y,w+4,f.line,0);
+      if(s.verse){c.setTextSize(1);c.setTextColor(hl?1:0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse).c_str());}
+      readFace(face,x+marker,y+(f.line-f.ascent-4)/2,s.text,hl?1:0,468-x-marker);x+=w;}
+     y+=f.line;}
    }
   }else if(u.page==Page::BibleBooks){ // Old Testament in two columns, New Testament in the third, 26 px rows
    bold(12,22,"BOOKS OF THE BIBLE",2);

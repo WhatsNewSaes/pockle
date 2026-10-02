@@ -88,7 +88,7 @@ struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standin
 struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];uint8_t votdBook,votdChapter,votdVerse;};
 struct Key {int button;ButtonEvent event;};
 SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
-static std::string readFileText(const std::string& path);static int dayOfYear();static std::string bibleChapterText(int book,int chapter); // Bible helpers, defined with the reader below
+static std::string readFileText(const std::string& path);static int dayOfYear();static std::string bibleChapterText(int book,int chapter);static void saveBiblePos(); // Bible helpers, defined with the reader below
 
 // Vendor ESP-IDF driver powers the panel through PMU ALDO3 at 3.3 V.
 // Preserve every unrelated regulator and all battery charging settings.
@@ -668,6 +668,13 @@ static void loadTranslations(){
  if(!have&&!ui.translations.empty())bibleCode=ui.translations[0].code.c_str();ui.bibleCode=bibleCode.c_str();
 }
 static void loadVerseOfDay();static bool loadBibleChapter(int book,int chapter);
+// Reader text size: re-paginate the open chapter and stay on the verse that was at the top.
+static void setTextSize(int size){
+ size=size<0?2:size>2?0:size;if(size==ui.textSize)return;
+ const int firstVerse=ui.bible.pages.empty()?0:ui.bible.pages[std::min(ui.bible.page,(int)ui.bible.pages.size()-1)].firstVerse;
+ ui.textSize=size;prefs.putInt("textsz",size);loadBibleChapter(ui.bible.book,ui.bible.chapter);ui.bible.page=firstVerse>0?biblePageOf(ui.bible.pages,firstVerse):0;saveBiblePos();dirty=true;
+}
+static void loadSample(){const auto vs=bibleVerses(bibleChapterText(43,3));ui.sample.clear();for(int v=16;v<=18&&v<=(int)vs.size();v++)ui.sample+=vs[v-1]+"\n";}
 // The devotional's cached verse text in the current translation (the cache may hold another version's wording).
 static void refreshDevotionalVerse(){
  if(!ui.devotional.valid||!ui.devotional.ref.valid())return;const auto vs=bibleVerses(bibleChapterText(ui.devotional.ref.book,ui.devotional.ref.chapter));
@@ -675,7 +682,7 @@ static void refreshDevotionalVerse(){
 }
 // Switch translations: same book, chapter and verse everywhere, new wording.
 static void setTranslation(const std::string& code){
- if(code==bibleCode.c_str())return;bibleCode=code.c_str();prefs.putString("bibletr",bibleCode);ui.bibleCode=code; // "bible" is the reading position
+ if(code==bibleCode.c_str())return;bibleCode=code.c_str();prefs.putString("bibletr",bibleCode);ui.bibleCode=code;loadSample(); // "bible" is the reading position
  const int page=ui.bible.page;loadBibleChapter(ui.bible.book,ui.bible.chapter);ui.bible.page=std::min(page,std::max(0,(int)ui.bible.pages.size()-1));
  refreshDevotionalVerse();loadVerseOfDay();if(ui.page==Page::Launcher)buildLauncher();dirty=true;Serial.printf("BIBLE translation=%s\n",bibleCode.c_str());
 }
@@ -684,7 +691,8 @@ static bool loadBibleChapter(int book,int chapter){
  BibleRef r;r.book=book;r.chapter=chapter;if(!r.valid())return false;
  const std::string text=bibleChapterText(book,chapter);
  ui.bible.book=book;ui.bible.chapter=chapter;ui.bible.verse=0;ui.bible.page=0;
- ui.bible.pages=text.empty()?std::vector<BiblePage>{}:paginateBible(bibleVerses(text),readWidth,456,READ_LINES);
+ const int face=ui.textSize<0?1:ui.textSize>2?1:ui.textSize;
+ ui.bible.pages=text.empty()?std::vector<BiblePage>{}:paginateBible(bibleVerses(text),[face](const std::string& s){return readWidthFace(face,s);},456,READ_FACES[face].linesPerPage);
  Serial.printf("BIBLE %s pages=%u bytes=%u\n",bibleRefLabel(r).c_str(),(unsigned)ui.bible.pages.size(),(unsigned)text.size());
  return !ui.bible.pages.empty();
 }
@@ -864,6 +872,7 @@ static void goBack(){
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=8;}break;
  case Page::Translation:ui.page=translationFrom;ui.selected=translationFromSel;break;
+ case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
  case Page::Launcher:break;
  case Page::Bible:ui.page=Page::BibleHome;ui.selected=0;break;
  case Page::BibleBooks:ui.page=Page::Bible;ui.selected=0;break;
@@ -902,6 +911,7 @@ static void keyAction(const Key& k){
    if(ui.selected>=LAUNCH_TAB0&&ui.selected<LAUNCH_GEAR&&ui.selected-LAUNCH_TAB0!=ui.tab){ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;buildLauncher();} // landing on a tab switches the list
    dirty=true;return;}
   if(ui.page==Page::Weather)return;
+  if(ui.page==Page::TextSize){setTextSize(ui.textSize+step);ui.selected=ui.textSize;dirty=true;return;} // live: the sample redraws in the new size
   if(ui.page==Page::Bible){bibleStep(step);return;}
   if(ui.page==Page::BibleBooks){ui.bible.pick=(ui.bible.pick+step+BIBLE_BOOKS)%BIBLE_BOOKS;dirty=true;return;}
   if(ui.page==Page::BibleChapters){const int n=bibleBooks[std::max(1,std::min(BIBLE_BOOKS,ui.bible.pickBook))-1].chapters;ui.bible.pick=(ui.bible.pick+step+n)%n;dirty=true;return;}
@@ -918,7 +928,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=5;break;case Page::TextSize:count=3;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -969,7 +979,9 @@ static void keyAction(const Key& k){
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
  case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
-  else{translationFrom=Page::BibleHome;translationFromSel=3;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}break;
+  else if(ui.selected==3){translationFrom=Page::BibleHome;translationFromSel=3;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
+  else{loadSample();ui.page=Page::TextSize;ui.selected=ui.textSize;}break;
+ case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
  case Page::Devotional:
   if(ui.selected==0&&speakState){stopSpeaking();} // reading: a press stops it
   else if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
@@ -1113,6 +1125,7 @@ void setupApp(){
  // This dedicated new filesystem partition is initialized only on first app boot.
  if(!fsOK&&!prefs.getBool("fsInit",false)){fsOK=LittleFS.format()&&LittleFS.begin(false);}
  if(fsOK)prefs.putBool("fsInit",true);ui.storage=fsOK;loadFavorites();
+ ui.textSize=std::max(0,std::min(2,(int)prefs.getInt("textsz",1))); // before the chapter is laid out
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
  {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
