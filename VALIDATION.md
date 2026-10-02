@@ -151,6 +151,10 @@ The user heard pauses and clipped words. Cause: speech was written to I2S straig
 
 The user asked for a daily devotional on the verse of the day, one screen, simple and accessible for ages 7–13, verse on top with truth and application, broken up with headers and bullets, with a read-aloud option. A sample was generated first with the brief that `Devotional.h` carries (Psalm 119:9: "Keep Your Way Pure", one truth, three bullets, a doable action, a one-line prayer) and the user approved the shape; it is `tests/fixtures/devotional.json` and the preview `devotional-demo`. The firmware writes the devotional on the network task with the voice key, parses the model's JSON with length caps, caches it in NVS keyed by day and verse, and refreshes it when the day or verse changes — on the 6:30 wake it is counted into that wake's pending fetches so the board stays up for it. The page lays the verse out in the reading font over a rule, then the title at pixel size 3 and the sections with bold headers and square bullets; press reads `devotionalSpeech` through the TTS path, and the voice action `open_devotional` (with `read`) does the same by voice. Host tests cover parsing the fixture, the NVS roundtrip, the spoken text and the voice reply.
 
+## Clock — v1.6.5
+
+The user asked for the time on the launcher strip, between the weather and the battery, and on the sleep screen. The strip shows the clock right-aligned before the battery figure and redraws on the minute while the launcher is up; the sleep screen draws ASLEEP SINCE and the time at pixel size 4 under the banner (which now reads ASLEEP - BATTERY nn%), the verse block centered beneath. While asleep the panel cannot tick, so the sleep screen shows the time it fell asleep rather than a live clock.
+
 ## Reader text size — v1.6.2
 
 Then the user asked for the devotional box on top: the Bible home order is now TODAY'S DEVOTIONAL, CONTINUE, BOOKS OF THE BIBLE, then the SETTINGS section. The size page's sample had clipped its first line because the preview numbered verses with a width hack; it now feeds verses 16-18 at their real positions.

@@ -250,7 +250,8 @@ class Renderer {
  void sleepVerse(const UI& u){
   if(!u.votd.valid()){render(u);return;}
   c.fillScreen(1);c.setTextWrap(false);
-  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=52+(748-total)/2;
+  if(u.clockValid){center(66,"ASLEEP SINCE",2);center(92,clockLabel(u.now),4);} // the time it went to sleep, large, under the banner
+  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=140+(660-total)/2;
   center(y,"VERSE OF THE DAY",2);center(y+30,bibleRefLabel(u.votd),3);y+=76;
   for(const auto& line:lines){center(y,line,2);y+=24;}
  }
@@ -418,8 +419,9 @@ class Renderer {
      const std::string t=std::to_string(w.temp);text(54,16,t,2,ink);const int dx=54+int(t.size())*12+3;c.drawCircle(dx,18,2,ink);c.drawCircle(dx,18,1,ink);
      text(dx+12,16,weatherWord(w.code),2,ink,14); // the same pixel size as the battery figure
     }else text(16,16,u.online?"WEATHER LOADING...":"WEATHER: CONNECT WI-FI",2,ink);
-    if(u.battery>=0){ // battery on the far right: percentage, then a cell outline filled to the level
-     const std::string pct=std::to_string(u.battery)+"%";const int bx=468-8-30;text(bx-8-int(pct.size())*12,16,pct,2,ink);
+    if(u.battery>=0){ // battery on the far right: percentage, then a cell outline filled to the level; the clock sits before it
+     const std::string pct=std::to_string(u.battery)+"%";const int bx=468-8-30,px=bx-8-int(pct.size())*12;text(px,16,pct,2,ink);
+     if(u.clockValid){const std::string t=clockLabel(u.now);text(px-18-int(t.size())*12,16,t,2,ink);}
      c.drawRect(bx,15,27,16,ink);c.fillRect(bx+27,19,3,8,ink);const int fill=(23*std::min(100,u.battery)+50)/100;if(fill>0)c.fillRect(bx+2,17,fill,12,ink);
     }
     c.drawFastHLine(16,46,448,0); // rule between the weather and the verse

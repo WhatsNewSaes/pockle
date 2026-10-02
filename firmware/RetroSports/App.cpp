@@ -830,7 +830,7 @@ static void idleSleep(){
  ui.battery=batteryPercent();ui.now=time(nullptr);renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
  const std::string top="PRESS ANY BUTTON FOR LATEST";canvas.setCursor(240-int(top.size())*6,5);canvas.print(top.c_str());
- std::string line="ASLEEP - "+clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
+ std::string line="ASLEEP";int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%"; // the time is drawn large below the banner
  canvas.setCursor(240-int(line.size())*6,28);canvas.print(line.c_str());
  applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();panelPending=false;EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);
  if(shown)memcpy(shown,canvas.getBuffer(),48000);
@@ -1173,6 +1173,7 @@ void loopApp(){
  ui.now=time(nullptr);
  if(ui.clockValid&&followToday&&ui.date!=localDate(ui.now)&&ui.page!=Page::Date&&ui.page!=Page::Detail){ui.date=localDate(ui.now);loadView();}
  {const int s=speakState;if(s!=ui.speaking){ui.speaking=s;if(ui.page==Page::Devotional)dirty=true;}}
+ {static int lastMinute=-1;tm lt{};localtime_r((const time_t*)&ui.now,&lt);if(ui.clockValid&&lt.tm_min!=lastMinute){lastMinute=lt.tm_min;if(ui.page==Page::Launcher)dirty=true;}} // the strip clock
  static uint32_t batteryRead=0;if(!batteryRead||now-batteryRead>60000){batteryRead=now;const int b=batteryPercent();if(b!=ui.battery){ui.battery=b;if(ui.page==Page::Launcher||ui.page==Page::Settings)dirty=true;}}
  static int votdDay=-1;if(ui.clockValid&&dayOfYear()!=votdDay){votdDay=dayOfYear();loadVerseOfDay();refreshDevoHash();nextDevotional=0;if(ui.page==Page::Launcher||ui.page==Page::BibleHome){if(ui.page==Page::Launcher)buildLauncher();dirty=true;}}
  if(ui.ap){dns.processNextRequest();server.handleClient();if((finishSetup&&(int32_t)(now-finishAt)>=0)||(ui.online&&!connectionPending&&now-connectedAt>120000)||now-apStarted>600000)stopAP();}
