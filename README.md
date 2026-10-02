@@ -42,6 +42,10 @@ After that the device looks after itself: it checks GitHub for new firmware each
 
 `VALIDATION.md` keeps the running log of what was built, why, and how each piece was verified on the hardware; `PRD.md` holds the product intent.
 
+## License
+
+The code, tools and documentation are released under the [MIT License](LICENSE). The devotionals are [CC BY 4.0](devotionals/LICENSE). Third-party components listed below keep their own terms.
+
 ## Credits and licenses
 
 - Bible text: the Berean Standard Bible (public domain, Bible Hub), the Free Bible Version (© 2018 Jonathan Gallagher, CC BY-SA 4.0), the Bible in Basic English and the King James Version (public domain), the latter three from [eBible.org](https://ebible.org).
