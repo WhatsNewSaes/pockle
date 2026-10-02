@@ -426,8 +426,8 @@ class Renderer {
    { // Bible row (selection 1): the reference on the left, OPEN BIBLE on the right, the verse beneath
     const bool sel=u.selected==LAUNCH_BIBLE;const int ink=sel?1:0;if(sel)c.fillRect(12,54,456,36,0);
     std::string ref=u.votd.valid()?bibleRefLabel(u.votd):"BIBLE";
-    if(ref.size()>15&&u.votd.valid())ref=upperText(bibleBooks[u.votd.book-1].abbr)+" "+std::to_string(u.votd.chapter)+":"+std::to_string(u.votd.verse); // long book names use the abbreviation here
-    text(20,60,ref,3,ink,15);text(468-8-12*12,64,"DEVOTIONAL >",2,ink);
+    if(ref.size()>22&&u.votd.valid())ref=upperText(bibleBooks[u.votd.book-1].abbr)+" "+std::to_string(u.votd.chapter)+":"+std::to_string(u.votd.verse); // long book names use the abbreviation here
+    bold(20,64,ref,2,ink,22);text(468-8-12*12,64,"DEVOTIONAL >",2,ink); // the reference at the same size as the label, bold
     if(u.votd.valid()){int y=98;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
     else read(12,98,"Bible files missing: run tools/upload_bible.sh");
    }
