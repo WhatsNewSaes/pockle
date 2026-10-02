@@ -370,10 +370,11 @@ class Renderer {
    small(12,116,"UP/DOWN TO CHANGE, PRESS WHEN DONE");
    {const int face=u.textSize<0?1:u.textSize>2?1:u.textSize;const ReadFace& f=READ_FACES[face];int y=142;
     bold(12,y,bibleRefLabel({43,3,16}),2);y+=28;
-    const auto pages=paginateBible(bibleVerses(u.sample),[face](const std::string& s){return readWidthFace(face,s);},456,40);
+    std::vector<std::string> sample(15);for(const auto& v:bibleVerses(u.sample))sample.push_back(v); // verses 16-18 keep their real numbers
+    const auto pages=paginateBible(sample,[face](const std::string& s){return readWidthFace(face,s);},456,40);
     if(!pages.empty())for(const auto& line:pages[0].lines){int x=12;if(y+f.line>740)break;
-     for(const auto& s:line.segs){if(x>12)x+=readWidthFace(face," ");const int marker=s.verse?bibleMarkerWidth(s.verse+15):0;
-      if(s.verse){c.setTextSize(1);c.setTextColor(0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse+15).c_str());}
+     for(const auto& s:line.segs){if(x>12)x+=readWidthFace(face," ");const int marker=s.verse?bibleMarkerWidth(s.verse):0;
+      if(s.verse){c.setTextSize(1);c.setTextColor(0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse).c_str());}
       readFace(face,x+marker,y+(f.line-f.ascent-4)/2,s.text,0,468-x-marker);x+=marker+readWidthFace(face,s.text);}
      y+=f.line;}}
   }else if(u.page==Page::Translation){ // the installed translations, each with a line parents can read
@@ -449,15 +450,14 @@ class Renderer {
   }else if(u.page==Page::BibleHome){ // the Bible's own home: resume, today's verse, or browse
    center(60,"BIBLE",3);{std::string sub="BEREAN STANDARD BIBLE";for(const auto& t:u.translations)if(t.code==u.bibleCode)sub=upperText(t.name);smallCenter(240,96,sub);}
    const BibleView& b=u.bible;std::string cont="CONTINUE "+bibleRefLabel({b.book,b.chapter,0});if(b.pages.size()>1)cont+="  "+std::to_string(std::min(b.page,(int)b.pages.size()-1)+1)+"/"+std::to_string(b.pages.size());
-   row(140,cont,u.selected==0);
-   { // Today's devotional, with its verse inside the box (the verse of the day is the devotional's opening)
-    const bool sel=u.selected==1;const int ink=sel?1:0;const auto lines=u.votd.valid()?wrapWidth(u.votdText,readWidth,436,7):std::vector<std::string>{};const int h=70+int(std::max<size_t>(1,lines.size()))*READ_LINE; // wrapped for the box's inner width
-    c.fillRect(12,210,456,h,sel?0:1);c.drawRect(12,210,456,h,0);if(sel)text(22,228,">",2,1);text(sel?46:22,228,"TODAY'S DEVOTIONAL",2,ink);
-    if(u.votd.valid()){bold(22,254,bibleRefLabel(u.votd),2,ink);int y=280;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
-    else read(22,280,"The Bible files are missing",ink);
-    row(210+h+16,"BOOKS OF THE BIBLE",u.selected==2);
+   { // Today's devotional first, with its verse inside the box (the verse of the day is the devotional's opening)
+    const bool sel=u.selected==0;const int ink=sel?1:0;const auto lines=u.votd.valid()?wrapWidth(u.votdText,readWidth,436,7):std::vector<std::string>{};const int h=70+int(std::max<size_t>(1,lines.size()))*READ_LINE; // wrapped for the box's inner width
+    c.fillRect(12,140,456,h,sel?0:1);c.drawRect(12,140,456,h,0);if(sel)text(22,158,">",2,1);text(sel?46:22,158,"TODAY'S DEVOTIONAL",2,ink);
+    if(u.votd.valid()){bold(22,184,bibleRefLabel(u.votd),2,ink);int y=210;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
+    else read(22,210,"The Bible files are missing",ink);
+    row(140+h+16,cont,u.selected==1);row(140+h+76,"BOOKS OF THE BIBLE",u.selected==2);
     // Settings section: the translation and the reader's text size.
-    const int sy=210+h+90;{std::string s=" SETTINGS ";int w=int(s.size())*12;c.fillRect(16,sy+13,448,3,0);c.fillRect(240-w/2,sy+6,w+1,16,1);text(240-w/2,sy+6,s,2);text(240-w/2+1,sy+6,s,2);}
+    const int sy=140+h+150;{std::string s=" SETTINGS ";int w=int(s.size())*12;c.fillRect(16,sy+13,448,3,0);c.fillRect(240-w/2,sy+6,w+1,16,1);text(240-w/2,sy+6,s,2);text(240-w/2+1,sy+6,s,2);}
     std::string ver=upperText(u.bibleCode);for(const auto& t:u.translations)if(t.code==u.bibleCode)ver=upperText(t.shortName.empty()?t.code:t.shortName);
     row(sy+40,"BIBLE VERSION: "+ver,u.selected==3);row(sy+100,std::string("TEXT SIZE: ")+READ_FACES[u.textSize<0?1:u.textSize>2?1:u.textSize].name,u.selected==4);
    }

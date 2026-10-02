@@ -978,7 +978,7 @@ static void keyAction(const Key& k){
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
- case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
+ case Page::BibleHome:if(ui.selected==1)openBible(BibleRef{});else if(ui.selected==0){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
   else if(ui.selected==3){translationFrom=Page::BibleHome;translationFromSel=3;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
   else{loadSample();ui.page=Page::TextSize;ui.selected=ui.textSize;}break;
  case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
