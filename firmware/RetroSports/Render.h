@@ -250,8 +250,7 @@ class Renderer {
  void sleepVerse(const UI& u){
   if(!u.votd.valid()){render(u);return;}
   c.fillScreen(1);c.setTextWrap(false);
-  if(u.clockValid){center(66,"ASLEEP SINCE",2);center(92,clockLabel(u.now),4);} // the time it went to sleep, large, under the banner
-  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=140+(660-total)/2;
+  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=52+(748-total)/2;
   center(y,"VERSE OF THE DAY",2);center(y+30,bibleRefLabel(u.votd),3);y+=76;
   for(const auto& line:lines){center(y,line,2);y+=24;}
  }

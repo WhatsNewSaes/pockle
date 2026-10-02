@@ -153,7 +153,7 @@ The user asked for a daily devotional on the verse of the day, one screen, simpl
 
 ## Clock — v1.6.5
 
-The user asked for the time on the launcher strip, between the weather and the battery, and on the sleep screen. The strip shows the clock right-aligned before the battery figure and redraws on the minute while the launcher is up; the sleep screen draws ASLEEP SINCE and the time at pixel size 4 under the banner (which now reads ASLEEP - BATTERY nn%), the verse block centered beneath. While asleep the panel cannot tick, so the sleep screen shows the time it fell asleep rather than a live clock.
+The user asked for the time on the launcher strip, between the weather and the battery, and on the sleep screen. The strip shows the clock right-aligned before the battery figure and redraws on the minute while the launcher is up; the sleep screen draws ASLEEP SINCE and the time at pixel size 4 under the banner (which now reads ASLEEP - BATTERY nn%), the verse block centered beneath. While asleep the panel cannot tick without waking, so after weighing a five-minute clock-tick wake the user chose not to have a live clock: the sleep screen keeps the verse centered and the banner reads ASLEEP SINCE <time> - BATTERY nn%.
 
 ## Reader text size — v1.6.2
 

@@ -816,7 +816,7 @@ static void sleepScreen(bool scheduled=false){
  ui.now=time(nullptr);renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
  const std::string top="ASLEEP - PRESS ANY BUTTON";canvas.setCursor(240-int(top.size())*6,5);canvas.print(top.c_str());
- std::string line=scheduled?"BACK AT 6:30 AM":clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
+ std::string line=scheduled?"SINCE "+clockLabel(ui.now)+" - BACK AT 6:30":"ASLEEP SINCE "+clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
  canvas.setCursor(240-int(line.size())*6,28);canvas.print(line.c_str());
  applyTheme(canvas.getBuffer());
  if(scheduled&&ui.clockValid)esp_sleep_enable_timer_wakeup((uint64_t)secondsUntilWake()*1000000ULL);
@@ -830,7 +830,7 @@ static void idleSleep(){
  ui.battery=batteryPercent();ui.now=time(nullptr);renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
  const std::string top="PRESS ANY BUTTON FOR LATEST";canvas.setCursor(240-int(top.size())*6,5);canvas.print(top.c_str());
- std::string line="ASLEEP";int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%"; // the time is drawn large below the banner
+ std::string line="ASLEEP SINCE "+clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
  canvas.setCursor(240-int(line.size())*6,28);canvas.print(line.c_str());
  applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();panelPending=false;EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);
  if(shown)memcpy(shown,canvas.getBuffer(),48000);
