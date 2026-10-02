@@ -668,12 +668,16 @@ static void loadTranslations(){
  if(!have&&!ui.translations.empty())bibleCode=ui.translations[0].code.c_str();ui.bibleCode=bibleCode.c_str();
 }
 static void loadVerseOfDay();static bool loadBibleChapter(int book,int chapter);
+// The devotional's cached verse text in the current translation (the cache may hold another version's wording).
+static void refreshDevotionalVerse(){
+ if(!ui.devotional.valid||!ui.devotional.ref.valid())return;const auto vs=bibleVerses(bibleChapterText(ui.devotional.ref.book,ui.devotional.ref.chapter));
+ if(ui.devotional.ref.verse>=1&&ui.devotional.ref.verse<=(int)vs.size()&&ui.devotional.verse!=vs[ui.devotional.ref.verse-1]){ui.devotional.verse=vs[ui.devotional.ref.verse-1];prefs.putString("devo",encodeDevotional(ui.devotional).c_str());}
+}
 // Switch translations: same book, chapter and verse everywhere, new wording.
 static void setTranslation(const std::string& code){
- if(code==bibleCode.c_str())return;bibleCode=code.c_str();prefs.putString("bible",bibleCode);ui.bibleCode=code;
+ if(code==bibleCode.c_str())return;bibleCode=code.c_str();prefs.putString("bibletr",bibleCode);ui.bibleCode=code; // "bible" is the reading position
  const int page=ui.bible.page;loadBibleChapter(ui.bible.book,ui.bible.chapter);ui.bible.page=std::min(page,std::max(0,(int)ui.bible.pages.size()-1));
- if(ui.devotional.valid&&ui.devotional.ref.valid()){const auto vs=bibleVerses(bibleChapterText(ui.devotional.ref.book,ui.devotional.ref.chapter));if(ui.devotional.ref.verse>=1&&ui.devotional.ref.verse<=(int)vs.size()){ui.devotional.verse=vs[ui.devotional.ref.verse-1];prefs.putString("devo",encodeDevotional(ui.devotional).c_str());}}
- loadVerseOfDay();if(ui.page==Page::Launcher)buildLauncher();dirty=true;Serial.printf("BIBLE translation=%s\n",bibleCode.c_str());
+ refreshDevotionalVerse();loadVerseOfDay();if(ui.page==Page::Launcher)buildLauncher();dirty=true;Serial.printf("BIBLE translation=%s\n",bibleCode.c_str());
 }
 static void saveBiblePos(){prefs.putUInt("bible",((uint32_t)ui.bible.book<<16)|((uint32_t)ui.bible.chapter<<8)|(uint32_t)std::min(ui.bible.page,255));}
 static bool loadBibleChapter(int book,int chapter){
@@ -1112,7 +1116,7 @@ void setupApp(){
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
  {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
- bibleCode=prefs.getString("bible","bsb");loadTranslations();
+ bibleCode=prefs.getString("bibletr","bsb");loadTranslations();refreshDevotionalVerse();
  loadVerseOfDay(); // again, now that the cached devotional can name the verse
  {Weather w;if(decodeWeatherCache(prefs.getString("weather","").c_str(),w))ui.weather=w;nextWeather=(w.valid&&time(nullptr)-w.fetched<=3000)?1:0;} // a fresh cache waits until it is stale; 0 forces a fetch
  ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();
