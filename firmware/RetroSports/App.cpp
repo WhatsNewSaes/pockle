@@ -82,7 +82,7 @@ static const char* zones[]={"EST5EDT,M3.2.0,M11.1.0","CST6CDT,M3.2.0,M11.1.0","M
 static const char* zoneLabels[]={"Eastern","Central","Mountain","Pacific","UTC"};
 struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional,devoSync;uint8_t book,chapter,verse;char key[96];};
 struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false,isDevoSync=false;std::string note;Devotional devotional;int fetched=0,code=0;};
-struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];};
+struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];uint8_t votdBook,votdChapter,votdVerse;};
 struct Key {int button;ButtonEvent event;};
 SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
 static std::string readFileText(const std::string& path);static int dayOfYear(); // Bible helpers, defined with the reader below
@@ -375,7 +375,8 @@ static void voiceTask(void*){
   bool speak=job.speak&&result->voice.ok&&(result->voice.action==VoiceAction::Answer||result->voice.action==VoiceAction::Fact||(result->voice.action==VoiceAction::OpenWeather&&!result->voice.answer.empty()));std::string answer=result->voice.answer;
   if(result->voice.ok&&result->voice.action==VoiceAction::OpenDevotional&&result->voice.read&&job.say[0]){answer=job.say;speak=job.speak;} // the devotional text rides along in the job
   if(result->voice.ok&&result->voice.action==VoiceAction::OpenBible&&result->voice.read){ // "read me John 3:16": the words come from the chapter file, not the model
-   const BibleRef r=result->voice.daily?verseOfDay(dayOfYear()):result->voice.bible;
+   BibleRef daily;daily.book=job.votdBook;daily.chapter=job.votdChapter;daily.verse=job.votdVerse; // the day's verse as the launcher shows it (a devotional file may have set it)
+   const BibleRef r=result->voice.daily?(daily.valid()?daily:verseOfDay(dayOfYear())):result->voice.bible;
    if(r.valid()){answer=bibleSpeakText(bibleVerses(readFileText(biblePath(r.book,r.chapter))),r);speak=job.speak&&!answer.empty();}
   }
   xQueueSend(resultQueue,&result,portMAX_DELAY); // the screen shows the answer while the speech is fetched
@@ -709,7 +710,7 @@ static void finishVoice(){
    auto cut=trimSilence((const int16_t*)pcm,n/2,audio::SAMPLE_RATE);
    if(cut.first)memmove(pcm,pcm+cut.first*2,cut.second*2);
    Serial.printf("VOICE clip %u -> %u bytes after trimming silence\n",(unsigned)n,(unsigned)(cut.second*2));n=cut.second*2;
-   static VoiceJob job;memset(&job,0,sizeof(job));job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
+   static VoiceJob job;memset(&job,0,sizeof(job));job.pcm=pcm;job.len=n;job.speak=speakReplies;snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.weather,sizeof(job.weather),"%s",weatherSpeech(ui.weather).c_str());job.votdBook=ui.votd.book;job.votdChapter=ui.votd.chapter;job.votdVerse=ui.votd.verse;if(ui.devotional.valid)snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());
    std::string favs;for(const auto& f:ui.favorites){std::string line=std::to_string(f.league)+"|"+f.name+"\n";if(favs.size()+line.size()>=sizeof(job.favorites))break;favs+=line;}
    snprintf(job.favorites,sizeof(job.favorites),"%s",favs.c_str());
    if(xQueueSend(voiceQueue,&job,0)==pdTRUE)ui.voice=VoiceState::Thinking;else{heap_caps_free(pcm);ui.voice=VoiceState::Error;ui.voiceNote="STILL BUSY WITH THE LAST QUESTION";}
