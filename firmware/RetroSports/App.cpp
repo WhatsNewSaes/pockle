@@ -24,6 +24,8 @@
 #include <mbedtls/base64.h>
 #include <Update.h>
 #include <esp_ota_ops.h>
+#include <nvs.h>
+#include <functional>
 #include "Version.h"
 using namespace retro;
 static UI ui;
@@ -1025,6 +1027,15 @@ static void serialControl(){
  if(ch=='Z'){int mask=0;const int64_t planned=planRefresh(mask);Serial.printf("WAKE in %lld s (%.1f h) battery=%d%% idle=%lus refreshWake=%d nextRefresh=%llds leagues=0x%x live=%d%d%d%d\n",(long long)secondsUntilWake(),secondsUntilWake()/3600.0,batteryPercent(),(unsigned long)((millis()-lastKeyAt)/1000),refreshWake,(long long)planned,mask,leagueLive[0],leagueLive[1],leagueLive[2],leagueLive[3]);}
  if(ch=='I'){Serial.println("SLEEP idle (forced)");lastKeyAt=0;idleSleep();}
  if(ch=='L'){String v=Serial.readStringUntil('\n');v.trim();setLocation(v);}
+ if(ch=='F'){ // storage map: data partition usage by folder, plus NVS and app slot facts
+  Serial.printf("FS total=%u used=%u free=%u\n",(unsigned)LittleFS.totalBytes(),(unsigned)LittleFS.usedBytes(),(unsigned)(LittleFS.totalBytes()-LittleFS.usedBytes()));
+  std::function<void(const char*,size_t&,int&,int)> walk=[&](const char* path,size_t& bytes,int& files,int depth){File d=LittleFS.open(path);if(!d||!d.isDirectory())return;File e=d.openNextFile();while(e){if(e.isDirectory()){if(depth<3){std::string sub=std::string(path)+(path[strlen(path)-1]=='/'?"":"/")+e.name();walk(sub.c_str(),bytes,files,depth+1);}}else{bytes+=e.size();files++;}e=d.openNextFile();}};
+  File root=LittleFS.open("/");File e=root.openNextFile();size_t loose=0;int looseN=0;
+  while(e){if(e.isDirectory()){size_t b=0;int n=0;std::string p=std::string("/")+e.name();walk(p.c_str(),b,n,1);Serial.printf("FS dir %-10s files=%d bytes=%u\n",e.name(),n,(unsigned)b);}else{loose+=e.size();looseN++;Serial.printf("FS file %-14s %u\n",e.name(),(unsigned)e.size());}e=root.openNextFile();}
+  Serial.printf("FS loose files=%d bytes=%u\n",looseN,(unsigned)loose);
+  nvs_stats_t st;if(nvs_get_stats(NULL,&st)==ESP_OK)Serial.printf("NVS used=%u free=%u entries total=%u\n",(unsigned)st.used_entries,(unsigned)st.free_entries,(unsigned)st.total_entries);
+  const esp_partition_t* run=esp_ota_get_running_partition();Serial.printf("APP running=%s size=%u\n",run?run->label:"?",run?(unsigned)run->size:0);
+ }
  if(ch=='P'){ // PMU rail dump: DCDC enables 0x80, LDO enables 0x90/0x91, LDO voltages 0x92-0x9B, status 0x00/0x01, battery 0xA4
   Serial.print("PMU");for(uint8_t reg:{0x00,0x01,0x80,0x82,0x83,0x84,0x85,0x86,0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,0x98,0x99,0x9a,0x9b,0xa4})Serial.printf(" %02x=%02x",reg,pmuRead(reg));Serial.println();
  }
