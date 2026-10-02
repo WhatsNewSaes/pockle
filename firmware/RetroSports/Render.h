@@ -420,9 +420,14 @@ class Renderer {
   }else if(u.page==Page::BibleHome){ // the Bible's own home: resume, today's verse, or browse
    center(60,"BIBLE",3);smallCenter(240,96,"BEREAN STANDARD BIBLE - PUBLIC DOMAIN");
    const BibleView& b=u.bible;std::string cont="CONTINUE "+bibleRefLabel({b.book,b.chapter,0});if(b.pages.size()>1)cont+="  "+std::to_string(std::min(b.page,(int)b.pages.size()-1)+1)+"/"+std::to_string(b.pages.size());
-   row(140,cont,u.selected==0);row(200,"VERSE OF THE DAY",u.selected==1);row(260,"TODAY'S DEVOTIONAL",u.selected==2);row(320,"BOOKS",u.selected==3);
-   if(u.votd.valid()){text(12,400,bibleRefLabel(u.votd),2);int y=428;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
-   small(12,690,"HOLD THE ROCKER: \"GO TO PSALM 23\" OR \"READ JOHN 3:16\"");
+   row(140,cont,u.selected==0);
+   { // Today's devotional, with its verse inside the box (the verse of the day is the devotional's opening)
+    const bool sel=u.selected==1;const int ink=sel?1:0;const auto lines=u.votd.valid()?wrapWidth(u.votdText,readWidth,436,7):std::vector<std::string>{};const int h=70+int(std::max<size_t>(1,lines.size()))*READ_LINE; // wrapped for the box's inner width
+    c.fillRect(12,210,456,h,sel?0:1);c.drawRect(12,210,456,h,0);if(sel)text(22,228,">",2,1);text(sel?46:22,228,"TODAY'S DEVOTIONAL",2,ink);
+    if(u.votd.valid()){bold(22,254,bibleRefLabel(u.votd),2,ink);int y=280;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
+    else read(22,280,"The Bible files are missing",ink);
+    row(210+h+16,"BOOKS OF THE BIBLE",u.selected==2);
+   }
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
    text(12,24,bibleRefLabel({b.book,b.chapter,0}),2,0,28);std::string pg=std::to_string(page+1)+"/"+std::to_string(pages);text(468-int(pg.size())*12,24,pg,2);c.drawFastHLine(12,50,456,0);
@@ -436,11 +441,12 @@ class Renderer {
       read(x+marker,y+1,s.text,hl?1:0,468-x-marker);x+=w;}
      y+=READ_LINE;}
    }
-  }else if(u.page==Page::BibleBooks){ // 66 books in three columns
-   text(12,24,"BOOKS",2);text(468-15*12,24,"PRESS: CHAPTERS",2);c.drawFastHLine(12,50,456,0);
-   for(int i=0;i<BIBLE_BOOKS;i++){const int x=12+(i/22)*152,y=60+(i%22)*30;const bool sel=u.bible.pick==i;
-    std::string name=bibleBooks[i].name;if(readWidth(name)>142){size_t t=name.find("Thessalonians");if(t!=std::string::npos)name=name.substr(0,t)+"Thess.";else if(name=="Song of Solomon")name="Song of Sol.";}
-    if(sel)c.fillRect(x,y,152,30,0);read(x+6,y+4,name,sel?1:0,142);}
+  }else if(u.page==Page::BibleBooks){ // Old Testament in two columns, New Testament in the third, 26 px rows
+   bold(12,22,"BOOKS OF THE BIBLE",2);
+   bold(12,56,"OLD TESTAMENT",2);bold(320,56,"NEW TESTAMENT",2);c.drawFastHLine(12,76,296,0);c.drawFastHLine(320,76,148,0);c.drawFastVLine(314,52,736,0);
+   for(int i=0;i<BIBLE_BOOKS;i++){const int col=i<20?0:i<39?1:2,rowi=i<20?i:i<39?i-20:i-39,x=12+col*152,y=82+rowi*26;const bool sel=u.bible.pick==i;
+    std::string name=bibleBooks[i].name;if(readWidth(name)>138){size_t t=name.find("Thessalonians");if(t!=std::string::npos)name=name.substr(0,t)+"Thess.";else if(name=="Song of Solomon")name="Song of Sol.";}
+    if(sel)c.fillRect(x,y,col==2?148:148,26,0);read(x+6,y+2,name,sel?1:0,138);}
   }else if(u.page==Page::BibleChapters){ // chapter grid for the picked book
    const BibleBook& bk=bibleBooks[std::max(1,std::min(BIBLE_BOOKS,u.bible.pickBook))-1];std::string t=bk.name;for(auto& ch:t)ch=toupper((unsigned char)ch);
    text(12,24,t,2,0,20);text(468-8*12,24,"CHAPTERS",2);c.drawFastHLine(12,50,456,0);
@@ -469,7 +475,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
  }
 };
 }
