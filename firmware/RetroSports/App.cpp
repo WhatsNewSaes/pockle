@@ -782,8 +782,10 @@ static void idleSleep(){
  applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();panelPending=false;EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);
  if(shown)memcpy(shown,canvas.getBuffer(),48000);
  EPD_3IN97_Sleep();panelPower(false);rtcTab=ui.tab;rtcSleeps++;
- int mask=0;const int64_t planned=planRefresh(mask);const int64_t secs=inNight()?secondsUntilWake():planned;
- Serial.printf("SLEEP idle: wake in %llds (night=%d, next refresh %llds, leagues 0x%x) battery=%d%%\n",(long long)secs,inNight(),(long long)planned,mask,b);
+ // Asleep, the panel shows the verse of the day, so scores need no refreshing until a button wakes it:
+ // the only timed wake is 6:30 am (devotional, verse, weather, update check, and a full score refresh).
+ const int64_t secs=secondsUntilWake();
+ Serial.printf("SLEEP idle: wake at 6:30 in %llds (%.1f h) battery=%d%%\n",(long long)secs,secs/3600.0,b);
  WiFi.disconnect(true);esp_sleep_enable_timer_wakeup((uint64_t)secs*1000000ULL);powerDownForSleep();armWakeButtons();delay(100);esp_deep_sleep_start();
 }
 static void goBack(){
@@ -1071,7 +1073,7 @@ void setupApp(){
  {tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);if(lt.tm_hour==23&&lt.tm_min==0)lastSleepDay=lt.tm_yday;
   const auto cause=esp_sleep_get_wakeup_cause();refreshWake=cause==ESP_SLEEP_WAKEUP_TIMER;refreshStarted=millis();
   if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
-  if(refreshWake){planRefresh(refreshMaskBits);refreshPending=__builtin_popcount(refreshMaskBits);}else{refreshMaskBits=15;refreshPending=4;}
+  refreshMaskBits=15;refreshPending=4; // the morning wake (or a button) refreshes every league
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
   refreshDevoHash();if(refreshWake&&ui.clockValid&&devoSyncDue()){devoSyncPending=true;refreshPending++;} // the library sync rides on a wake every six hours
