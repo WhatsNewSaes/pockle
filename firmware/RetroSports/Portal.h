@@ -1,9 +1,9 @@
 #pragma once
 // The status screen stays on the device's hotspot while the station joins Wi-Fi.
 static const char CONNECTION_PAGE[] PROGMEM = R"HTML(<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pixel League connection</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pockle connection</title>
 <style>body{background:#f5f3e8;color:#182019;font:18px monospace;max-width:480px;margin:40px auto;padding:24px}h1{border-bottom:6px solid;padding-bottom:16px}p{line-height:1.5}a,button{display:block;box-sizing:border-box;text-align:center;width:100%;font:inherit;padding:14px;margin:20px 0;border:2px solid;background:#182019;color:white;text-decoration:none}[hidden]{display:none}</style></head>
-<body><h1>PIXEL LEAGUE</h1><div role="status" aria-live="polite"><h2 id="title">Connecting...</h2><p id="message">The scoreboard is joining your home Wi-Fi. This usually takes a few seconds.</p></div>
+<body><h1>POCKLE</h1><div role="status" aria-live="polite"><h2 id="title">Connecting...</h2><p id="message">The scoreboard is joining your home Wi-Fi. This usually takes a few seconds.</p></div>
 <div id="success" hidden><p>You can switch your phone back to your home Wi-Fi now. Press BOOT twice on the scoreboard to choose a league.</p><button id="done">FINISH SETUP</button></div>
 <div id="retry" hidden><a href="/">CHECK WI-FI DETAILS</a><button id="check">CHECK AGAIN</button></div>
 <script>
@@ -38,7 +38,7 @@ async function checkConnection() {
     // The phone can briefly lose the hotspot when the board changes Wi-Fi channel.
   }
   if (Date.now() - started >= 45000) {
-    showFailure('Check the scoreboard', 'The phone could not confirm the connection. If the display says WI-FI: ON, setup succeeded. Otherwise rejoin the PixelLeague network and check your Wi-Fi details.');
+    showFailure('Check the scoreboard', 'The phone could not confirm the connection. If the display says WI-FI: ON, setup succeeded. Otherwise rejoin the Pockle network and check your Wi-Fi details.');
     return;
   }
   setTimeout(checkConnection, 1500);

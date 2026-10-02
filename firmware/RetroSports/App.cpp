@@ -257,7 +257,7 @@ static void voiceDisconnect(){if(voiceClient)voiceClient->stop();}
 static void voiceHeaders(HTTPClient& http,const char* key){
  http.setReuse(true);http.setTimeout(45000);http.setConnectTimeout(12000);
  http.addHeader("Content-Type","application/json");http.addHeader("Authorization",String("Bearer ")+key);
- http.addHeader("HTTP-Referer","https://pixel-league.local");http.addHeader("X-Title","Pixel League");
+ http.addHeader("HTTP-Referer","https://pockle.local");http.addHeader("X-Title","Pockle");
 }
 // One OpenRouter request: WAV audio plus the saved scores as context, JSON back.
 static VoiceReply askVoice(const VoiceJob& job){
@@ -772,14 +772,14 @@ static void finishVoice(){
 }
 static void stopAP(){dns.stop();server.stop();WiFi.softAPdisconnect(true);WiFi.mode(WIFI_STA);ui.ap=false;dirty=true;}
 static String portalPage(){
- String s=F("<!doctype html><html><meta name='viewport' content='width=device-width,initial-scale=1'><title>Pixel League Wi-Fi</title><style>body{background:#f5f3e8;color:#182019;font:18px monospace;max-width:480px;margin:40px auto;padding:24px}h1{border-bottom:6px solid;padding-bottom:16px}input,select,button{box-sizing:border-box;width:100%;font:inherit;padding:14px;margin:8px 0 20px;border:2px solid;background:white}button{background:#182019;color:white}p{line-height:1.5}</style><h1>PIXEL LEAGUE</h1><p>Connect your scoreboard to a 2.4 GHz Wi-Fi network.</p><form action='/save' method='post'><input type='hidden' name='epoch' id='epoch'><label>Wi-Fi name</label><input name='ssid' maxlength='32' required autocomplete='off'><label>Wi-Fi password</label><input name='password' type='password' maxlength='63'><label>Timezone</label><select name='zone'>");
+ String s=F("<!doctype html><html><meta name='viewport' content='width=device-width,initial-scale=1'><title>Pockle Wi-Fi</title><style>body{background:#f5f3e8;color:#182019;font:18px monospace;max-width:480px;margin:40px auto;padding:24px}h1{border-bottom:6px solid;padding-bottom:16px}input,select,button{box-sizing:border-box;width:100%;font:inherit;padding:14px;margin:8px 0 20px;border:2px solid;background:white}button{background:#182019;color:white}p{line-height:1.5}</style><h1>POCKLE</h1><p>Connect your scoreboard to a 2.4 GHz Wi-Fi network.</p><form action='/save' method='post'><input type='hidden' name='epoch' id='epoch'><label>Wi-Fi name</label><input name='ssid' maxlength='32' required autocomplete='off'><label>Wi-Fi password</label><input name='password' type='password' maxlength='63'><label>Timezone</label><select name='zone'>");
  for(int i=0;i<5;i++){s+="<option value='"+String(i)+"'"+(tz==zones[i]?" selected":"")+">"+zoneLabels[i]+"</option>";}
  s+=F("</select><label>Voice key (OpenRouter, optional)</label><input name='key' maxlength='128' autocomplete='off' placeholder='sk-or-v1-...'><label>ZIP or city for weather (optional)</label><input name='loc' maxlength='40' placeholder='44077'><button>CONNECT SCOREBOARD</button></form><p>Your password is saved only on the board. If connection fails, return here to retry. Press BOOT on the board to browse saved scores.</p><script>document.getElementById('epoch').value=Math.floor(Date.now()/1000);</script></html>");return s;
 }
 static void startAP(){
  connectionFailed=false;finishSetup=false;
  if(ui.ap)stopAP();WiFi.mode(WIFI_AP_STA);
- char suffix[5];snprintf(suffix,sizeof(suffix),"%04X",(unsigned)(ESP.getEfuseMac()&0xffff));ui.apName=std::string("PixelLeague-")+suffix;
+ char suffix[5];snprintf(suffix,sizeof(suffix),"%04X",(unsigned)(ESP.getEfuseMac()&0xffff));ui.apName=std::string("Pockle-")+suffix;
  char secret[13];snprintf(secret,sizeof(secret),"play%08x",(unsigned)esp_random());ui.apPass=secret;
  if(!WiFi.softAP(ui.apName.c_str(),ui.apPass.c_str())){ui.notice="Could not start setup. Restart and retry.";return;}
  dns.start(53,"*",WiFi.softAPIP());
@@ -1118,8 +1118,8 @@ static void serialControl(){
  if(ch=='?')Serial.printf("PANEL partials=%d pending=%d busy=%d idleMs=%lu sinceFull=%lu keysQueued=%u\n",partialCount,panelPending,EPD_3IN97_Busy(),(unsigned long)(millis()-lastKeyAt),(unsigned long)(millis()-lastFullRefresh),(unsigned)uxQueueMessagesWaiting(inputQueue));
 }
 void setupApp(){
- Serial.begin(115200);Serial.setTimeout(1000);delay(500);Serial.println("PIXEL LEAGUE v" FIRMWARE_VERSION " boot");ui.version=FIRMWARE_VERSION;
- prefs.begin("pixel-league",false);ssid=prefs.getString("ssid","");password=prefs.getString("pass","");tz=prefs.getString("tz",zones[0]);setenv("TZ",tz.c_str(),1);tzset();lastDateSaved=prefs.getString("lastDate","");voiceKey=prefs.getString("orkey","");ttsVoice=prefs.getString("voice","alloy");ui.ttsVoice=ttsVoice.c_str();speakReplies=prefs.getBool("speak",true);darkMode=prefs.getBool("dark",false);ui.dark=darkMode;nightSleep=prefs.getBool("night",true);ui.nightSleep=nightSleep;
+ Serial.begin(115200);Serial.setTimeout(1000);delay(500);Serial.println("POCKLE v" FIRMWARE_VERSION " boot");ui.version=FIRMWARE_VERSION;
+ prefs.begin("pixel-league",false) /* NVS namespace kept from the old name so existing devices keep their settings */;ssid=prefs.getString("ssid","");password=prefs.getString("pass","");tz=prefs.getString("tz",zones[0]);setenv("TZ",tz.c_str(),1);tzset();lastDateSaved=prefs.getString("lastDate","");voiceKey=prefs.getString("orkey","");ttsVoice=prefs.getString("voice","alloy");ui.ttsVoice=ttsVoice.c_str();speakReplies=prefs.getBool("speak",true);darkMode=prefs.getBool("dark",false);ui.dark=darkMode;nightSleep=prefs.getBool("night",true);ui.nightSleep=nightSleep;
  Wire.begin(41,42);powerUpFromSleep();panelPower(true);ui.clockValid=readRtc();audio::init();
  ui.speak=speakReplies;fsOK=LittleFS.begin(false);
  // This dedicated new filesystem partition is initialized only on first app boot.

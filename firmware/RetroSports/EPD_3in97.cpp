@@ -27,7 +27,7 @@
 # THE SOFTWARE.
 #
 ******************************************************************************/
-// Pixel League: register sequences are the vendor's, unchanged. Transport is
+// Pockle: register sequences are the vendor's, unchanged. Transport is
 // hardware SPI with whole-frame bulk writes, the per-row sleeps and the fixed
 // 100 ms busy pre-delay are gone, and non-blocking update entry points let the
 // application keep handling input while the panel refreshes.
@@ -297,7 +297,7 @@ void EPD_3IN97_Display_Fast_Base_Async(const UBYTE *Image) { EPD_3IN97_WriteFram
 function :	Partial (mode 2) refresh of the whole frame
 parameter:  Image    : new frame
             Previous : frame currently on the panel (may be NULL after a base write)
-Pixel League: the vendor sequence hardware-resets the controller before every
+Pockle: the vendor sequence hardware-resets the controller before every
 partial write and then uses the controller's default addressing, which does not
 match how the base image was written, and it never refreshes the "old" RAM. On
 this panel that left partial updates invisible until the next full refresh.

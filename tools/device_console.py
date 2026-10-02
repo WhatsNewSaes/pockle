@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Pixel League over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, or devosync."""
+"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, or devosync."""
 import argparse,time,serial,pathlib
 p=argparse.ArgumentParser();p.add_argument('command',nargs='?',default='?');p.add_argument('--port',default='/dev/cu.usbmodem1101');p.add_argument('--seconds',type=float,default=8);p.add_argument('--text');args=p.parse_args()
 class PassiveSerial(serial.Serial):

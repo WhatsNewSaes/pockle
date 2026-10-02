@@ -14,7 +14,7 @@
 #include "esp_types.h"
 #include "esp_err.h"
 
-// Pixel League: the legacy I2C header is not needed; Wire drives the bus.
+// Pockle: the legacy I2C header is not needed; Wire drives the bus.
 typedef int i2c_port_t;
 
 /* ES8311 address: CE pin low - 0x18, CE pin high - 0x19 */

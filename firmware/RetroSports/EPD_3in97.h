@@ -47,7 +47,7 @@ void EPD_3IN97_Display_Fast_Base(const UBYTE *Image);
 void EPD_3IN97_Display_Partial(const UBYTE *Image, const UBYTE *Previous);
 void EPD_3IN97_Sleep(void);
 
-// Pixel League: non-blocking variants. Each writes the frame, starts the panel
+// Pockle: non-blocking variants. Each writes the frame, starts the panel
 // update, and returns; poll EPD_3IN97_Busy() (or call EPD_3IN97_WaitIdle())
 // before sending anything else to the panel.
 void EPD_3IN97_Display_Partial_Async(const UBYTE *Image, const UBYTE *Previous);

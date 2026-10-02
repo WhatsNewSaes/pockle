@@ -30,7 +30,7 @@
 #include "DEV_Config.h"
 #include <SPI.h>
 
-// Pixel League: the vendor Arduino example bit-bangs SPI with digitalWrite,
+// Pockle: the vendor Arduino example bit-bangs SPI with digitalWrite,
 // which costs ~1 s per 48 KB frame. The vendor ESP-IDF port drives the same
 // panel with hardware SPI at 20 MHz, mode 0; do the same here.
 static SPIClass epdSpi(HSPI);

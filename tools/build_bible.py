@@ -67,7 +67,7 @@ def clean(text):
 def parse_ebible(tid,order):
  import io,zipfile
  z=ROOT/f'.tools/bible/{tid}_vpl.zip'
- if not z.exists():print('downloading',tid);req=urllib.request.Request(f'https://ebible.org/Scriptures/{tid}_vpl.zip',headers={'User-Agent':'Mozilla/5.0 (pixel-league build)'});z.write_bytes(urllib.request.urlopen(req,timeout=120).read()) # eBible refuses the default Python agent
+ if not z.exists():print('downloading',tid);req=urllib.request.Request(f'https://ebible.org/Scriptures/{tid}_vpl.zip',headers={'User-Agent':'Mozilla/5.0 (pockle build)'});z.write_bytes(urllib.request.urlopen(req,timeout=120).read()) # eBible refuses the default Python agent
  txt=zipfile.ZipFile(z).read(f'{tid}_vpl.txt').decode('utf-8')
  books={name:{} for name in order};bycode=dict(zip(EBIBLE_CODES,order))
  for line in txt.split('\n'):
