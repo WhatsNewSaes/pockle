@@ -10,21 +10,48 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 
 ## What's on the device
 
-**The launcher.** The first screen shows the weather, today's verse, and the latest scores across every league. The rocker moves between three doors: the forecast, the Bible, and the scoreboard.
+**Launcher** — the first screen
+- Weather, today's verse, and the latest scores across every league
+- Three doors: the forecast, the Bible, and the scoreboard
 
-**Bible.** The whole Bible lives on the board and reads offline, in a choice of four translations with a one-line description of each so parents can pick: the Berean Standard Bible, the Free Bible Version, the Bible in Basic English, and the King James. A reading position is remembered, pages turn with the rocker across chapters and books, there is a book and chapter picker, and the text size can be small, normal or large.
+**Bible**
+- The whole Bible on the board, readable offline
+- Four translations with a one-line description of each: Berean Standard, Free Bible Version, Bible in Basic English, King James
+- Book and chapter picker, pages turn across chapters and books, reading position remembered
+- Small, normal or large text
 
-**Daily devotional.** Each day has a short, gospel-centered devotional for ages 7–13 built on the verse of the day: the verse, a title, one truth, three bullets, something to do today, and a one-line prayer. It fits on one screen, can be read aloud by the speaker, and the verse of the day everywhere on the device is the devotional's verse. Devotionals are written as simple Markdown files in this repository (`devotionals/`), one per day, and reach the device over Wi-Fi; the whole library is kept on the board so it works offline. A day with no file gets one written on the spot.
+**Daily devotional**
+- One screen a day for ages 7–13: the verse, a title, one truth, three bullets, something to do today, a one-line prayer
+- Gospel-centered — points to what Jesus has done before what we do
+- Read aloud by the speaker
+- The verse of the day everywhere on the device is the devotional's verse
+- Written as Markdown files in `devotionals/`, delivered over Wi-Fi, kept on the board for offline reading; a day with no file gets one written on the spot
 
-**Sports scores.** MLB, NFL, NBA and college football: recent results and today's games in a dense scoreboard, grouped by league and week, with team logos; a matchup page with the box score, team leaders and a headline; team pages with results, the next game, and division and conference standings. Scores refresh while the device is awake and whenever it wakes up.
+**Sports scores**
+- MLB, NFL, NBA and college football
+- Dense scoreboard grouped by league and week, with team logos
+- Matchup pages: box score, team leaders, headline
+- Team pages: results, next game, division and conference standings
+- Refreshes while awake and whenever it wakes up
 
-**Weather.** Current conditions on the launcher and a seven-day forecast page, for the location you give it (or where its network says it is).
+**Weather**
+- Current conditions on the launcher
+- Seven-day forecast page for your ZIP code
 
-**Voice.** Hold the rocker and ask. "Bears score", "NFL standings", "go to Psalm 23", "read today's devotional", "will it rain tomorrow", "who won the 1985 Super Bowl" — the device opens the right page or answers out loud, in a voice you can choose. It sticks to sports, the Bible and the weather, and looks up current facts (like who's starting at quarterback) rather than guessing.
+**Voice** — hold the rocker and ask
+- "Bears score", "NFL standings", "go to Psalm 23", "read today's devotional", "will it rain tomorrow", "who won the 1985 Super Bowl"
+- Opens the right page or answers out loud, in a voice you choose
+- Sticks to sports, the Bible and the weather; looks up current facts rather than guessing
 
-**Settings.** Wi-Fi setup from a phone, spoken replies on or off, the speaking voice, dark mode, the nightly sleep schedule, and a check for software updates.
+**Settings**
+- Wi-Fi setup from a phone
+- Spoken replies on/off, speaking voice, dark mode, nightly sleep schedule
+- Check for software updates
 
-**Battery life.** The board sleeps when it's idle and overnight, showing the verse of the day while asleep, wakes on any button, and wakes once each morning to fetch the day's devotional, verse, weather, scores and any software update. In practice that's a few percent of battery a day.
+**Battery life**
+- Sleeps when idle and overnight, showing the verse of the day
+- Wakes on any button; one timed wake each morning for the day's devotional, verse, weather, scores and updates
+- A few percent of battery a day
 
 ## Setting one up
 
