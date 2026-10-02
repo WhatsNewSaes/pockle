@@ -166,7 +166,7 @@ int main(){
   assert(bibleBookIndex("John")==43&&bibleBookIndex("1 John")==62&&bibleBookIndex("First John")==62&&bibleBookIndex("Psalms")==19&&bibleBookIndex("Song of Songs")==22&&bibleBookIndex("Judg")==7&&bibleBookIndex("Jude")==65&&bibleBookIndex("Rev")==66&&bibleBookIndex("xyz")==0&&bibleBookIndex("Phil")==50);
   {BibleRef r=parseBibleRef("John 3:16");assert(r.book==43&&r.chapter==3&&r.verse==16);r=parseBibleRef("1 Corinthians 13");assert(r.book==46&&r.chapter==13&&r.verse==0);
    r=parseBibleRef("psalm 23 verse 4");assert(r.book==19&&r.chapter==23&&r.verse==4);r=parseBibleRef("Jude 24");assert(r.book==65&&r.chapter==1&&r.verse==24);
-   r=parseBibleRef("john 99");assert(r.book==43&&r.chapter==1);assert(parseBibleRef("nothing here").book==0);assert(biblePath(43,3)=="/bible/43/003.txt");}
+   r=parseBibleRef("john 99");assert(r.book==43&&r.chapter==1);assert(parseBibleRef("nothing here").book==0);assert(bibleBookPath("bsb",43)=="/bible/bsb/43.z");{std::string book=std::string("one\ntwo\n")+"\x1e"+"three\n"+"\x1e"+"four\n";assert(bibleChapterOf(book,1)=="one\ntwo\n"&&bibleChapterOf(book,2)=="three\n"&&bibleChapterOf(book,3)=="four\n"&&bibleChapterOf(book,4).empty());}}
   {std::ifstream jf("tests/fixtures/john3.txt");std::string text((std::istreambuf_iterator<char>(jf)),std::istreambuf_iterator<char>());auto verses=bibleVerses(text);assert(verses.size()==36);
    auto width=[](const std::string& s){return int(s.size())*6;};auto pages=paginateBible(verses,width,456,36);assert(pages.size()>=2);
    for(auto& p:pages){assert(p.lines.size()<=36);for(auto& l:p.lines){int w=0;bool firstSeg=true;for(auto& s:l.segs){w+=(firstSeg?0:6)+(s.verse?bibleMarkerWidth(s.verse):0)+width(s.text);firstSeg=false;assert(s.of>=1);}assert(w<=456);}}

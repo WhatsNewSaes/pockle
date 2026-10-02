@@ -11,9 +11,12 @@ are mapped to their plain equivalents because the device fonts cover 32-126.
 The book order and chapter counts must match `bibleBooks` in Bible.h, which is
 checked here, along with every verse-of-the-day reference in that table.
 """
-import argparse, pathlib, re, sys, urllib.request
+import argparse, json, pathlib, re, struct, sys, urllib.request, zlib
 ROOT=pathlib.Path(__file__).resolve().parent.parent
-SRC=ROOT/'.tools/bible/bsb.txt';OUT=ROOT/'.tools/bible/fs/bible';URL='https://bereanbible.com/bsb.txt'
+SRC=ROOT/'.tools/bible/bsb.txt';OUT=ROOT/'.tools/bible/fs/bible/bsb';URL='https://bereanbible.com/bsb.txt'
+# One zlib file per book: a 4-byte little-endian raw length, then the deflated text with chapters
+# separated by \x1e (verses one per line). 66 files cost ~1.35 MB on LittleFS instead of 6.3 MB for 1,189.
+CHAPTER_SEP='\x1e'
 ASCII={'“':'"','”':'"','‘':"'",'’':"'",'—':' - ','…':'...',' ':' '}
 def download():
  if SRC.exists():return
@@ -48,14 +51,19 @@ def main():
   assert len(books[name])==chapters,f'{name}: firmware {chapters} chapters vs text {len(books[name])}'
  for b,c,v in votd():
   assert 1<=b<=66 and c in books[fw[b-1][0]] and v in books[fw[b-1][0]][c],f'verse of the day {b} {c}:{v} does not exist'
- total=0;files=0
+ total=0;packed=0;OUT.mkdir(parents=True,exist_ok=True)
+ for old in (OUT.parent).glob('[0-9][0-9]'):  # the previous one-file-per-chapter layout
+  for f in old.glob('*.txt'):f.unlink()
+  old.rmdir()
  for i,(name,chapters) in enumerate(fw,1):
-  d=OUT/f'{i:02d}';d.mkdir(parents=True,exist_ok=True)
+  parts=[]
   for c in range(1,chapters+1):
    verses=books[name][c];n=max(verses)
-   text='\n'.join(verses.get(v,'') for v in range(1,n+1))+'\n'
-   (d/f'{c:03d}.txt').write_text(text);total+=len(text);files+=1
- print(f'wrote {files} chapter files, {total/1048576:.2f} MB, to {OUT}')
+   parts.append('\n'.join(verses.get(v,'') for v in range(1,n+1))+'\n')
+  raw=CHAPTER_SEP.join(parts).encode();z=zlib.compress(raw,9)
+  (OUT/f'{i:02d}.z').write_bytes(struct.pack('<I',len(raw))+z);total+=len(raw);packed+=len(z)+4
+ (OUT/'meta.json').write_text(json.dumps({'code':'bsb','name':'Berean Standard Bible','license':'public domain'}))
+ print(f'wrote 66 book files, {total/1048576:.2f} MB of text packed to {packed/1048576:.2f} MB, to {OUT}')
  if a.fixture:
   j=books['John'][3];(ROOT/'tests/fixtures/john3.txt').write_text('\n'.join(j[v] for v in range(1,max(j)+1))+'\n');print('wrote tests/fixtures/john3.txt')
 if __name__=='__main__':main()

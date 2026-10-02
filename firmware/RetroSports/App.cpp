@@ -25,6 +25,7 @@
 #include <Update.h>
 #include <esp_ota_ops.h>
 #include <nvs.h>
+#include <miniz.h> // ESP32-S3 ROM inflater (esp_rom/include)
 #include <functional>
 #include "Version.h"
 using namespace retro;
@@ -87,7 +88,7 @@ struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standin
 struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];uint8_t votdBook,votdChapter,votdVerse;};
 struct Key {int button;ButtonEvent event;};
 SET_LOOP_TASK_STACK_SIZE(16*1024); // VoiceJob copies and the renderer need more than the 8 KB default
-static std::string readFileText(const std::string& path);static int dayOfYear(); // Bible helpers, defined with the reader below
+static std::string readFileText(const std::string& path);static int dayOfYear();static std::string bibleChapterText(int book,int chapter); // Bible helpers, defined with the reader below
 
 // Vendor ESP-IDF driver powers the panel through PMU ALDO3 at 3.3 V.
 // Preserve every unrelated regulator and all battery charging settings.
@@ -379,7 +380,7 @@ static void voiceTask(void*){
   if(result->voice.ok&&result->voice.action==VoiceAction::OpenBible&&result->voice.read){ // "read me John 3:16": the words come from the chapter file, not the model
    BibleRef daily;daily.book=job.votdBook;daily.chapter=job.votdChapter;daily.verse=job.votdVerse; // the day's verse as the launcher shows it (a devotional file may have set it)
    const BibleRef r=result->voice.daily?(daily.valid()?daily:verseOfDay(dayOfYear())):result->voice.bible;
-   if(r.valid()){answer=bibleSpeakText(bibleVerses(readFileText(biblePath(r.book,r.chapter))),r);speak=job.speak&&!answer.empty();}
+   if(r.valid()){answer=bibleSpeakText(bibleVerses(bibleChapterText(r.book,r.chapter)),r);speak=job.speak&&!answer.empty();}
   }
   xQueueSend(resultQueue,&result,portMAX_DELAY); // the screen shows the answer while the speech is fetched
   if(speak)speakAnswer(answer,job.key,job.voice);
@@ -464,12 +465,12 @@ static bool syncDevotionals(int& fetched,int& code){
 // --- Today's devotional: the local file if the library has it, else one chat request with the verse and its neighbours.
 static bool fetchDevotional(const FetchRequest& req,Devotional& out,int& code){
  BibleRef ref;ref.book=req.book;ref.chapter=req.chapter;ref.verse=req.verse;if(!ref.valid())return false;
- const auto verses=bibleVerses(readFileText(biblePath(ref.book,ref.chapter)));if(ref.verse<1||ref.verse>(int)verses.size())return false;
+ const auto verses=bibleVerses(bibleChapterText(ref.book,ref.chapter));if(ref.verse<1||ref.verse>(int)verses.size())return false;
  tm now{};time_t t=time(nullptr);localtime_r(&t,&now);
  { // the library's file for today comes first (no network needed); without one the model writes it (when there is a key)
   const std::string body=readFileText(devotionalLocalPath(now.tm_mon+1,now.tm_mday));
   if(!body.empty()){
-   auto verseFor=[&](const BibleRef& r){const auto vs=bibleVerses(readFileText(biblePath(r.book,r.chapter)));return r.verse>=1&&r.verse<=(int)vs.size()?vs[r.verse-1]:std::string();};
+   auto verseFor=[&](const BibleRef& r){const auto vs=bibleVerses(bibleChapterText(r.book,r.chapter));return r.verse>=1&&r.verse<=(int)vs.size()?vs[r.verse-1]:std::string();};
    if(decodeDevotionalFile(body,now.tm_yday,ref,verses[ref.verse-1],verseFor,out)){JsonDocument idx;deserializeJson(idx,readFileText("/devo/index.json"));const char* h=idx[devotionalDayKey(now.tm_mon+1,now.tm_mday)].as<const char*>();out.hash=h?h:"";
     Serial.printf("DEVOTIONAL file %02d-%02d: %s\n",now.tm_mon+1,now.tm_mday,out.title.c_str());return true;}
    Serial.println("DEVOTIONAL file did not parse");}
@@ -639,10 +640,28 @@ static std::string readFileText(const std::string& path){
  char buf[512];while(f.available()){int n=f.readBytes(buf,sizeof(buf));if(n<=0)break;s.append(buf,n);}f.close();return s;
 }
 static int dayOfYear(){tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);return lt.tm_yday;}
+// The selected translation's book, decompressed into PSRAM with the ROM inflater and kept
+// until another book is wanted (Psalms, the largest, is about 430 KB of text).
+static String bibleCode="bsb";
+static std::string bibleBookText(int book){
+ static int cachedBook=0;static std::string cachedCode;static std::string cached;
+ if(book==cachedBook&&cachedCode==bibleCode.c_str())return cached;
+ cached.clear();cachedBook=0;if(!fsOK)return cached;
+ File f=LittleFS.open(bibleBookPath(bibleCode.c_str(),book).c_str(),"r");if(!f)return cached;
+ const size_t len=f.size();if(len<=4){f.close();return cached;}
+ uint8_t* in=(uint8_t*)heap_caps_malloc(len,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!in){f.close();return cached;}
+ size_t got=0;while(got<len){int n=f.read(in+got,len-got);if(n<=0)break;got+=n;}f.close();
+ const uint32_t rawLen=in[0]|(in[1]<<8)|(in[2]<<16)|((uint32_t)in[3]<<24);
+ uint8_t* out=(rawLen&&rawLen<2*1024*1024)?(uint8_t*)heap_caps_malloc(rawLen,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT):nullptr;
+ if(out&&got==len){const size_t n=tinfl_decompress_mem_to_mem(out,rawLen,in+4,len-4,TINFL_FLAG_PARSE_ZLIB_HEADER);
+  if(n==rawLen){cached.assign((const char*)out,rawLen);cachedBook=book;cachedCode=bibleCode.c_str();}else Serial.printf("BIBLE inflate failed book=%d got=%u want=%u\n",book,(unsigned)n,(unsigned)rawLen);}
+ heap_caps_free(out);heap_caps_free(in);return cached;
+}
+static std::string bibleChapterText(int book,int chapter){return bibleChapterOf(bibleBookText(book),chapter);}
 static void saveBiblePos(){prefs.putUInt("bible",((uint32_t)ui.bible.book<<16)|((uint32_t)ui.bible.chapter<<8)|(uint32_t)std::min(ui.bible.page,255));}
 static bool loadBibleChapter(int book,int chapter){
  BibleRef r;r.book=book;r.chapter=chapter;if(!r.valid())return false;
- const std::string text=fsOK?readFileText(biblePath(book,chapter)):"";
+ const std::string text=bibleChapterText(book,chapter);
  ui.bible.book=book;ui.bible.chapter=chapter;ui.bible.verse=0;ui.bible.page=0;
  ui.bible.pages=text.empty()?std::vector<BiblePage>{}:paginateBible(bibleVerses(text),readWidth,456,READ_LINES);
  Serial.printf("BIBLE %s pages=%u bytes=%u\n",bibleRefLabel(r).c_str(),(unsigned)ui.bible.pages.size(),(unsigned)text.size());
@@ -683,7 +702,7 @@ static void requestDevotional(){
  if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;ui.devotionalLoading=!ui.devotional.valid;nextDevotional=millis()+(r.feed?7200000:600000);if(ui.page==Page::Devotional)dirty=true;}
 }
 static void loadVerseOfDay(){
- const BibleRef r=verseOfDay(ui.clockValid?dayOfYear():0);const auto verses=bibleVerses(fsOK?readFileText(biblePath(r.book,r.chapter)):"");
+ const BibleRef r=verseOfDay(ui.clockValid?dayOfYear():0);const auto verses=bibleVerses(bibleChapterText(r.book,r.chapter));
  if(r.verse>=1&&r.verse<=(int)verses.size()){ui.votd=r;ui.votdText=verses[r.verse-1];}else{ui.votd=BibleRef{};ui.votdText.clear();}
  // Today's devotional file names the verse of the day; the table is only the fallback.
  const Devotional& d=ui.devotional;if(d.valid&&d.fromFile&&d.day==dayOfYear()&&d.ref.valid()&&!d.verse.empty()){ui.votd=d.ref;ui.votdText=d.verse;}

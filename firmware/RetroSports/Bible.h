@@ -5,11 +5,12 @@
 #include <cstdio>
 #include <cctype>
 #include <cstdlib>
-// The Berean Standard Bible (public domain) lives on LittleFS as one plain-text
-// file per chapter, verses one per line: /bible/<book 01-66>/<chapter 001>.txt
-// (built by tools/build_bible.py, flashed by tools/upload_bible.sh). This header
-// is the part shared with the host tests: book table, reference parsing, page
-// layout and the verse-of-the-day pick.
+// A translation lives on LittleFS as one zlib file per book, /bible/<code>/<book 01-66>.z:
+// a 4-byte little-endian raw length, then the deflated text with chapters separated
+// by \x1e and verses one per line (built by tools/build_bible.py, flashed by
+// tools/upload_bible.sh, decompressed on the device with the ROM's tinfl). This
+// header is the part shared with the host tests: book table, reference parsing,
+// chapter splitting, page layout and the verse-of-the-day pick.
 namespace retro {
 struct BibleBook { const char* name; const char* abbr; int chapters; };
 static const BibleBook bibleBooks[]={
@@ -27,7 +28,12 @@ struct BibleRef {
  int book=0,chapter=0,verse=0;
  bool valid()const{return book>=1&&book<=BIBLE_BOOKS&&chapter>=1&&chapter<=bibleBooks[book-1].chapters;}
 };
-inline std::string biblePath(int book,int chapter){char p[32];snprintf(p,sizeof(p),"/bible/%02d/%03d.txt",book,chapter);return p;}
+inline std::string bibleBookPath(const std::string& code,int book){char p[48];snprintf(p,sizeof(p),"/bible/%s/%02d.z",code.c_str(),book);return p;}
+// Chapter `chapter` (1-based) out of a decompressed book: chapters are separated by \x1e.
+inline std::string bibleChapterOf(const std::string& bookText,int chapter){
+ size_t p=0;for(int c=1;c<chapter;c++){size_t q=bookText.find('\x1e',p);if(q==std::string::npos)return "";p=q+1;}
+ size_t q=bookText.find('\x1e',p);return bookText.substr(p,q==std::string::npos?std::string::npos:q-p);
+}
 inline std::string bibleRefLabel(const BibleRef& r,bool upper=true){
  if(!r.valid())return "";std::string s=bibleBooks[r.book-1].name;s+=" "+std::to_string(r.chapter);if(r.verse>0)s+=":"+std::to_string(r.verse);
  if(upper)for(auto& c:s)c=toupper((unsigned char)c);return s;
