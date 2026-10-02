@@ -543,6 +543,7 @@ static uint32_t nextWeather=0;
 // A new ZIP or city: forget the coordinates so the next weather fetch geocodes it.
 static void setLocation(const String& query){prefs.putString("locq",query);prefs.remove("lat");prefs.remove("lon");prefs.remove("city");nextWeather=0;Serial.printf("WEATHER location set to \"%s\"\n",query.c_str());}
 static bool updateBusy=false,autoUpdateCheck=false;static uint32_t restartAt=0;
+static Page translationFrom=Page::Settings;static int translationFromSel=7; // where the version picker returns to
 // Manual: show the update page while it runs. Automatic (6:30 wake): silent unless a newer build installs.
 static void requestUpdate(bool manual){
  if(requestBusy||!ui.online||!ui.clockValid||updateBusy)return;FetchRequest r{};r.update=true;
@@ -858,7 +859,7 @@ static void goBack(){
  case Page::Devotional:stopSpeaking();goLauncher(LAUNCH_BIBLE);break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=8;}break;
- case Page::Translation:ui.page=Page::Settings;ui.selected=7;break;
+ case Page::Translation:ui.page=translationFrom;ui.selected=translationFromSel;break;
  case Page::Launcher:break;
  case Page::Bible:ui.page=Page::BibleHome;ui.selected=0;break;
  case Page::BibleBooks:ui.page=Page::Bible;ui.selected=0;break;
@@ -913,7 +914,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=3;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=4;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -953,9 +954,9 @@ static void keyAction(const Key& k){
   else if(ui.selected==6){ // next voice, saved, and a sample line in it
    ttsVoice=TTS_VOICES[(ttsVoiceIndex(ttsVoice.c_str())+1)%TTS_VOICE_COUNT];prefs.putString("voice",ttsVoice);ui.ttsVoice=ttsVoice.c_str();
    if(!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));std::string name=ttsVoice.c_str();name[0]=toupper(name[0]);snprintf(job.say,sizeof(job.say),"Hi, I'm %s. Bears twenty seven, Eagles seven. For God so loved the world.",name.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());xQueueSend(voiceQueue,&job,0);}}
-  else if(ui.selected==7){ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
+  else if(ui.selected==7){translationFrom=Page::Settings;translationFromSel=7;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
   else requestUpdate(true);break;
- case Page::Translation:if(ui.selected<(int)ui.translations.size())setTranslation(ui.translations[ui.selected].code);ui.page=Page::Settings;ui.selected=7;break;
+ case Page::Translation:if(ui.selected<(int)ui.translations.size())setTranslation(ui.translations[ui.selected].code);ui.page=translationFrom;ui.selected=translationFromSel;break;
  case Page::Wifi:if(!ui.ap)startAP();break;
  case Page::Launcher:
   if(ui.selected==LAUNCH_WEATHER){ui.page=Page::Weather;if(!ui.weather.valid)nextWeather=0;}
@@ -963,7 +964,8 @@ static void keyAction(const Key& k){
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
- case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else{ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}break;
+ case Page::BibleHome:if(ui.selected==0)openBible(BibleRef{});else if(ui.selected==1){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
+  else{translationFrom=Page::BibleHome;translationFromSel=3;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}break;
  case Page::Devotional:
   if(ui.selected==0&&speakState){stopSpeaking();} // reading: a press stops it
   else if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}

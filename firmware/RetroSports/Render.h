@@ -437,6 +437,8 @@ class Renderer {
     if(u.votd.valid()){bold(22,254,bibleRefLabel(u.votd),2,ink);int y=280;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
     else read(22,280,"The Bible files are missing",ink);
     row(210+h+16,"BOOKS OF THE BIBLE",u.selected==2);
+    std::string ver=upperText(u.bibleCode);for(const auto& t:u.translations)if(t.code==u.bibleCode)ver=upperText(t.shortName.empty()?t.code:t.shortName);
+    row(210+h+76,"BIBLE VERSION: "+ver,u.selected==3); // press: the list of installed translations
    }
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
