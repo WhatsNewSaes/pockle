@@ -44,7 +44,7 @@ After that the device looks after itself: it checks GitHub for new firmware each
 
 ## License
 
-The code, tools and documentation are released under the [MIT License](LICENSE). The devotionals are [CC BY 4.0](devotionals/LICENSE). Third-party components listed below keep their own terms.
+The code, tools and documentation are released under the [MIT License](LICENSE). The devotionals are [CC BY 4.0](devotionals/LICENSE). Third-party components keep their own terms, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and below.
 
 ## Credits and licenses
 
