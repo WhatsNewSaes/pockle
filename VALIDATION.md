@@ -153,7 +153,7 @@ The user asked for a daily devotional on the verse of the day, one screen, simpl
 
 ## Verse of the day follows the devotional — v1.5.1
 
-The user wanted the launcher verse to match the devotional's verse. The device already takes a file devotional's `ref` as the day's verse, but the draft script picked verses from the table with a leap-year calendar (2024), one day ahead of the device's non-leap day-of-year after February, so drafts quoted the next day's verse (10-02: Psalm 37:5 against the device's 1 Peter 3:15). The script now indexes by the current year's calendar; existing drafts keep their verses, and the override makes the launcher follow whichever verse the file names.
+The user wanted the launcher verse to match the devotional's verse. The device already takes a file devotional's `ref` as the day's verse, but the draft script picked verses from the table with a leap-year calendar (2024), one day ahead of the device's non-leap day-of-year after February, so drafts quoted the next day's verse (10-02: Psalm 37:5 against the device's 1 Peter 3:15). The script now indexes by the current year's calendar; existing drafts keep their verses, and the override makes the launcher follow whichever verse the file names. That override was then found to be undone right after boot: the loop's first "new day" pass called `loadVerseOfDay`, which reset the verse to the table entry. The override now lives inside `loadVerseOfDay` itself (a file devotional for today names the verse; the table is the fallback), so every caller agrees.
 
 ## No refresh wakes while asleep — v1.5.1
 

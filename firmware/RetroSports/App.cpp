@@ -683,6 +683,8 @@ static void requestDevotional(){
 static void loadVerseOfDay(){
  const BibleRef r=verseOfDay(ui.clockValid?dayOfYear():0);const auto verses=bibleVerses(fsOK?readFileText(biblePath(r.book,r.chapter)):"");
  if(r.verse>=1&&r.verse<=(int)verses.size()){ui.votd=r;ui.votdText=verses[r.verse-1];}else{ui.votd=BibleRef{};ui.votdText.clear();}
+ // Today's devotional file names the verse of the day; the table is only the fallback.
+ const Devotional& d=ui.devotional;if(d.valid&&d.fromFile&&d.day==dayOfYear()&&d.ref.valid()&&!d.verse.empty()){ui.votd=d.ref;ui.votdText=d.verse;}
 }
 static void goHome(){ui.page=Page::Home;ui.selected=ui.tab;ui.filter.clear();ui.detailFromHome=false;buildRecent();dirty=true;}
 // Open a team's page, remembering where to return.
@@ -1058,7 +1060,8 @@ void setupApp(){
  if(fsOK)prefs.putBool("fsInit",true);ui.storage=fsOK;loadFavorites();
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
- {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d)){ui.devotional=d;if(d.fromFile&&d.day==dayOfYear()&&d.ref.valid()){ui.votd=d.ref;ui.votdText=d.verse;}}}
+ {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
+ loadVerseOfDay(); // again, now that the cached devotional can name the verse
  {Weather w;if(decodeWeatherCache(prefs.getString("weather","").c_str(),w))ui.weather=w;nextWeather=(w.valid&&time(nullptr)-w.fetched<=3000)?1:0;} // a fresh cache waits until it is stale; 0 forces a fetch
  ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();
  inputQueue=xQueueCreate(12,sizeof(Key));requestQueue=xQueueCreate(1,sizeof(FetchRequest));resultQueue=xQueueCreate(2,sizeof(FetchResult*));voiceQueue=xQueueCreate(2,sizeof(VoiceJob));
