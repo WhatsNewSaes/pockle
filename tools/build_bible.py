@@ -46,11 +46,11 @@ def votd():
 # Every translation the device can carry: where it comes from, how it is credited, and a one-line
 # description parents can read in the picker. All use the standard Protestant verse numbering.
 TRANSLATIONS={
- 'bsb':{'name':'Berean Standard Bible','short':'BSB','source':'bsb','license':'Public domain (Bible Hub, 2023)',
+ 'bsb':{'name':'Berean Standard Bible','short':'BSB','source':'bsb','license':'Public domain (Bible Hub, 2023)','closest':'ESV, NASB, CSB',
   'blurb':'Modern, clear English that reads like a typical church Bible - accurate and easy to follow.'},
- 'fbv':{'name':'Free Bible Version','short':'FBV','source':'ebible:engfbv','license':'(c) 2018 Jonathan Gallagher, CC BY-SA 4.0',
+ 'fbv':{'name':'Free Bible Version','short':'FBV','source':'ebible:engfbv','license':'(c) 2018 Jonathan Gallagher, CC BY-SA 4.0','closest':'NLT, NIV',
   'blurb':'Plain, everyday English written for readability - the easiest to understand for new readers.'},
- 'bbe':{'name':'Bible in Basic English','short':'BBE','source':'ebible:engBBE','license':'Public domain (1949/1965)',
+ 'bbe':{'name':'Bible in Basic English','short':'BBE','source':'ebible:engBBE','license':'Public domain (1949/1965)','closest':'NIrV, ERV',
   'blurb':'Uses only about 1,000 simple words, so young children can read it on their own.'},
  'kjv':{'name':'King James Version','short':'KJV','source':'ebible:eng-kjv','license':'Public domain (1611, 1769 text)',
   'blurb':"The classic 1611 English Bible with 'thee' and 'thou' - the wording many hymns and memory verses use."},
@@ -86,7 +86,7 @@ def write_translation(code,books,fw):
    parts.append('\n'.join(verses.get(v,'') for v in range(1,n+1))+'\n')
   raw=CHAPTER_SEP.join(parts).encode();z=zlib.compress(raw,9)
   (out/f'{i:02d}.z').write_bytes(struct.pack('<I',len(raw))+z);total+=len(raw);packed+=len(z)+4
- t=TRANSLATIONS[code];(out/'meta.json').write_text(json.dumps({'code':code,'name':t['name'],'short':t['short'],'license':t['license'],'blurb':t['blurb']}))
+ t=TRANSLATIONS[code];(out/'meta.json').write_text(json.dumps({'code':code,'name':t['name'],'short':t['short'],'license':t['license'],'blurb':t['blurb'],'closest':t.get('closest','')}))
  print(f'{code}: 66 books, {total/1048576:.2f} MB of text packed to {packed/1048576:.2f} MB')
 def main():
  p=argparse.ArgumentParser();p.add_argument('--fixture',action='store_true');p.add_argument('--only',help='comma-separated translation codes');a=p.parse_args()
@@ -108,7 +108,7 @@ def main():
   for name,chapters in fw:
    got=len([c for c in books[name] if books[name][c]]);assert got==chapters,f'{code} {name}: {got} chapters, expected {chapters}'
   write_translation(code,books,fw)
- index={code:{'name':t['name'],'short':t['short'],'license':t['license'],'blurb':t['blurb']} for code,t in TRANSLATIONS.items() if (base/code/'66.z').exists()}
+ index={code:{'name':t['name'],'short':t['short'],'license':t['license'],'blurb':t['blurb'],'closest':t.get('closest','')} for code,t in TRANSLATIONS.items() if (base/code/'66.z').exists()}
  (base/'index.json').write_text(json.dumps(index,separators=(',',':')))
  print('index:',', '.join(index))
  if a.fixture:

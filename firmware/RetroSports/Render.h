@@ -14,7 +14,7 @@
 namespace retro {
 enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize};
 // A translation installed on the data partition (/bible/<code>/), from /bible/index.json.
-struct Translation { std::string code,name,shortName,license,blurb; };
+struct Translation { std::string code,name,shortName,license,blurb,closest; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
 // Launcher selections: the weather strip, the Bible row, the five score tabs, and the settings gear.
 constexpr int LAUNCH_WEATHER=0,LAUNCH_BIBLE=1,LAUNCH_TAB0=2,LAUNCH_GEAR=7,LAUNCH_COUNT=8;
@@ -380,10 +380,11 @@ class Renderer {
   }else if(u.page==Page::Translation){ // the installed translations, each with a line parents can read
    bold(12,22,"BIBLE VERSION",2);c.drawFastHLine(12,46,456,0);int y=58;
    for(size_t i=0;i<u.translations.size()&&y+140<=740;i++){const Translation& t=u.translations[i];const bool sel=u.selected==(int)i;const int ink=sel?1:0;
-    const auto lines=wrapWidth(t.blurb,readWidth,436,3);const int h=56+int(lines.size())*READ_LINE+22;
+    const auto lines=wrapWidth(t.blurb,readWidth,436,3);const int h=56+int(lines.size())*READ_LINE+(t.closest.empty()?0:20)+24;
     c.fillRect(12,y,456,h,sel?0:1);c.drawRect(12,y,456,h,0);
     bold(22,y+12,upperText(t.name)+(t.code==u.bibleCode?"  (CURRENT)":""),2,ink,34);int ly=y+40;for(const auto& line:lines){read(22,ly,line,ink,436);ly+=READ_LINE;}
-    small(22,ly+4,t.license,ink,436);y+=h+10;}
+    if(!t.closest.empty()){bold(22,ly+4,"CLOSEST TO: "+upperText(t.closest),2,ink,36);ly+=20;} // the familiar translations it reads like
+    rowStatus(22+rowWidth(t.license)/2,ly+6,t.license,ink,436);y+=h+10;} // license in the bold caption face
    if(u.translations.empty())center(300,"NO TRANSLATIONS FOUND",2);
   }else if(u.page==Page::Devotional){ // one screen: verse, title, truth, three bullets, do it today, prayer
    const Devotional& d=u.devotional;
@@ -508,7 +509,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
  }
 };
 }

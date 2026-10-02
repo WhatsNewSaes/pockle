@@ -154,7 +154,7 @@ The user asked for a daily devotional on the verse of the day, one screen, simpl
 ## Reader text size — v1.6.2
 
 Then the user asked for the devotional box on top: the Bible home order is now TODAY'S DEVOTIONAL, CONTINUE, BOOKS OF THE BIBLE, then the SETTINGS section. The size page's sample had clipped its first line because the preview numbered verses with a width hack; it now feeds verses 16-18 at their real positions.
-The launcher's verse reference dropped from pixel size 3 to bold size 2, level with the DEVOTIONAL label, at the user's request.
+The launcher's verse reference dropped from pixel size 3 to bold size 2, level with the DEVOTIONAL label, at the user's request. The version cards then gained a `CLOSEST TO: ESV, NASB, CSB` line (BSB), `NLT, NIV` (FBV) and `NIrV, ERV` (BBE) from the index, the license line moved to the bold caption face, and the picker lost its footer hints.
 
 The user asked for font size and line height settings for the Bible, in a Settings section on the Bible home with a live preview. Two more rasterizations of Inter (17 px, 24 px) join the 20 px face as `READ_FACES` (line heights 22/26/31, 32/27/23 lines a page); the Bible home gains a SETTINGS divider with BIBLE VERSION and TEXT SIZE rows; the TEXT SIZE page shows SMALL/NORMAL/LARGE across the top and John 3:16-18 from the current translation beneath, re-rendered in the chosen size on every rocker move; the choice is saved (`textsz`), the open chapter re-paginates and keeps the verse that was at the top. Only the reader changes size; captions, the devotional and the launcher stay at 20 px. Preview `text-size-demo`.
 

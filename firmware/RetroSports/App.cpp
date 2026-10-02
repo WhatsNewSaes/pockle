@@ -663,7 +663,7 @@ static std::string bibleChapterText(int book,int chapter){return bibleChapterOf(
 static void loadTranslations(){
  ui.translations.clear();JsonDocument idx;if(deserializeJson(idx,readFileText("/bible/index.json")))return;
  for(JsonPairConst kv:idx.as<JsonObjectConst>()){Translation t;t.code=kv.key().c_str();auto str=[&](const char* k){const char* v=kv.value()[k].as<const char*>();return std::string(v?v:"");};
-  t.name=str("name");t.shortName=str("short");t.license=str("license");t.blurb=str("blurb");if(LittleFS.exists(bibleBookPath(t.code,66).c_str()))ui.translations.push_back(t);}
+  t.name=str("name");t.shortName=str("short");t.license=str("license");t.blurb=str("blurb");t.closest=str("closest");if(LittleFS.exists(bibleBookPath(t.code,66).c_str()))ui.translations.push_back(t);}
  bool have=false;for(const auto& t:ui.translations)if(t.code==bibleCode.c_str())have=true;
  if(!have&&!ui.translations.empty())bibleCode=ui.translations[0].code.c_str();ui.bibleCode=bibleCode.c_str();
 }
