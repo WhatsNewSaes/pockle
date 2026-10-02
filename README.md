@@ -1,4 +1,4 @@
-# Pixel League
+# Pockle
 
 A small e-paper companion for a kid's desk: the day's Bible verse and devotional, the latest sports scores, and the weather — on a 4-inch screen that holds its image without power, with a rocker switch to browse and a voice you can ask questions. It runs on the Waveshare ESP32-S3-ePaper-3.97 board (480 × 800 e-paper, microphone, speaker, battery) and lasts weeks on a charge.
 
