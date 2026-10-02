@@ -90,7 +90,9 @@ def validate(name,d):
  d['points']=[p.replace('’',"'").replace('“','"').replace('”','"') for p in d['points']]
  return errs
 def day_verse(month,day):
- yday=datetime.date(2024,month,day).timetuple().tm_yday-1  # leap-year calendar so 02-29 exists
+ year=datetime.date.today().year
+ try:yday=datetime.date(year,month,day).timetuple().tm_yday-1  # the device indexes its table by this year's day-of-year (0-based)
+ except ValueError:yday=datetime.date(2024,month,day).timetuple().tm_yday-1  # 02-29 only exists in leap years
  t=votd_table();b,c,v=t[yday%len(t)]
  return b,c,v
 def draft(month,day):
