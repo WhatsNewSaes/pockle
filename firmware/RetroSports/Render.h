@@ -451,7 +451,7 @@ class Renderer {
     small(12,776,"UPDATED "+clockLabel(w.fetched));
    }
   }else if(u.page==Page::BibleHome){ // the Bible's own home: resume, today's verse, or browse
-   center(60,"BIBLE",3);{std::string sub="BEREAN STANDARD BIBLE";for(const auto& t:u.translations)if(t.code==u.bibleCode)sub=upperText(t.name);smallCenter(240,96,sub);}
+   center(56,"BIBLE",3);{std::string sub="BEREAN STANDARD BIBLE";for(const auto& t:u.translations)if(t.code==u.bibleCode)sub=upperText(t.name);center(92,sub,2);} // the translation name, readable at a glance
    const BibleView& b=u.bible;std::string cont="CONTINUE "+bibleRefLabel({b.book,b.chapter,0});if(b.pages.size()>1)cont+="  "+std::to_string(std::min(b.page,(int)b.pages.size()-1)+1)+"/"+std::to_string(b.pages.size());
    { // Today's devotional first, with its verse inside the box (the verse of the day is the devotional's opening)
     const bool sel=u.selected==0;const int ink=sel?1:0;const auto lines=u.votd.valid()?wrapWidth(u.votdText,readWidth,436,7):std::vector<std::string>{};const int h=70+int(std::max<size_t>(1,lines.size()))*READ_LINE; // wrapped for the box's inner width
