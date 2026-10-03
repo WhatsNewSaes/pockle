@@ -8,6 +8,7 @@ inline void makeScoreFilter(JsonDocument& f){
  auto c=e["competitions"][0];c["status"]=true;c["venue"]["fullName"]=true;
  auto t=c["competitors"][0];t["homeAway"]=true;t["score"]=true;
  for(auto k:{"id","displayName","abbreviation","conferenceId"})t["team"][k]=true;
+ t["curatedRank"]["current"]=true; // college Top 25
 }
 
 inline std::string js(JsonVariantConst v,const char* fallback="") {return v.is<const char*>()?v.as<const char*>():fallback;}
@@ -53,7 +54,8 @@ inline bool decodeDetail(JsonVariantConst root,const std::string& gameId,int lea
 }
 // `start` widens the accepted window to [start, date]; empty keeps the exact day;
 // `allDates` keeps everything (team schedules span a season).
-inline bool decodeScores(JsonVariantConst root,int league,const std::string& date,int64_t updated,Snapshot& output,const std::string& start="",bool allDates=false){
+// rankedOnly: keep only games with a Top-25 team (college football feeds).
+inline bool decodeScores(JsonVariantConst root,int league,const std::string& date,int64_t updated,Snapshot& output,const std::string& start="",bool allDates=false,bool rankedOnly=false){
  if(!root["events"].is<JsonArrayConst>() || league<0||league>3||!validDate(date)||updated<1700000000)return false;
  const std::string first=start.empty()?date:start;if(!allDates&&(!validDate(first)||first>date))return false;
  Snapshot next;next.league=league;next.date=date;next.updated=updated;
@@ -70,10 +72,11 @@ inline bool decodeScores(JsonVariantConst root,int league,const std::string& dat
   if(g.id.empty()||!epoch||g.state.empty()||!c["competitors"].is<JsonArrayConst>())return false;
   const std::string day=localDate(epoch);if(!allDates&&(day<first||day>date))continue; // NFL/college feeds return a whole week.
   for(JsonObjectConst p:c["competitors"].as<JsonArrayConst>()){
-   Team t;t.id=js(p["team"]["id"]);t.name=clean(js(p["team"]["displayName"]));t.abbr=clean(js(p["team"]["abbreviation"]),10);t.conf=clean(js(p["team"]["conferenceId"]),6);t.score=clean(p["score"].is<JsonObjectConst>()?js(p["score"]["displayValue"]):js(p["score"]),8); // schedules nest the score
+   Team t;t.id=js(p["team"]["id"]);t.name=clean(js(p["team"]["displayName"]));t.abbr=clean(js(p["team"]["abbreviation"]),10);t.conf=clean(js(p["team"]["conferenceId"]),6);t.rank=p["curatedRank"]["current"]|0;if(t.rank<1||t.rank>25)t.rank=0;t.score=clean(p["score"].is<JsonObjectConst>()?js(p["score"]["displayValue"]):js(p["score"]),8); // schedules nest the score
    if(js(p["homeAway"])=="home")g.home=t;else if(js(p["homeAway"])=="away")g.away=t;
   }
   if(g.home.id.empty()||g.away.id.empty()||g.home.name.empty()||g.away.name.empty())return false;
+  if(rankedOnly&&!g.home.rank&&!g.away.rank)continue;
   next.games.push_back(g);
  }
  output=std::move(next);return true;
@@ -170,22 +173,22 @@ inline bool decodeStandingsCache(JsonVariantConst j,Standings& out){
  if(s.groups.empty())return false;out=std::move(s);return true;
 }
 inline void encodeCache(const Snapshot& s,JsonDocument& doc){
- doc["version"]=3;doc["league"]=s.league;doc["date"]=s.date;doc["updated"]=s.updated;doc["span"]=s.span;doc["team"]=s.team;
+ doc["version"]=4;doc["league"]=s.league;doc["date"]=s.date;doc["updated"]=s.updated;doc["span"]=s.span;doc["team"]=s.team;doc["upcomingAt"]=s.upcomingAt;
  auto c=doc["covered"].to<JsonArray>();for(const auto& d:s.covered)c.add(d);
  auto a=doc["games"].to<JsonArray>();for(const auto& g:s.games){auto j=a.add<JsonObject>();
  j["id"]=g.id;j["start"]=g.start;j["status"]=g.status;j["state"]=g.state;j["venue"]=g.venue;j["complete"]=g.complete;j["week"]=g.week;j["stype"]=g.seasonType;
- const Team* ts[]={&g.away,&g.home};const char* keys[]={"away","home"};for(int i=0;i<2;i++){auto t=j[keys[i]].to<JsonObject>();t["id"]=ts[i]->id;t["name"]=ts[i]->name;t["abbr"]=ts[i]->abbr;t["score"]=ts[i]->score;if(!ts[i]->conf.empty())t["conf"]=ts[i]->conf;}
+ const Team* ts[]={&g.away,&g.home};const char* keys[]={"away","home"};for(int i=0;i<2;i++){auto t=j[keys[i]].to<JsonObject>();t["id"]=ts[i]->id;t["name"]=ts[i]->name;t["abbr"]=ts[i]->abbr;t["score"]=ts[i]->score;if(!ts[i]->conf.empty())t["conf"]=ts[i]->conf;if(ts[i]->rank)t["rank"]=ts[i]->rank;}
  }
 }
 inline bool decodeCache(JsonVariantConst j,Snapshot& out){
- if(j["version"]!=3||!j["games"].is<JsonArrayConst>())return false;
+ if(j["version"]!=4||!j["games"].is<JsonArrayConst>())return false;
  Snapshot s;s.league=j["league"]|-1;s.date=js(j["date"]);s.updated=j["updated"]|int64_t(0);
  if(s.league<0||s.league>3||!validDate(s.date)||s.updated<1700000000||j["games"].size()>200)return false;
- s.span=j["span"]|0;if(s.span<0||s.span>60)return false;s.team=clean(js(j["team"]),12);
+ s.span=j["span"]|0;if(s.span<0||s.span>60)return false;s.team=clean(js(j["team"]),12);s.upcomingAt=j["upcomingAt"]|int64_t(0);
  if(j["covered"].is<JsonArrayConst>())for(JsonVariantConst v:j["covered"].as<JsonArrayConst>()){std::string d=js(v);if(validDate(d)&&s.covered.size()<64)s.covered.push_back(d);}
  for(JsonObjectConst v:j["games"].as<JsonArrayConst>()){
   Game g;g.id=js(v["id"]);g.start=js(v["start"]);g.status=js(v["status"]);g.state=js(v["state"]);g.venue=js(v["venue"]);g.complete=v["complete"]|false;g.week=v["week"]|0;g.seasonType=v["stype"]|0;
-  Team* ts[]={&g.away,&g.home};const char* ks[]={"away","home"};for(int i=0;i<2;i++){auto t=v[ks[i]];*ts[i]={js(t["id"]),js(t["name"]),js(t["abbr"]),js(t["score"]),js(t["conf"])};}
+  Team* ts[]={&g.away,&g.home};const char* ks[]={"away","home"};for(int i=0;i<2;i++){auto t=v[ks[i]];*ts[i]={js(t["id"]),js(t["name"]),js(t["abbr"]),js(t["score"]),js(t["conf"])};ts[i]->rank=t["rank"]|0;}
   if(g.id.empty()||g.away.id.empty()||g.home.id.empty()||g.state.empty())return false;
   s.games.push_back(g);
  }

@@ -29,7 +29,10 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 
 **Sports scores**
 - MLB, NFL, NBA and college football
-- Dense scoreboard grouped by league and week, with team logos
+- Every scoreboard reads as a timeline: LIVE, then UP NEXT (soonest first, with kickoff times), then RESULTS — so after the week's last game you see the coming slate without any extra clicks
+- NFL and college football carry this week and next; MLB and NBA carry today and tomorrow; college football shows Top-25 games only, with ranks on the rows
+- The launcher shows each league's NEXT game above its latest results
+- Dense rows grouped by league and week, with team logos
 - Matchup pages: box score, team leaders, headline
 - Team pages: results, next game, division and conference standings
 - Refreshes while awake and whenever it wakes up
@@ -39,7 +42,8 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Seven-day forecast page for your ZIP code
 
 **Voice** — hold the rocker and ask
-- "Bears score", "NFL standings", "go to Psalm 23", "read today's devotional", "will it rain tomorrow", "who won the 1985 Super Bowl"
+- "Bears score", "NFL standings", "upcoming NFL games", "go to Psalm 23", "read today's devotional", "will it rain tomorrow", "who won the 1985 Super Bowl"
+- "Upcoming NFL games" opens a schedule page: the coming week's games only, grouped by day
 - Opens the right page or answers out loud, in a voice you choose
 - Sticks to sports, the Bible and the weather; looks up current facts rather than guessing
 

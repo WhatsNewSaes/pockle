@@ -28,6 +28,7 @@ inline std::string voiceSystemPrompt(){
   "\"open_team\" when they ask about a team's schedule, next game, record or season; "
   "\"open_league\" when they ask for a league's scores or games in general; "
   "\"open_standings\" when they ask for standings, the table, who leads a division or conference, or a team's place: set group to the division or conference name they said (e.g. NFC North, AFC, AL East, Pacific, SEC) or team to the team whose division they mean; "
+  "\"open_schedule\" when they ask what games are coming up, the schedule, who plays this week, tonight or next, for a league (set league; a specific team's next game is \"open_team\"); "
   "\"open_weather\" for anything about the weather, forecast, temperature, rain, snow or what to wear, today or any coming day: the context carries the 7-day forecast, so also put a one-sentence spoken reply in answer (e.g. the day asked about with its high, low and rain chance, or a plain answer like whether to bring a jacket); "
   "\"open_devotional\" when they ask for today's devotional, the daily reading or lesson (set read to true when they want it read aloud); "
   "\"open_bible\" when they ask to open the Bible, go to or read a book, chapter, verse or passage (set book to the full English book name, chapter and verse as numbers or null; set daily to true for the verse of the day; set read to true when they want it read aloud or ask what it says); "
@@ -37,7 +38,7 @@ inline std::string voiceSystemPrompt(){
   "If you are unsure whether something is still current, set needs_lookup to true - never offer an older fact as if it were current; "
   "\"answer\" only for a question about the saved scores that no page fits, or when the saved scores do not have it, "
   "You only talk about sports, the Bible and the weather: for anything else use action \"answer\" with the answer \"I only know about sports, the Bible and the weather. Ask me about a team, a game, or a verse!\" "
-  "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_weather\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
+  "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_weather\"|\"open_schedule\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
   "\"book\": <Bible book name or null>, \"chapter\": <number or null>, \"verse\": <number or null>, \"daily\": <true or false>, \"read\": <true or false>, "
   "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|null>, \"team\": <team abbreviation exactly as in the saved scores, or null>, "
   "\"opponent\": <opponent abbreviation if a specific matchup was named, else null>, "
@@ -64,7 +65,7 @@ inline std::string voiceContext(const Snapshot* feeds[4],const std::vector<Favor
  if(!favorites.empty()){ctx+="Favorite teams: ";for(const auto& f:favorites)ctx+=f.name+" ("+names[f.league]+"); ";ctx+="\n";}
  return ctx;
 }
-enum class VoiceAction {Answer,OpenGame,OpenTeam,OpenLeague,Fact,OpenStandings,OpenBible,OpenWeather,OpenDevotional};
+enum class VoiceAction {Answer,OpenGame,OpenTeam,OpenLeague,Fact,OpenStandings,OpenBible,OpenWeather,OpenDevotional,OpenSchedule};
 struct VoiceReply { bool ok=false,lookup=false; VoiceAction action=VoiceAction::Answer; std::string heard,answer,error; int league=-1; std::string teamAbbr,teamId,teamName,gameId,group,scope; BibleRef bible; bool daily=false,read=false; };
 inline std::string upperAbbr(std::string s){for(auto& c:s)c=toupper((unsigned char)c);return s;}
 // Newest game in the feeds involving `team` (and `opponent` if given), preferring `league`.
@@ -92,7 +93,7 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
  auto str=[&](const char* key){const char* v=inner[key].as<const char*>();if(!v)v=inner["navigate"][key].as<const char*>();return std::string(v?v:"");};
  r.league=leagueIndex(str("league"));
  const std::string action=str("action");r.lookup=inner["needs_lookup"]|false;
- r.action=action=="open_game"?VoiceAction::OpenGame:action=="open_team"?VoiceAction::OpenTeam:action=="open_league"?VoiceAction::OpenLeague:action=="fact"?VoiceAction::Fact:action=="open_standings"?VoiceAction::OpenStandings:action=="open_bible"?VoiceAction::OpenBible:action=="open_weather"?VoiceAction::OpenWeather:action=="open_devotional"?VoiceAction::OpenDevotional:VoiceAction::Answer;
+ r.action=action=="open_game"?VoiceAction::OpenGame:action=="open_team"?VoiceAction::OpenTeam:action=="open_league"?VoiceAction::OpenLeague:action=="fact"?VoiceAction::Fact:action=="open_standings"?VoiceAction::OpenStandings:action=="open_bible"?VoiceAction::OpenBible:action=="open_weather"?VoiceAction::OpenWeather:action=="open_devotional"?VoiceAction::OpenDevotional:action=="open_schedule"?VoiceAction::OpenSchedule:VoiceAction::Answer;
  if(r.action==VoiceAction::OpenDevotional){r.read=inner["read"]|false;r.ok=true;return r;}
  if(r.action==VoiceAction::OpenWeather){r.ok=true;return r;} // the page carries the forecast; the answer, if any, is spoken
  if(r.action==VoiceAction::OpenBible){ // a place in the Bible; no book means the saved reading position
@@ -124,6 +125,7 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
  if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenStandings&&r.league<0&&r.teamId.empty())r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenLeague&&r.league<0)r.action=VoiceAction::Answer;
+ if(r.action==VoiceAction::OpenSchedule&&r.league<0){if(!r.teamId.empty())r.action=VoiceAction::OpenTeam;else r.action=VoiceAction::Answer;}
  if((r.action==VoiceAction::Answer||r.action==VoiceAction::Fact)&&r.answer.empty()){r.error="empty answer";return r;}
  r.ok=true;return r;
 }

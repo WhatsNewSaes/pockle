@@ -204,11 +204,11 @@ static bool fetchBody(const String& url,ScoreBody& body,int& code){
  }
  return ok;
 }
-static bool fetchJson(const String& url,const char* what,int league,const std::string& date,const std::string& start,bool allDates,Snapshot& out,int& code){
+static bool fetchJson(const String& url,const char* what,int league,const std::string& date,const std::string& start,bool allDates,Snapshot& out,int& code,bool rankedOnly=false){
  ScoreBody body;if(!fetchBody(url,body,code))return false;
  ScoreJsonAllocator allocator;JsonDocument document(&allocator),filter;makeScoreFilter(filter);
  auto error=deserializeJson(document,(const char*)body.data,body.length,DeserializationOption::Filter(filter),DeserializationOption::NestingLimit(30));
- bool ok=!error&&decodeScores(document,league,date,time(nullptr),out,start,allDates);
+ bool ok=!error&&decodeScores(document,league,date,time(nullptr),out,start,allDates,rankedOnly);
  Serial.printf("SCORE %s error=%s events=%u kept=%u valid=%d bytes=%u heap=%u\n",what,error.c_str(),(unsigned)document["events"].size(),(unsigned)out.games.size(),ok,(unsigned)body.length,ESP.getFreeHeap());
  return ok;
 }
@@ -228,7 +228,23 @@ static bool fetchDetail(int league,const std::string& date,const std::string& ga
 }
 static bool fetchDay(int league,const std::string& day,const std::string& date,const std::string& start,Snapshot& out,int& code){
  String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;url+="/scoreboard?dates=";url+=day.c_str();url+="&limit=200";if(league==3)url+="&groups=80";
- return fetchJson(url,("day="+day).c_str(),league,date,start,false,out,code);
+ return fetchJson(url,("day="+day).c_str(),league,date,start,false,out,code,league==3); // college feeds keep Top-25 games only
+}
+// The schedule ahead: football by week number (this week and next), daily sports by tomorrow's date.
+static bool fetchUpcoming(int league,const std::string& today,Snapshot& feed,int& code){
+ Snapshot all;all.league=league;bool any=false;
+ if(league==1||league==3){
+  int week=currentWeek(feed);if(!week)return false;tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);const int year=lt.tm_year+1900-(lt.tm_mon<2?1:0);
+  for(int w=week;w<=week+1&&w<=18+(league==3?-2:0);w++){
+   String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;url+="/scoreboard?dates="+String(year)+"&seasontype=2&week="+String(w)+"&limit=200";if(league==3)url+="&groups=80";
+   Snapshot part;if(!fetchJson(url,("week="+std::to_string(w)).c_str(),league,today,"",true,part,code,league==3))continue;
+   for(const auto& g:part.games)all.games.push_back(g);any=true;}
+ }else{
+  const std::string tomorrow=shiftDate(today,1);Snapshot part;
+  if(fetchDay(league,tomorrow,tomorrow,tomorrow,part,code)){for(const auto& g:part.games)all.games.push_back(g);any=true;}
+ }
+ if(any)mergeUpcoming(feed,all,today,aheadDays[league],time(nullptr));
+ return any;
 }
 // Team page: the season schedule (results carry scores) plus the team's games
 // from the league feed, which covers leagues whose schedule feed omits results.
@@ -518,6 +534,8 @@ static void networkTask(void*){
     Snapshot part;if(!fetchDay(req.league,day,end,start,part,result->code))break;
     mergeFeed(feed,part,day,start,end,span);any=true;
    }
+   // The schedule ahead rides along every six hours (schedules change, but not by the minute).
+   if(time(nullptr)-feed.upcomingAt>6*3600&&fetchUpcoming(req.league,end,feed,result->code))any=true;
    if(any){result->ok=true;result->more=feedHasGaps(feed,start,end);result->snapshot=std::move(feed);}
   }
   // Flash writes stay off the UI task so a save never delays a key press.
@@ -870,6 +888,7 @@ static void goBack(){
  case Page::BibleHome:goLauncher(LAUNCH_BIBLE);break;
  case Page::Devotional:stopSpeaking();goLauncher(LAUNCH_BIBLE);break;
  case Page::Weather:goLauncher(LAUNCH_WEATHER);break;
+ case Page::Schedule:goLauncher(LAUNCH_TAB0+ui.tab);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=8;}break;
  case Page::Translation:ui.page=translationFrom;ui.selected=translationFromSel;break;
  case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
@@ -911,6 +930,7 @@ static void keyAction(const Key& k){
    if(ui.selected>=LAUNCH_TAB0&&ui.selected<LAUNCH_GEAR&&ui.selected-LAUNCH_TAB0!=ui.tab){ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;buildLauncher();} // landing on a tab switches the list
    dirty=true;return;}
   if(ui.page==Page::Weather)return;
+  if(ui.page==Page::Schedule){ui.listPage=std::max(0,ui.listPage+step);dirty=true;return;} // the renderer clamps to the last page
   if(ui.page==Page::TextSize){setTextSize(ui.textSize+step);ui.selected=ui.textSize;dirty=true;return;} // live: the sample redraws in the new size
   if(ui.page==Page::Bible){bibleStep(step);return;}
   if(ui.page==Page::BibleBooks){ui.bible.pick=(ui.bible.pick+step+BIBLE_BOOKS)%BIBLE_BOOKS;dirty=true;return;}
@@ -1003,6 +1023,7 @@ static void handleResults(){
    if(!v.ok){ui.voice=VoiceState::Error;ui.voiceNote=v.error;}
    else if(v.action==VoiceAction::Answer||v.action==VoiceAction::Fact){ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer=v.answer;ui.voiceLeague=v.league;ui.voiceTeamId=v.teamId;ui.voiceTeamName=v.teamName;}
    else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;Serial.println("VOICE opened devotional");}
+   else if(v.action==VoiceAction::OpenSchedule){ui.voice=VoiceState::Idle;ui.tab=v.league+1;loadLeagueTab();ui.page=Page::Schedule;ui.listPage=0;ui.selected=0;nextFetch=0;Serial.printf("VOICE opened schedule league=%d\n",v.league);}
    else if(v.action==VoiceAction::OpenWeather){ui.voice=VoiceState::Idle;ui.page=Page::Weather;ui.selected=0;if(!ui.weather.valid)nextWeather=0;Serial.println("VOICE opened weather");}
    else if(v.action==VoiceAction::OpenBible){ui.voice=VoiceState::Idle;openBible(v.daily?ui.votd:v.bible);Serial.printf("VOICE opened bible %s\n",bibleRefLabel(v.daily?ui.votd:v.bible).c_str());}
    else{ // go straight to the page that shows what was asked for
@@ -1058,6 +1079,7 @@ static void handleResults(){
  if(r->ok){ui.storage=r->stored;if(lastDateSaved!=r->date.c_str()){lastDateSaved=r->date.c_str();prefs.putString("lastDate",lastDateSaved);}
   if(r->feed&&ui.page==Page::Home&&(ui.tab==0||r->league==ui.league)){const int keep=ui.selected;buildRecent();ui.selected=std::min(keep,ui.tab>0?HOME_NEXT+(int)visibleGames(ui).size():HOME_ALL_ROW-1+(int)ui.recent.size());dirty=true;}
   if(r->feed&&ui.page==Page::Launcher){buildLauncher();dirty=true;}
+  if(r->feed&&ui.page==Page::Schedule&&r->league==ui.league){loadLeagueTab();dirty=true;}
   if(r->feed&&r->team.empty()){leagueLive[r->league]=leagueActive(r->snapshot,time(nullptr));leagueFetched[r->league]=millis();}
   if(r->feed&&refreshWake){refreshPending--;nextFetch=0;}}
  if(sameView(r->league,r->date,r->feed,r->team)){
@@ -1203,7 +1225,7 @@ void loopApp(){
  }
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextWeather)>=0&&(!ui.weather.valid||ui.now-ui.weather.fetched>3000||nextWeather==0)){requestWeather();nextWeather=now+300000;}
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextFetch)>=0){
-  if(ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher)&&ui.tab>0))requestScores(ui.league,ui.date,ui.feed,ui.filter);
+  if(ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher||ui.page==Page::Schedule)&&ui.tab>0))requestScores(ui.league,ui.date,ui.feed,ui.filter);
   else { // background rotation: on a refresh wake only the planned leagues; awake, idle leagues only every 15 minutes
    int l=backgroundLeague,tries=0;
    auto wanted=[&](int x){return refreshWake?((refreshMaskBits>>x)&1)!=0:(leagueLive[x]||leagueFetched[x]==0||now-leagueFetched[x]>IDLE_POLL_MS);};

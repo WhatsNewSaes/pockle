@@ -78,8 +78,8 @@ int main(){
  {Snapshot a;a.league=0;Game g1;g1.id="a1";g1.start="2026-09-29T22:00Z";g1.state="in";Game g2;g2.id="a2";g2.start="2026-09-30T23:00Z";g2.state="pre";a.games={g2,g1};
   Snapshot b;b.league=1;Game g3;g3.id="b1";g3.start="2026-09-28T00:15Z";g3.state="post";Game g4;g4.id="b2";g4.start="2026-09-29T23:15Z";g4.state="post";b.games={g4,g3};
   const Snapshot* f[4]={&a,&b,nullptr,nullptr};auto rec=recentGames(f,10);assert(rec.size()==3&&rec[0].game.id=="b2"&&rec[1].game.id=="a1"&&rec[2].game.id=="b1"&&rec[0].league==1);assert(recentGames(f,2).size()==2);
-  auto grp=recentGamesGrouped(f,1000);assert(grp.size()==3&&grp[0].league==1&&grp[1].league==1&&grp[2].league==0); // NFL had the newest game, so it leads
-  auto tight=recentGamesGrouped(f,28+28+56+56);assert(tight.size()==2&&tight[0].league==1&&tight[1].league==0); // two rows fit: one per league, not two NFL
+  auto grp=recentGamesGrouped(f,1000);assert(grp.size()==4&&grp[0].league==1&&grp[1].league==1&&grp[2].league==0&&grp[2].next&&grp[2].game.id=="a2"&&grp[3].game.id=="a1"); // NFL had the newest game, so it leads; MLB's NEXT row leads its group
+  auto tight=recentGamesGrouped(f,28+28+56+56);assert(tight.size()==2&&tight[0].league==1&&tight[1].league==0&&tight[1].next); // two rows fit: one per league, not two NFL
   auto three=recentGamesGrouped(f,28+28+56*3);assert(three.size()==3);}
  // Voice: JSON escaping, grounded context, reply parsing with team resolution, wrapping.
  {assert(jsonEscape("a\"b\\c\nd")=="a\\\"b\\\\c\\nd");
@@ -118,6 +118,23 @@ int main(){
   std::vector<int16_t> clip(16000*3,0);for(size_t i=16000;i<32000;i++)clip[i]=(int16_t)((i%40<20)?3000:-3000);
   auto cut=trimSilence(clip.data(),clip.size(),16000);assert(cut.first>=16000-8*320&&cut.first<=16000&&cut.first+cut.second>=32000&&cut.first+cut.second<=32000+12*320);
   std::vector<int16_t> quiet(16000,5);auto keep=trimSilence(quiet.data(),quiet.size(),16000);assert(keep.first==0&&keep.second==quiet.size());assert(ttsRequestBody("Go \"Bears\"").find("Read this out loud: Go \\\"Bears\\\"")!=std::string::npos);(void)said;}
+  // Upcoming games: sections, NEXT rows, the merge ahead, the current week, Top-25 filtering, cache rank.
+  {Snapshot s;s.league=1;s.date="20260930";s.updated=1790800000;s.span=14;
+   Game a;a.id="live";a.state="in";a.start="2026-09-30T23:00Z";a.week=4;a.seasonType=2;Game b;b.id="next2";b.state="pre";b.start="2026-10-04T17:00Z";b.week=4;b.seasonType=2;
+   Game c;c.id="next1";c.state="pre";c.start="2026-10-01T23:15Z";c.week=4;c.seasonType=2;Game d;d.id="old";d.state="post";d.start="2026-09-27T17:00Z";d.week=3;d.seasonType=2;Game e;e.id="older";e.state="post";e.start="2026-09-20T17:00Z";e.week=2;e.seasonType=2;
+   for(Game* g:{&a,&b,&c,&d,&e}){g->away={"1","A","AAA","0"};g->home={"2","B","BBB","0"};}
+   s.games={b,a,d,c,e};std::vector<int> ids{0,1,2,3,4};const auto order=sectionedOrder(s,ids);
+   assert(order.size()==5&&order[0].section==Section::Live&&s.games[ids[order[0].pos]].id=="live"&&s.games[ids[order[1].pos]].id=="next1"&&s.games[ids[order[2].pos]].id=="next2"&&s.games[ids[order[3].pos]].id=="old"&&s.games[ids[order[4].pos]].id=="older");
+   assert(currentWeek(s)==4);Snapshot done=s;done.games={d,e};assert(currentWeek(done)==4);assert(sectionName(Section::Next)==std::string("UP NEXT"));
+   const Snapshot* f[4]={nullptr,&s,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(!rows.empty()&&rows[0].next&&rows[0].game.id=="next1"&&!rows[1].next);
+   Snapshot part;Game n;n.id="wk5";n.state="pre";n.start="2026-10-11T17:00Z";n.week=5;n.seasonType=2;n.away=a.away;n.home=a.home;Game far;far=n;far.id="far";far.start="2026-10-25T17:00Z";part.games={n,far,b};
+   mergeUpcoming(s,part,"20260930",14,1790800000);int pre=0;bool hasFar=false,hasWk5=false;for(const auto& g:s.games){if(g.state=="pre")pre++;if(g.id=="far")hasFar=true;if(g.id=="wk5")hasWk5=true;}
+   assert(hasWk5&&!hasFar&&pre==2&&s.upcomingAt==1790800000); // next1 (today-dated, kept) + wk5; next2 was replaced by the fresh set which carried it... 
+   JsonDocument cache;encodeCache(s,cache);Snapshot back;assert(decodeCache(cache,back)&&back.upcomingAt==1790800000);
+   JsonDocument rj;deserializeJson(rj,"{\"events\":[{\"id\":\"1\",\"date\":\"2026-10-03T19:30Z\",\"status\":{\"type\":{\"state\":\"pre\",\"shortDetail\":\"3:30 PM\"}},\"competitions\":[{\"competitors\":[{\"homeAway\":\"home\",\"score\":\"0\",\"curatedRank\":{\"current\":5},\"team\":{\"id\":\"1\",\"displayName\":\"Ohio State\",\"abbreviation\":\"OSU\"}},{\"homeAway\":\"away\",\"score\":\"0\",\"curatedRank\":{\"current\":99},\"team\":{\"id\":\"2\",\"displayName\":\"Rutgers\",\"abbreviation\":\"RUTG\"}}]}]},{\"id\":\"2\",\"date\":\"2026-10-03T20:00Z\",\"status\":{\"type\":{\"state\":\"pre\",\"shortDetail\":\"4:00 PM\"}},\"competitions\":[{\"competitors\":[{\"homeAway\":\"home\",\"score\":\"0\",\"curatedRank\":{\"current\":99},\"team\":{\"id\":\"3\",\"displayName\":\"Akron\",\"abbreviation\":\"AKR\"}},{\"homeAway\":\"away\",\"score\":\"0\",\"curatedRank\":{\"current\":99},\"team\":{\"id\":\"4\",\"displayName\":\"Kent State\",\"abbreviation\":\"KENT\"}}]}]}]}");
+   Snapshot ranked;assert(decodeScores(rj,3,"20261003",1790800000,ranked,"",true,true)&&ranked.games.size()==1&&ranked.games[0].home.rank==5&&ranked.games[0].away.rank==0);
+   Snapshot allg;assert(decodeScores(rj,3,"20261003",1790800000,allg,"",true,false)&&allg.games.size()==2);
+   JsonDocument c2;encodeCache(ranked,c2);Snapshot b2;assert(decodeCache(c2,b2)&&b2.games[0].home.rank==5);}
   // Game-aware refresh: live or imminent games keep the 15-minute cadence; otherwise sleep until the next start, at most six hours.
   {const int64_t now=1790800000;Snapshot live;live.updated=now-60;Game a;a.state="in";a.start="2026-09-30T23:00Z";live.games={a};
    Snapshot soon;soon.updated=now-60;Game b;b.state="pre";b.start="2026-09-30T21:30:00Z";soon.games={b}; // 1790800000 is 2026-09-30T20:26:40Z
@@ -183,5 +200,5 @@ int main(){
    VoiceReply h=parseVoiceReply(hj,nf);assert(h.ok&&h.bible.book==19&&h.bible.chapter==23);
    JsonDocument wj2;deserializeJson(wj2,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"will it rain tomorrow\\\",\\\"action\\\":\\\"open_weather\\\",\\\"answer\\\":\\\"Tomorrow looks dry, high 81 with a 30% chance of rain.\\\"}\"}}]}");
    VoiceReply wv=parseVoiceReply(wj2,nf);assert(wv.ok&&wv.action==VoiceAction::OpenWeather&&wv.answer.rfind("Tomorrow",0)==0);}
- std::cout<<"PASS: debounce, hold exclusivity, dates/DST, ESPN normalization, cache roundtrip, malformed response retention, freshness, missing scores, recent-games feed merging, Bible references/layout, weather decoding, game-aware refresh planning, and the devotional\n";
+ std::cout<<"PASS: debounce, hold exclusivity, dates/DST, ESPN normalization, cache roundtrip, malformed response retention, freshness, missing scores, recent-games feed merging, Bible references/layout, weather decoding, game-aware refresh planning, upcoming games, and the devotional\n";
 }

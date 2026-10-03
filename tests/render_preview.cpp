@@ -18,7 +18,7 @@ int main(){
   e.week=4;a.week=4;b.week=3;d.week=2;for(Game* w:{&e,&a,&b,&d})w->seasonType=2;
   f.snapshot.games={e,a,b};for(int i=0;i<8;i++){Game x=i%2?b:d;x.id="q"+std::to_string(i);x.start=i%2?"2026-09-27T17:00Z":"2026-09-20T20:25Z";f.snapshot.games.push_back(x);}
   std::stable_sort(f.snapshot.games.begin(),f.snapshot.games.end(),[](const Game& x,const Game& y){return isoEpoch(x.start)>isoEpoch(y.start);});
-  f.selected=3;r.render(f);save(c,"games-feed-demo");f.selected=11;r.render(f);save(c,"games-feed-page2-demo");
+  f.selected=3;r.render(f);save(c,"games-feed-demo");{UI sc=f;sc.page=Page::Schedule;sc.listPage=0;Game n2=e;n2.id="n2";n2.start="2026-10-04T17:00Z";n2.away={"3","Chicago Bears","CHI","0"};n2.home={"12","Kansas City Chiefs","KC","0"};Game n3=e;n3.id="n3";n3.start="2026-10-05T00:20Z";sc.snapshot.games.push_back(n2);sc.snapshot.games.push_back(n3);r.render(sc);save(c,"schedule-demo");}f.selected=11;r.render(f);save(c,"games-feed-page2-demo");
   UI tp=f;tp.filter="12";tp.filterName="Kansas City Chiefs";tp.favorites={{1,"12","Kansas City Chiefs"}};tp.snapshot.team="12";tp.snapshot.games={e,a};tp.selected=0;r.render(tp);save(c,"team-demo");}
  for(int i=0;i<5;i++)u.snapshot.games.push_back(g);u.selected=3;r.render(u);save(c,"games-full-demo");u.selected=4;r.render(u);save(c,"games-page2-demo");{UI n=u;n.league=1;n.page=Page::Detail;n.selected=1;Game x;x.id="nfl";x.start="2026-09-27T17:00Z";x.state="post";x.status="Final";x.away={"24","Los Angeles Chargers","LAC","16"};x.home={"2","Buffalo Bills","BUF","24"};x.venue="Highmark Stadium";n.snapshot.games={x};n.gameIndex=0;
   n.detail.id="nfl";n.detail.awayRecord="0-3";n.detail.homeRecord="3-0";n.detail.awayLine={10,0,3,3};n.detail.homeLine={0,10,0,14};

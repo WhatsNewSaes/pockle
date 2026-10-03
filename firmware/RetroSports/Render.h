@@ -12,7 +12,7 @@
 #include "Voice.h"
 #include "TeamLogos.h"
 namespace retro {
-enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize};
+enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule};
 // A translation installed on the data partition (/bible/<code>/), from /bible/index.json.
 struct Translation { std::string code,name,shortName,license,blurb,closest; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
@@ -63,8 +63,15 @@ inline GamesLayout layoutGames(const UI& u){
  if(u.page==Page::Home){L.top=68;L.avail=768-L.top;} // league tab on Home: the list starts right under the tab row
  else if(u.page==Page::Launcher){L.top=launcherScoresTop(u);L.avail=780-L.top;} // launcher: under the verse and the tab strip
  else{L.top=L.team?y+76:L.feedLeague?y+50:y+78;L.avail=(L.team?620:768)-L.top;}
- L.ids=visibleGames(u);
- std::string last;for(size_t p=0;p<L.ids.size();p++){std::string h=weekLabel(u.league,u.snapshot.games[L.ids[p]]);if(!h.empty()&&h!=last){L.items.push_back({-1,h});last=h;}L.items.push_back({(int)p,""});}
+ // Live games first, then what is next, then results; section headers when there is more than one
+ // section, with football's week dividers inside the sections.
+ {const std::vector<int> raw=visibleGames(u);const auto order=sectionedOrder(u.snapshot,raw);
+  bool multi=false;for(size_t i=1;i<order.size();i++)if(order[i].section!=order[0].section)multi=true;
+  std::string lastWeek;Section lastSection=Section::Live;bool first=true;
+  for(const auto& o:order){const Game& g=u.snapshot.games[raw[o.pos]];const std::string week=weekLabel(u.league,g);
+   if(first||o.section!=lastSection){if(multi){std::string h=sectionName(o.section);if(!week.empty())h+=" - "+week;L.items.push_back({-1,h});}else if(!week.empty())L.items.push_back({-1,week});lastWeek=week;lastSection=o.section;first=false;}
+   else if(!week.empty()&&week!=lastWeek){L.items.push_back({-1,week});lastWeek=week;}
+   L.items.push_back({(int)L.ids.size(),""});L.ids.push_back(raw[o.pos]);}}
  L.pages.push_back(0);int used=0;
  for(size_t i=0;i<L.items.size();i++){int ih=L.items[i].pos<0?L.hdrH:L.rowH,need=L.items[i].pos<0?L.hdrH+L.rowH:L.rowH;if(used+need>L.avail){L.pages.push_back(i);used=0;}used+=ih;}
  return L;
@@ -138,7 +145,7 @@ class Renderer {
   for(size_t i=0;i<u.recent.size();i++){const auto& rg=u.recent[i];const int64_t start=isoEpoch(rg.game.start);
    if(rg.league!=lastLeague){std::string s=std::string(" ")+leagues[rg.league].name+" ";int w=int(s.size())*12;c.fillRect(16,ry+13,448,3,0);c.fillRect(240-w/2,ry+6,w+1,16,1);text(240-w/2,ry+6,s,2);text(240-w/2+1,ry+6,s,2);ry+=28;lastLeague=rg.league;}
    if(ry+56>770)break;
-   std::string status=dayLabel(start,u.now)+" "+(rg.game.state=="in"&&!u.online?"SAVED ":"")+compactStatus(rg.game.status);
+   std::string status=rg.next?"NEXT: "+dayLabel(start,u.now)+" "+clockLabel(start):dayLabel(start,u.now)+" "+(rg.game.state=="in"&&!u.online?"SAVED ":"")+compactStatus(rg.game.status);
    const bool beforeDivider=i+1<u.recent.size()&&u.recent[i+1].league!=rg.league;
    gameRow(ry,rg.league,rg.game,selBase>=0&&u.selected==selBase+(int)i,status,!beforeDivider);ry+=56;}
   if(u.recent.empty()){center(ry+70,"NO RECENT GAMES YET",3);center(ry+130,u.online?"LOADING SCORES...":"CONNECT WI-FI TO LOAD SCORES",2);}
@@ -188,7 +195,8 @@ class Renderer {
   auto a=score(g,g.away),h=score(g,g.home);
   text(84-int(a.size())*18,ry+16,a,3,color,4);logo(88,ry+7,42,league,g.away.id,g.away.abbr);
   logo(350,ry+7,42,league,g.home.id,g.home.abbr);text(396,ry+16,h,3,color,4);
-  std::string vs=clean(g.away.abbr,4)+" @ "+clean(g.home.abbr,4);text(240-int(vs.size())*6,ry+10,vs,2,color,13);
+  auto side=[&](const Team& t){return (t.rank?"#"+std::to_string(t.rank)+" ":"")+clean(t.abbr,4);};
+  std::string vs=side(g.away)+" @ "+side(g.home);text(240-int(vs.size())*6,ry+10,vs,2,color,18); // college rows carry the Top-25 rank
   rowStatus(240,ry+32,status,color,216);
  }
  static std::string upperAbbrLabel(std::string s){for(auto& c:s)c=toupper((unsigned char)c);return s;}
@@ -377,6 +385,21 @@ class Renderer {
       if(s.verse){c.setTextSize(1);c.setTextColor(0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse).c_str());}
       readFace(face,x+marker,y+(f.line-f.ascent-4)/2,s.text,0,468-x-marker);x+=marker+readWidthFace(face,s.text);}
      y+=f.line;}}
+  }else if(u.page==Page::Schedule){ // upcoming games only, soonest first, grouped by day; up/down pages
+   std::vector<int> ids;for(size_t i=0;i<u.snapshot.games.size();i++)if(u.snapshot.games[i].state=="pre")ids.push_back(i);
+   std::stable_sort(ids.begin(),ids.end(),[&](int a,int b){return isoEpoch(u.snapshot.games[a].start)<isoEpoch(u.snapshot.games[b].start);});
+   struct Item{int pos;std::string header;};std::vector<Item> items;std::string lastDay;
+   for(int id:ids){const std::string day=dayLabel(isoEpoch(u.snapshot.games[id].start),u.now);if(day!=lastDay){items.push_back({-1,day});lastDay=day;}items.push_back({id,""});}
+   std::vector<int> pages{0};int used=0;const int top=60,avail=768-top;
+   for(size_t i=0;i<items.size();i++){const int ih=items[i].pos<0?28:56,need=items[i].pos<0?84:56;if(used+need>avail){pages.push_back(i);used=0;}used+=ih;}
+   const int page=std::min(u.listPage,(int)pages.size()-1);
+   text(12,24,std::string("UPCOMING ")+leagues[u.league].name,2,0,24);{std::string pg=std::to_string(page+1)+"/"+std::to_string(pages.size());text(468-int(pg.size())*12,24,pg,2);}c.drawFastHLine(12,50,456,0);
+   if(ids.empty()){center(360,"NO UPCOMING GAMES",3);center(420,u.online?"CHECKING THE SCHEDULE...":"CONNECT WI-FI FOR THE SCHEDULE",2);}
+   else{int ry=top;const int last=page+1<(int)pages.size()?pages[page+1]:(int)items.size();
+    for(int i=pages[page];i<last;i++){const auto& it=items[i];
+     if(it.pos<0){std::string s=" "+it.header+" ";int w=int(s.size())*12;c.fillRect(16,ry+13,448,3,0);c.fillRect(240-w/2,ry+6,w+1,16,1);text(240-w/2,ry+6,s,2);text(240-w/2+1,ry+6,s,2);ry+=28;continue;}
+     const Game& g=u.snapshot.games[it.pos];const bool beforeDivider=i+1<last&&items[i+1].pos<0;
+     gameRow(ry,u.league,g,false,clockLabel(isoEpoch(g.start)),!beforeDivider);ry+=56;}}
   }else if(u.page==Page::Translation){ // the installed translations, each with a line parents can read
    bold(12,22,"BIBLE VERSION",2);c.drawFastHLine(12,46,456,0);int y=58;
    for(size_t i=0;i<u.translations.size()&&y+140<=740;i++){const Translation& t=u.translations[i];const bool sel=u.selected==(int)i;const int ink=sel?1:0;
@@ -510,7 +533,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation&&u.page!=Page::Schedule){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
  }
 };
 }

@@ -15,7 +15,7 @@ static const League leagues[] = {
  {"NBA", "basketball/nba", "NATIONAL BASKETBALL ASSN."},
  {"COLLEGE FB", "football/college-football", "NCAA DIVISION I FBS"}
 };
-struct Team { std::string id, name, abbr, score, conf; }; // conf: college conference id
+struct Team { std::string id, name, abbr, score, conf; int rank=0; }; // conf: college conference id; rank: Top-25 rank or 0
 struct Game { std::string id, start, status, state, venue; Team away, home; bool complete=false; int week=0, seasonType=0; };
 // Recent-games window per league, in days back from today. ESPN's scoreboard
 // rejects date ranges, so the device walks days and merges them into one feed.
@@ -31,7 +31,9 @@ inline std::string weekLabel(int league,const Game& g){
 // A feed snapshot (span>0) holds games from the last `span` days sorted newest
 // first; `covered` lists the days already fetched so gaps can be backfilled.
 // `team` marks a team page: that team's season results plus its next game.
-struct Snapshot { int league=0; std::string date; int64_t updated=0; std::vector<Game> games; int span=0; std::vector<std::string> covered; std::string team; };
+struct Snapshot { int league=0; std::string date; int64_t updated=0; std::vector<Game> games; int span=0; std::vector<std::string> covered; std::string team; int64_t upcomingAt=0; }; // upcomingAt: when the schedule ahead was last fetched
+// How far ahead each league's feed carries upcoming games (days): MLB, NFL, NBA, CFB.
+static const int aheadDays[] = {2, 14, 2, 8};
 struct Favorite { int league; std::string id,name; };
 // On-demand matchup detail from the scoreboard: records, line scores, a few
 // headline stats per sport, and ESPN's one-line story.
@@ -132,6 +134,31 @@ inline void trimUpcoming(Snapshot& s){
  int64_t next=0;for(const auto& g:s.games)if(g.state=="pre"){int64_t e=isoEpoch(g.start);if(!next||e<next)next=e;}
  s.games.erase(std::remove_if(s.games.begin(),s.games.end(),[&](const Game& g){return g.state=="pre"&&isoEpoch(g.start)!=next;}),s.games.end());
 }
+// Replace the feed's upcoming games (dated after `today`) with a fresh set, kept to the horizon.
+inline void mergeUpcoming(Snapshot& feed,const Snapshot& part,const std::string& today,int ahead,int64_t now,size_t cap=150){
+ const std::string horizon=shiftDate(today,ahead);
+ feed.games.erase(std::remove_if(feed.games.begin(),feed.games.end(),[&](const Game& g){return gameDate(g)>today;}),feed.games.end());
+ for(const auto& p:part.games){const std::string d=gameDate(p);bool dup=false;for(const auto& g:feed.games)if(g.id==p.id)dup=true;if(!dup&&d>today&&d<=horizon)feed.games.push_back(p);}
+ std::stable_sort(feed.games.begin(),feed.games.end(),[](const Game& a,const Game& b){return isoEpoch(a.start)>isoEpoch(b.start);});
+ if(feed.games.size()>cap)feed.games.resize(cap);
+ feed.upcomingAt=now;
+}
+// The week a football league is in now: the lowest week with a game still to play, else the last played week plus one.
+inline int currentWeek(const Snapshot& s){
+ int open=0,played=0;for(const auto& g:s.games){if(g.seasonType!=2||g.week<=0)continue;if(g.state!="post"){if(!open||g.week<open)open=g.week;}else played=std::max(played,g.week);}
+ return open?open:played?played+1:0;
+}
+// List order for a scoreboard: live games first, then what is next (soonest first), then results (newest first).
+enum class Section { Live, Next, Results };
+struct Ordered { Section section; int pos; }; // pos indexes the caller's id list
+inline std::vector<Ordered> sectionedOrder(const Snapshot& s,const std::vector<int>& ids){
+ std::vector<Ordered> live,next,results;
+ for(size_t p=0;p<ids.size();p++){const Game& g=s.games[ids[p]];if(g.state=="in")live.push_back({Section::Live,(int)p});else if(g.state=="pre")next.push_back({Section::Next,(int)p});else results.push_back({Section::Results,(int)p});}
+ auto by=[&](bool asc){return [&,asc](const Ordered& a,const Ordered& b){const int64_t x=isoEpoch(s.games[ids[a.pos]].start),y=isoEpoch(s.games[ids[b.pos]].start);return asc?x<y:x>y;};};
+ std::stable_sort(live.begin(),live.end(),by(true));std::stable_sort(next.begin(),next.end(),by(true));std::stable_sort(results.begin(),results.end(),by(false));
+ std::vector<Ordered> out=live;out.insert(out.end(),next.begin(),next.end());out.insert(out.end(),results.begin(),results.end());return out;
+}
+inline const char* sectionName(Section s){return s==Section::Live?"LIVE":s==Section::Next?"UP NEXT":"RESULTS";}
 // Fold one day's response into the feed: replace that day, drop games that
 // moved, keep the window, newest first, and record what has been covered.
 inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fetched,const std::string& start,const std::string& end,int span,size_t cap=150){
@@ -147,7 +174,7 @@ inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fet
 }
 // Home page feed: the newest games already played (or in progress) across all
 // leagues, drawn from the cached league feeds.
-struct RecentGame { int league; Game game; };
+struct RecentGame { int league; Game game; bool next=false; }; // next: the league's soonest upcoming game, shown above its results
 inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit){
  std::vector<RecentGame> out;
  for(int l=0;l<4;l++){if(!feeds[l])continue;for(const auto& g:feeds[l]->games)if(g.state!="pre")out.push_back({l,g});}
@@ -162,6 +189,9 @@ inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit
 inline std::vector<RecentGame> recentGamesGrouped(const Snapshot* feeds[4],int heightPx,int rowH=56,int dividerH=28){
  std::vector<RecentGame> all=recentGames(feeds,200);std::vector<int> order;
  for(const auto& rg:all)if(std::find(order.begin(),order.end(),rg.league)==order.end())order.push_back(rg.league); // first appearance = newest game
+ // Each league's soonest upcoming game leads its group as a NEXT row.
+ for(int l=0;l<4;l++){if(!feeds[l])continue;const Game* soonest=nullptr;for(const auto& g:feeds[l]->games)if(g.state=="pre"&&(!soonest||isoEpoch(g.start)<isoEpoch(soonest->start)))soonest=&g;
+  if(soonest){RecentGame n{l,*soonest,true};all.insert(all.begin(),n);if(std::find(order.begin(),order.end(),l)==order.end())order.push_back(l);}}
  if(order.empty())return {};
  std::vector<int> have(4,0),take(4,0);for(const auto& rg:all)have[rg.league]++;
  int rows=std::max(0,(heightPx-int(order.size())*dividerH)/rowH);
