@@ -401,9 +401,10 @@ class Renderer {
   }else if(u.page==Page::Character){ // one card: the plate, then who they were; up/down moves between cards, press opens their passage
    if(u.characterIndex<(int)u.characters.size()){const Character& ch=u.characters[u.characterIndex];int y=12;
     if(u.scene.w>0&&!u.scene.bits.empty()){const int x=(480-u.scene.w)/2;c.drawBitmap(x,y,u.scene.bits.data(),u.scene.w,u.scene.h,0);c.drawRect(x-1,y-1,u.scene.w+2,u.scene.h+2,0);y+=u.scene.h+8;
+     for(const auto& cl:wrapWidth(u.scene.caption,[&](const std::string& s){return smallWidth(s);},456,2)){small(12,y,cl,0,456);y+=16;} // what the picture shows
      if(!u.scene.credit.empty()){small(12,y,u.scene.credit);y+=18;}}
     y+=6;bold(12,y,upperText(ch.name),3,0,25);{std::string pg=std::to_string(u.characterIndex+1)+"/"+std::to_string(u.characters.size());text(468-int(pg.size())*12,y+4,pg,2);}y+=36;
-    for(const auto& line:wrapWidth(ch.blurb,readWidth,456,6)){if(y>640)break;read(12,y,line);y+=READ_LINE;}y+=8;
+    for(const auto& line:wrapWidth(ch.blurb,readWidth,456,8)){if(y>640)break;read(12,y,line);y+=READ_LINE;}y+=8;
     for(const auto& b:ch.bullets){if(y>660)break;c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(b,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=4;}
     if(!ch.passages.empty())row(732,"READ "+upperText(ch.passages[0]),true);
    }
@@ -435,21 +436,24 @@ class Renderer {
    const Devotional& d=u.devotional;
    if(!d.valid){center(300,"TODAY'S DEVOTIONAL",3);center(380,u.devotionalLoading?"WRITING IT NOW...":u.online?"COMING AT THE NEXT CHECK":"CONNECT WI-FI TO GET IT",2);center(420,"PRESS BOOT TO GO BACK",2);}
    else{
+    const bool pic=u.dayScene.w>0&&!u.dayScene.bits.empty();
+    const int gS=pic?14:22,gT=pic?34:42,gB=pic?5:8,gR1=pic?6:10,gR2=pic?12:18,gP=pic?8:14; // tighter spacing when the day's picture is on the page
+    auto lines=[&](const std::string& t,int w,int m){return int(wrapWidth(t,readWidth,w,m).size());};
     int y=12;
-    if(u.dayScene.w>0&&!u.dayScene.bits.empty()){ // the middle of the day's picture, as tall as the text leaves room for
-     int textH=34+int(wrapWidth(d.verse,readWidth,456,4).size())*READ_LINE+28+42+48+int(wrapWidth(d.truth,readWidth,456,3).size())*READ_LINE+14;
-     for(const auto& p:d.points)textH+=int(wrapWidth(p,readWidth,430,2).size())*READ_LINE+8;
-     textH+=48+int(wrapWidth(d.apply,readWidth,456,4).size())*READ_LINE+48+int(wrapWidth(d.prayer,readWidth,456,4).size())*READ_LINE;
-     const int band=std::min(u.dayScene.h,std::min(170,732-24-textH));
-     if(band>=96){const int x=(480-u.dayScene.w)/2,top=(u.dayScene.h-band)/2,rb=(u.dayScene.w+7)/8;c.drawBitmap(x,y,u.dayScene.bits.data()+rb*top,u.dayScene.w,band,0);c.drawRect(x-1,y-1,u.dayScene.w+2,band+2,0);y+=band+14;}
+    if(pic){ // the middle of the day's picture, as tall as the text leaves room for
+     int textH=34+lines(d.verse,456,4)*READ_LINE+gR1+gR2+gT+26+lines(d.truth,456,3)*READ_LINE+gS;
+     for(const auto& p:d.points)textH+=lines(p,430,2)*READ_LINE+gB;
+     textH+=gP+26+lines(d.apply,456,4)*READ_LINE+gS+26+lines(d.prayer,456,4)*READ_LINE+gS;
+     const int band=std::min(u.dayScene.h,std::min(170,732-12-textH-10));
+     if(band>=72){const int x=(480-u.dayScene.w)/2,top=(u.dayScene.h-band)*3/10,rb=(u.dayScene.w+7)/8;c.drawBitmap(x,y,u.dayScene.bits.data()+rb*top,u.dayScene.w,band,0);c.drawRect(x-1,y-1,u.dayScene.w+2,band+2,0);y+=band+12;}
     }
     bold(12,y+8,bibleRefLabel(d.ref),2);y+=34;
     for(const auto& line:wrapWidth(d.verse,readWidth,456,4)){read(12,y,line);y+=READ_LINE;}
-    y+=10;c.drawFastHLine(16,y,448,0);y+=18;bold(12,y,upperText(d.title),3,0,25);y+=42;
-    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=22;};
+    y+=gR1;c.drawFastHLine(16,y,448,0);y+=gR2;bold(12,y,upperText(d.title),3,0,25);y+=gT;
+    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=gS;};
     section("TRUTH",d.truth,3);
-    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=8;}
-    y+=14;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4); // the page has room: four lines each before the buttons
+    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=gB;}
+    y+=gP;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4); // the page has room: four lines each before the buttons
     // Three buttons along the bottom: read it aloud, open the Bible, done.
     const char* labels[]={u.speaking==1?"LOADING...":u.speaking==2?"STOP":"READ ALOUD","BIBLE","DONE"};
     for(int i=0;i<3;i++){const int x=12+i*154,w=i==2?148:148;const bool sel=u.selected==i;c.fillRect(x,732,w,48,sel?0:1);c.drawRect(x,732,w,48,0);const int tw=int(strlen(labels[i]))*12;text(x+(w-tw)/2,748,labels[i],2,sel?1:0);}

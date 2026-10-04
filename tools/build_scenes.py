@@ -43,6 +43,11 @@ def dither(im,crop=None):
  # Painted sources dither into noise; a light blur and a contrast lift before Floyd-Steinberg keep the figures crisp and calm the skies.
  im=ImageOps.autocontrast(im.filter(ImageFilter.GaussianBlur(0.8)),cutoff=2);im=ImageEnhance.Contrast(im).enhance(1.3)
  return im.convert('1')
+def tidy(caption):
+ # The captions often end by naming the chapter ("..., as described in Luke 18."); the card and the sleep screen already show the passage.
+ c=re.sub(r',?\s*(as\s+(described|told|seen|depicted|recorded|mentioned|narrated|written)\s+)?(in|from)\s+(the\s+)?(book\s+of\s+|gospel\s+of\s+)?(\d\s+)?[A-Z][a-z]+(\s+chapter)?\s+\d+(:\d+(-\d+)?)?\s*\.?$','',caption.strip(),flags=re.I).strip()
+ if c and c.rstrip('"\'')[-1:] not in ('.','!','?'):c+='.'
+ return c
 def ascii_(s):
  for k,v in {'’':"'",'‘':"'",'“':'"','”':'"','—':' - ','…':'...','é':'e'}.items():s=s.replace(k,v)
  return ''.join(c if 32<=ord(c)<127 else '?' for c in s)
@@ -54,9 +59,9 @@ def pack(im,text):
    acc=(acc<<1)|(0 if px[x,y] else 1);n+=1  # ink = 1
    if n==8:rows.append(acc);acc=0;n=0
   if n:rows.append(acc<<(8-n))
- t=ascii_(text).encode()[:255];return struct.pack('<HHH',w,h,len(t))+t+zlib.compress(bytes(rows),9)
+ t=US.join(ascii_(part) for part in text.split(US)).encode()[:255];return struct.pack('<HHH',w,h,len(t))+t+zlib.compress(bytes(rows),9)  # ASCII per part: the separators must survive
 def build(sid,meta,caption):
- im=dither(fetch(meta['commons']),meta.get('crop'));credit=CREDITS.get(meta.get('source',''),meta.get('credit',meta.get('source','')))
+ caption=tidy(caption);im=dither(fetch(meta['commons']),meta.get('crop'));credit=CREDITS.get(meta.get('source',''),meta.get('credit',meta.get('source','')))
  data=pack(im,US.join([credit,meta.get('passage',''),caption]))
  (OUT/f'{sid}.img').write_bytes(data);im.save(PREVIEW/f'{sid}.png')
  return {'title':meta.get('title',caption or sid),'source':meta.get('source','sweet'),'credit':credit,'passage':meta.get('passage',''),'characters':[c.strip() for c in meta.get('characters','').split(',') if c.strip()],'caption':caption,'w':im.size[0],'h':im.size[1],'bytes':len(data),'hash':hashlib.sha1(data).hexdigest()[:8]}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, devosync, character <name>, or sleep-preview."""
+"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, devosync, character <name>, devotional-page, or sleep-preview."""
 import argparse,time,serial,pathlib
 p=argparse.ArgumentParser();p.add_argument('command',nargs='?',default='?');p.add_argument('--port',default='/dev/cu.usbmodem1101');p.add_argument('--seconds',type=float,default=8);p.add_argument('--text');args=p.parse_args()
 class PassiveSerial(serial.Serial):
@@ -80,6 +80,13 @@ elif args.command=='character': # open a Bible character's card by name, as the 
   if line:
    text=line.decode(errors='replace').rstrip();print(text)
    if text.startswith('CHARACTER '):break
+elif args.command=='devotional-page': # open today's devotional page (no rewrite)
+ s.write(b'J');deadline=time.monotonic()+6
+ while time.monotonic()<deadline:
+  line=s.readline()
+  if line:
+   text=line.decode(errors='replace').rstrip();print(text)
+   if text.startswith('DEVOTIONAL page'):break
 elif args.command=='sleep-preview': # draw the sleep screen (today's picture and verse) without sleeping
  s.write(b'G');deadline=time.monotonic()+8
  while time.monotonic()<deadline:
