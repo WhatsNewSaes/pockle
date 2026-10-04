@@ -116,6 +116,7 @@ static void powerUpFromSleep(){
  // Only DCDC1 (3.3 V), ALDO2 (codec analog) and ALDO3 (panel) are wired on this board; the PMU
  // powers up with every converter enabled, so switch the unconnected ones off for good.
  pmuWrite(0x80,0x01);pmuWrite(0x90,0x06);pmuWrite(0x91,0x00);delay(10);
+ {int en=pmuRead(0x41);if(en>=0)pmuWrite(0x41,en|0x0C);pmuWrite(0x49,0xFF);} // the PWR key reaches the PMU, not a GPIO: enable its short/long press flags (IRQ status 2, bits 3/2) and clear stale ones
  Serial.printf("PMU rails dcdc=%02x ldo=%02x/%02x\n",pmuRead(0x80),pmuRead(0x90),pmuRead(0x91));
 }
 static bool panelPower(bool on){
@@ -1293,6 +1294,11 @@ void loopApp(){
   if(ui.detail.id!=g.id||(g.state!="post"&&now-detailFetchedAt>60000))requestDetail(g);
  }
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextWeather)>=0&&(!ui.weather.valid||ui.now-ui.weather.fetched>3000||nextWeather==0)){requestWeather();nextWeather=now+300000;}
+ // The PWR key: the PMU latches a short press in IRQ status 2 (0x49, bit 3; write 1 to clear). A tap puts the board to sleep, like a BOOT hold.
+ // (A long hold is the PMU's own power-off, after which a 1 s press powers the board back on.)
+ {static uint32_t nextPmuPoll=0;if((int32_t)(now-nextPmuPoll)>=0){nextPmuPoll=now+200;const int st=pmuRead(0x49);
+  if(st>0&&(st&0x0C)){pmuWrite(0x49,st&0x0C);Serial.printf("KEY pwr %s press\n",(st&0x08)?"short":"long");
+   if((st&0x08)&&ui.page!=Page::Voice&&!ui.ap){stopSpeaking();idleSleep();return;}}}}
  // Self-heal: fetches that cannot even connect while the largest free internal block is under 48 KB mean TLS is starved of RAM
  // (fragmentation after a long session); a restart takes seconds, keeps every cache and setting, and returns to the same tab.
  if(connFails>=2&&!requestBusy&&!audio::playing()&&!ui.ap&&ui.voice==VoiceState::Idle){
