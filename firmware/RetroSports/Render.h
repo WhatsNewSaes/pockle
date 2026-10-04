@@ -12,7 +12,10 @@
 #include "Voice.h"
 #include "TeamLogos.h"
 namespace retro {
-enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule};
+enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule,Characters,Character};
+// A Bible character card (characters/out/index.json) and the scene plate it shows (scenes/out/<id>.img).
+struct Character { std::string id,name,scene,blurb; std::vector<std::string> bullets,passages; };
+struct Scene { std::vector<uint8_t> bits; int w=0,h=0; std::string credit; };
 // A translation installed on the data partition (/bible/<code>/), from /bible/index.json.
 struct Translation { std::string code,name,shortName,license,blurb,closest; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
@@ -40,7 +43,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::vector<Character> characters;int characterIndex=0;Scene scene;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -385,6 +388,19 @@ class Renderer {
       if(s.verse){c.setTextSize(1);c.setTextColor(0);c.setCursor(x,y+(f.line-14)/2);c.print(std::to_string(s.verse).c_str());}
       readFace(face,x+marker,y+(f.line-f.ascent-4)/2,s.text,0,468-x-marker);x+=marker+readWidthFace(face,s.text);}
      y+=f.line;}}
+  }else if(u.page==Page::Characters){ // the list of cards
+   bold(12,22,"BIBLE CHARACTERS",2);c.drawFastHLine(12,46,456,0);
+   for(size_t i=0;i<u.characters.size()&&i<11;i++)row(60+int(i)*60,upperText(u.characters[i].name),u.selected==(int)i);
+   if(u.characters.empty())center(300,"NO CHARACTERS LOADED",2);
+  }else if(u.page==Page::Character){ // one card: the plate, then who they were; up/down moves between cards, press opens their passage
+   if(u.characterIndex<(int)u.characters.size()){const Character& ch=u.characters[u.characterIndex];int y=12;
+    if(u.scene.w>0&&!u.scene.bits.empty()){const int x=(480-u.scene.w)/2;c.drawBitmap(x,y,u.scene.bits.data(),u.scene.w,u.scene.h,0);c.drawRect(x-1,y-1,u.scene.w+2,u.scene.h+2,0);y+=u.scene.h+8;
+     if(!u.scene.credit.empty()){small(12,y,u.scene.credit);y+=18;}}
+    y+=6;bold(12,y,upperText(ch.name),3,0,25);{std::string pg=std::to_string(u.characterIndex+1)+"/"+std::to_string(u.characters.size());text(468-int(pg.size())*12,y+4,pg,2);}y+=36;
+    for(const auto& line:wrapWidth(ch.blurb,readWidth,456,6)){if(y>640)break;read(12,y,line);y+=READ_LINE;}y+=8;
+    for(const auto& b:ch.bullets){if(y>660)break;c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(b,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=4;}
+    if(!ch.passages.empty())row(732,"READ "+upperText(ch.passages[0]),true);
+   }
   }else if(u.page==Page::Schedule){ // upcoming games only, soonest first, grouped by day; up/down pages
    std::vector<int> ids;for(size_t i=0;i<u.snapshot.games.size();i++)if(u.snapshot.games[i].state=="pre")ids.push_back(i);
    std::stable_sort(ids.begin(),ids.end(),[&](int a,int b){return isoEpoch(u.snapshot.games[a].start)<isoEpoch(u.snapshot.games[b].start);});
@@ -480,11 +496,11 @@ class Renderer {
     c.fillRect(12,140,456,h,sel?0:1);c.drawRect(12,140,456,h,0);if(sel)text(22,158,">",2,1);text(sel?46:22,158,"TODAY'S DEVOTIONAL",2,ink);
     if(u.votd.valid()){bold(22,184,bibleRefLabel(u.votd),2,ink);int y=210;for(const auto& line:lines){read(22,y,line,ink,436);y+=READ_LINE;}}
     else read(22,210,"The Bible files are missing",ink);
-    row(140+h+16,cont,u.selected==1);row(140+h+76,"BOOKS OF THE BIBLE",u.selected==2);
+    row(140+h+16,cont,u.selected==1);row(140+h+76,"BOOKS OF THE BIBLE",u.selected==2);row(140+h+136,"BIBLE CHARACTERS",u.selected==3);
     // Settings section: the translation and the reader's text size.
-    const int sy=140+h+150;{std::string s=" SETTINGS ";int w=int(s.size())*12;c.fillRect(16,sy+13,448,3,0);c.fillRect(240-w/2,sy+6,w+1,16,1);text(240-w/2,sy+6,s,2);text(240-w/2+1,sy+6,s,2);}
+    const int sy=140+h+210;{std::string s=" SETTINGS ";int w=int(s.size())*12;c.fillRect(16,sy+13,448,3,0);c.fillRect(240-w/2,sy+6,w+1,16,1);text(240-w/2,sy+6,s,2);text(240-w/2+1,sy+6,s,2);}
     std::string ver=upperText(u.bibleCode);for(const auto& t:u.translations)if(t.code==u.bibleCode)ver=upperText(t.shortName.empty()?t.code:t.shortName);
-    row(sy+40,"BIBLE VERSION: "+ver,u.selected==3);row(sy+100,std::string("TEXT SIZE: ")+READ_FACES[u.textSize<0?1:u.textSize>2?1:u.textSize].name,u.selected==4);
+    row(sy+40,"BIBLE VERSION: "+ver,u.selected==4);row(sy+100,std::string("TEXT SIZE: ")+READ_FACES[u.textSize<0?1:u.textSize>2?1:u.textSize].name,u.selected==5);
    }
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
@@ -533,7 +549,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation&&u.page!=Page::Schedule){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation&&u.page!=Page::Schedule&&u.page!=Page::Character){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK    HOLD FOR VOICE",1);}
  }
 };
 }

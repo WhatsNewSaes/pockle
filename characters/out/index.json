@@ -1,0 +1,47 @@
+[
+ {
+  "id": "david",
+  "name": "David",
+  "scene": "david-and-goliath",
+  "passages": [
+   "1 Samuel 17",
+   "Psalm 23",
+   "2 Samuel 7"
+  ],
+  "blurb": "David was a shepherd boy who trusted God more than he feared a giant. God chose him to be king of Israel, and he wrote many of the Psalms. Jesus was born from David's family, just as God promised.",
+  "bullets": [
+   "Beat Goliath with a sling, a stone, and faith in God",
+   "Wrote songs to God, like Psalm 23",
+   "Made big mistakes, but always came back to God"
+  ]
+ },
+ {
+  "id": "goliath",
+  "name": "Goliath",
+  "scene": "goliath-challenges-israel",
+  "passages": [
+   "1 Samuel 17"
+  ],
+  "blurb": "Goliath was a giant warrior from the Philistines, over nine feet tall. For forty days he dared Israel's army to fight him, and everyone was afraid - until a boy named David stepped up.",
+  "bullets": [
+   "Wore heavy armor and carried a huge spear",
+   "Laughed at David for being small",
+   "Shows that God's power is bigger than any giant"
+  ]
+ },
+ {
+  "id": "jonathan",
+  "name": "Jonathan",
+  "scene": "david-and-jonathan",
+  "passages": [
+   "1 Samuel 18",
+   "1 Samuel 20"
+  ],
+  "blurb": "Jonathan was King Saul's son and David's best friend. Even though he could have been king, he loved David and protected him from his own father.",
+  "bullets": [
+   "Gave David his own robe and sword as a sign of friendship",
+   "Warned David when Saul wanted to hurt him",
+   "Showed what a true, selfless friend looks like"
+  ]
+ }
+]

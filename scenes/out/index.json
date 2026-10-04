@@ -1,0 +1,47 @@
+{
+ "david-and-goliath": {
+  "title": "David and Goliath",
+  "source": "dore",
+  "credit": "Gustave Dore, 1866 (public domain)",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David",
+   "Goliath"
+  ],
+  "caption": "David stands over the fallen giant Goliath.",
+  "w": 238,
+  "h": 300,
+  "bytes": 8164,
+  "hash": "e6b3626b"
+ },
+ "david-and-jonathan": {
+  "title": "David and Jonathan",
+  "source": "schnorr",
+  "credit": "Julius Schnorr von Carolsfeld, 1860 (public domain)",
+  "passage": "1 Samuel 20",
+  "characters": [
+   "David",
+   "Jonathan"
+  ],
+  "caption": "Jonathan and David promise to stay friends before David has to flee from Saul.",
+  "w": 373,
+  "h": 300,
+  "bytes": 12207,
+  "hash": "7e28df9a"
+ },
+ "goliath-challenges-israel": {
+  "title": "Goliath Challenges Israel",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "Goliath",
+   "Saul"
+  ],
+  "caption": "The giant Goliath dares the army of Israel to send out a man to fight him.",
+  "w": 413,
+  "h": 300,
+  "bytes": 11781,
+  "hash": "955decda"
+ }
+}

@@ -686,6 +686,27 @@ static void loadTranslations(){
  if(!have&&!ui.translations.empty())bibleCode=ui.translations[0].code.c_str();ui.bibleCode=bibleCode.c_str();
 }
 static void loadVerseOfDay();static bool loadBibleChapter(int book,int chapter);
+// Bible characters: the index from the data partition, and a card's plate inflated into PSRAM when the card opens.
+static void loadCharacters(){
+ ui.characters.clear();JsonDocument j;if(deserializeJson(j,readFileText("/chars/index.json")))return;
+ for(JsonObjectConst o:j.as<JsonArrayConst>()){Character ch;auto str=[&](const char* k){const char* v=o[k].as<const char*>();return std::string(v?v:"");};
+  ch.id=str("id");ch.name=str("name");ch.scene=str("scene");ch.blurb=str("blurb");
+  for(JsonVariantConst b:o["bullets"].as<JsonArrayConst>()){const char* v=b.as<const char*>();if(v)ch.bullets.push_back(v);}
+  for(JsonVariantConst p:o["passages"].as<JsonArrayConst>()){const char* v=p.as<const char*>();if(v)ch.passages.push_back(v);}
+  if(!ch.name.empty())ui.characters.push_back(ch);}
+ Serial.printf("CHARACTERS %u\n",(unsigned)ui.characters.size());
+}
+static bool loadScene(const std::string& id){
+ ui.scene=Scene{};if(id.empty())return false;File f=LittleFS.open(("/scenes/"+id+".img").c_str(),"r");if(!f)return false;
+ const size_t len=f.size();if(len<=4){f.close();return false;}uint8_t* in=(uint8_t*)heap_caps_malloc(len,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!in){f.close();return false;}
+ size_t got=0;while(got<len){int n=f.read(in+got,len-got);if(n<=0)break;got+=n;}f.close();
+ const int w=in[0]|(in[1]<<8),h=in[2]|(in[3]<<8);const size_t rowBytes=(w+7)/8,raw=rowBytes*h;
+ bool ok=false;if(w>0&&w<=480&&h>0&&h<=800&&got==len){ui.scene.bits.resize(raw);const size_t n=tinfl_decompress_mem_to_mem(ui.scene.bits.data(),raw,in+4,len-4,TINFL_FLAG_PARSE_ZLIB_HEADER);ok=n==raw;if(ok){ui.scene.w=w;ui.scene.h=h;}else ui.scene.bits.clear();}
+ heap_caps_free(in);
+ {JsonDocument idx;if(!deserializeJson(idx,readFileText("/scenes/index.json"))){const char* cr=idx[id]["credit"].as<const char*>();if(cr)ui.scene.credit=cr;}}
+ Serial.printf("SCENE %s %dx%d ok=%d\n",id.c_str(),w,h,ok);return ok;
+}
+static void openCharacter(){ui.page=Page::Character;ui.selected=0;if(ui.characterIndex<(int)ui.characters.size())loadScene(ui.characters[ui.characterIndex].scene);dirty=true;}
 // Reader text size: re-paginate the open chapter and stay on the verse that was at the top.
 static void setTextSize(int size){
  size=size<0?2:size>2?0:size;if(size==ui.textSize)return;
@@ -891,7 +912,9 @@ static void goBack(){
  case Page::Schedule:goLauncher(LAUNCH_TAB0+ui.tab);break;
  case Page::Update:if(!updateBusy&&!restartAt){ui.page=Page::Settings;ui.selected=8;}break;
  case Page::Translation:ui.page=translationFrom;ui.selected=translationFromSel;break;
- case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
+ case Page::TextSize:ui.page=Page::BibleHome;ui.selected=5;break;
+ case Page::Characters:ui.page=Page::BibleHome;ui.selected=3;break;
+ case Page::Character:ui.scene=Scene{};ui.page=Page::Characters;ui.selected=ui.characterIndex;break;
  case Page::Launcher:break;
  case Page::Bible:ui.page=Page::BibleHome;ui.selected=0;break;
  case Page::BibleBooks:ui.page=Page::Bible;ui.selected=0;break;
@@ -932,6 +955,7 @@ static void keyAction(const Key& k){
   if(ui.page==Page::Weather)return;
   if(ui.page==Page::Schedule){ui.listPage=std::max(0,ui.listPage+step);dirty=true;return;} // the renderer clamps to the last page
   if(ui.page==Page::TextSize){setTextSize(ui.textSize+step);ui.selected=ui.textSize;dirty=true;return;} // live: the sample redraws in the new size
+  if(ui.page==Page::Character&&!ui.characters.empty()){ui.characterIndex=(ui.characterIndex+step+(int)ui.characters.size())%(int)ui.characters.size();openCharacter();return;}
   if(ui.page==Page::Bible){bibleStep(step);return;}
   if(ui.page==Page::BibleBooks){ui.bible.pick=(ui.bible.pick+step+BIBLE_BOOKS)%BIBLE_BOOKS;dirty=true;return;}
   if(ui.page==Page::BibleChapters){const int n=bibleBooks[std::max(1,std::min(BIBLE_BOOKS,ui.bible.pickBook))-1].chapters;ui.bible.pick=(ui.bible.pick+step+n)%n;dirty=true;return;}
@@ -948,7 +972,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=5;break;case Page::TextSize:count=3;break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=6;break;case Page::TextSize:count=3;break;case Page::Characters:count=std::max(1,(int)ui.characters.size());break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -999,9 +1023,12 @@ static void keyAction(const Key& k){
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
  case Page::BibleHome:if(ui.selected==1)openBible(BibleRef{});else if(ui.selected==0){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
-  else if(ui.selected==3){translationFrom=Page::BibleHome;translationFromSel=3;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
+  else if(ui.selected==3){ui.page=Page::Characters;ui.selected=std::min(ui.characterIndex,std::max(0,(int)ui.characters.size()-1));}
+  else if(ui.selected==4){translationFrom=Page::BibleHome;translationFromSel=4;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
   else{loadSample();ui.page=Page::TextSize;ui.selected=ui.textSize;}break;
- case Page::TextSize:ui.page=Page::BibleHome;ui.selected=4;break;
+ case Page::Characters:if(!ui.characters.empty()){ui.characterIndex=ui.selected;openCharacter();}break;
+ case Page::Character:if(ui.characterIndex<(int)ui.characters.size()&&!ui.characters[ui.characterIndex].passages.empty()){BibleRef r=parseBibleRef(ui.characters[ui.characterIndex].passages[0]);if(r.valid())openBible(r);}break;
+ case Page::TextSize:ui.page=Page::BibleHome;ui.selected=5;break;
  case Page::Devotional:
   if(ui.selected==0&&speakState){stopSpeaking();} // reading: a press stops it
   else if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
@@ -1151,7 +1178,7 @@ void setupApp(){
  {const uint32_t pos=prefs.getUInt("bible",0);BibleRef r;r.book=(pos>>16)&255;r.chapter=(pos>>8)&255;if(r.valid()){loadBibleChapter(r.book,r.chapter);ui.bible.page=std::min((int)(pos&255),std::max(0,(int)ui.bible.pages.size()-1));}else loadBibleChapter(43,1);}
  loadVerseOfDay();
  {Devotional d;if(decodeDevotional(prefs.getString("devo","").c_str(),d))ui.devotional=d;}
- bibleCode=prefs.getString("bibletr","bsb");loadTranslations();refreshDevotionalVerse();
+ bibleCode=prefs.getString("bibletr","bsb");loadTranslations();loadCharacters();refreshDevotionalVerse();
  loadVerseOfDay(); // again, now that the cached devotional can name the verse
  {Weather w;if(decodeWeatherCache(prefs.getString("weather","").c_str(),w))ui.weather=w;nextWeather=(w.valid&&time(nullptr)-w.fetched<=3000)?1:0;} // a fresh cache waits until it is stale; 0 forces a fetch
  ui.date=ui.clockValid?localDate(time(nullptr)):prefs.getString("lastDate","").c_str();
