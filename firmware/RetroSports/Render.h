@@ -47,6 +47,24 @@ struct UI {
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
+inline int smallTextWidth(const std::string& s){int w=0;for(unsigned char ch:s)if(ch>=32&&ch<=126)w+=InterSmallGlyphs[ch-32].xAdvance;return w;}
+// The devotional page is a column: the day's picture and its caption, the reference and verse, the title, the sections,
+// then the three buttons. Taller than the panel, it scrolls with the rocker in DEVO_STEP moves; the last move lands on the buttons.
+constexpr int DEVO_STEP=400;
+struct DevoLayout { int height=800,buttonsY=732,scrolls=0; int offsetFor(int sel) const {return sel<scrolls?std::min(sel*DEVO_STEP,height-800):height-800;} };
+inline DevoLayout devotionalLayout(const UI& u){
+ DevoLayout L;const Devotional& d=u.devotional;if(!d.valid)return L;
+ auto lines=[&](const std::string& t,int w,int m){return int(wrapWidth(t,readWidth,w,m).size());};
+ int y=12;
+ if(u.dayScene.w>0&&!u.dayScene.bits.empty()){y+=u.dayScene.h+10;y+=int(wrapWidth(u.dayScene.caption,smallTextWidth,456,2).size())*16;y+=10;}
+ y+=34+lines(d.verse,456,4)*READ_LINE+10+18+42;
+ y+=26+lines(d.truth,456,3)*READ_LINE+22;
+ for(const auto& p:d.points)y+=lines(p,430,2)*READ_LINE+8;
+ y+=14+26+lines(d.apply,456,4)*READ_LINE+22+26+lines(d.prayer,456,4)*READ_LINE+22;
+ L.buttonsY=std::max(732,y);L.height=std::max(800,L.buttonsY+68);
+ if(L.height>800)L.scrolls=(L.height-800+DEVO_STEP-1)/DEVO_STEP;
+ return L;
+}
 inline std::vector<std::string> launcherVerseLines(const UI& u){return u.votd.valid()?wrapWidth(u.votdText,readWidth,456,7):std::vector<std::string>{};}
 inline int launcherSportsBar(const UI& u){return 110+std::max(1,(int)launcherVerseLines(u).size())*READ_LINE;}
 inline int launcherScoresTop(const UI& u){return launcherSportsBar(u)+48;}
@@ -432,31 +450,27 @@ class Renderer {
     if(!t.closest.empty()){bold(22,ly+4,"CLOSEST TO: "+upperText(t.closest),2,ink,36);ly+=20;} // the familiar translations it reads like
     rowStatus(22+rowWidth(t.license)/2,ly+6,t.license,ink,436);y+=h+10;} // license in the bold caption face
    if(u.translations.empty())center(300,"NO TRANSLATIONS FOUND",2);
-  }else if(u.page==Page::Devotional){ // one screen: verse, title, truth, three bullets, do it today, prayer
+  }else if(u.page==Page::Devotional){ // a column that scrolls with the rocker: picture, verse, title, truth, three bullets, do it today, prayer, buttons
    const Devotional& d=u.devotional;
    if(!d.valid){center(300,"TODAY'S DEVOTIONAL",3);center(380,u.devotionalLoading?"WRITING IT NOW...":u.online?"COMING AT THE NEXT CHECK":"CONNECT WI-FI TO GET IT",2);center(420,"PRESS BOOT TO GO BACK",2);}
    else{
-    const bool pic=u.dayScene.w>0&&!u.dayScene.bits.empty();
-    const int gS=pic?14:22,gT=pic?34:42,gB=pic?5:8,gR1=pic?6:10,gR2=pic?12:18,gP=pic?8:14; // tighter spacing when the day's picture is on the page
-    auto lines=[&](const std::string& t,int w,int m){return int(wrapWidth(t,readWidth,w,m).size());};
-    int y=12;
-    if(pic){ // the middle of the day's picture, as tall as the text leaves room for
-     int textH=34+lines(d.verse,456,4)*READ_LINE+gR1+gR2+gT+26+lines(d.truth,456,3)*READ_LINE+gS;
-     for(const auto& p:d.points)textH+=lines(p,430,2)*READ_LINE+gB;
-     textH+=gP+26+lines(d.apply,456,4)*READ_LINE+gS+26+lines(d.prayer,456,4)*READ_LINE+gS;
-     const int band=std::min(u.dayScene.h,std::min(170,732-12-textH-10));
-     if(band>=72){const int x=(480-u.dayScene.w)/2,top=(u.dayScene.h-band)*3/10,rb=(u.dayScene.w+7)/8;c.drawBitmap(x,y,u.dayScene.bits.data()+rb*top,u.dayScene.w,band,0);c.drawRect(x-1,y-1,u.dayScene.w+2,band+2,0);y+=band+12;}
+    const DevoLayout L=devotionalLayout(u);const int off=L.offsetFor(u.selected),btn=u.selected-L.scrolls;int y=12-off;
+    if(u.dayScene.w>0&&!u.dayScene.bits.empty()){ // the day's picture, full size, with its caption
+     const int x=(480-u.dayScene.w)/2;c.drawBitmap(x,y,u.dayScene.bits.data(),u.dayScene.w,u.dayScene.h,0);c.drawRect(x-1,y-1,u.dayScene.w+2,u.dayScene.h+2,0);y+=u.dayScene.h+10;
+     for(const auto& cl:wrapWidth(u.dayScene.caption,smallTextWidth,456,2)){small(12,y,cl,0,456);y+=16;}y+=10;
     }
     bold(12,y+8,bibleRefLabel(d.ref),2);y+=34;
     for(const auto& line:wrapWidth(d.verse,readWidth,456,4)){read(12,y,line);y+=READ_LINE;}
-    y+=gR1;c.drawFastHLine(16,y,448,0);y+=gR2;bold(12,y,upperText(d.title),3,0,25);y+=gT;
-    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=gS;};
+    y+=10;c.drawFastHLine(16,y,448,0);y+=18;bold(12,y,upperText(d.title),3,0,25);y+=42;
+    auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=22;};
     section("TRUTH",d.truth,3);
-    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=gB;}
-    y+=gP;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4); // the page has room: four lines each before the buttons
-    // Three buttons along the bottom: read it aloud, open the Bible, done.
-    const char* labels[]={u.speaking==1?"LOADING...":u.speaking==2?"STOP":"READ ALOUD","BIBLE","DONE"};
-    for(int i=0;i<3;i++){const int x=12+i*154,w=i==2?148:148;const bool sel=u.selected==i;c.fillRect(x,732,w,48,sel?0:1);c.drawRect(x,732,w,48,0);const int tw=int(strlen(labels[i]))*12;text(x+(w-tw)/2,748,labels[i],2,sel?1:0);}
+    for(const auto& p:d.points){c.fillRect(14,y+9,6,6,0);for(const auto& line:wrapWidth(p,readWidth,430,2)){read(30,y,line);y+=READ_LINE;}y+=8;}
+    y+=14;section("DO IT TODAY",d.apply,4);section("PRAY",d.prayer,4);
+    // Three buttons at the end of the column: read it aloud, open the Bible, done.
+    const char* labels[]={u.speaking==1?"LOADING...":u.speaking==2?"STOP":"READ ALOUD","BIBLE","DONE"};const int by=L.buttonsY-off;
+    for(int i=0;i<3;i++){const int x=12+i*154,w=148;const bool sel=btn==i;c.fillRect(x,by,w,48,sel?0:1);c.drawRect(x,by,w,48,0);const int tw=int(strlen(labels[i]))*12;text(x+(w-tw)/2,by+16,labels[i],2,sel?1:0);}
+    if(L.height>800){ // scrollbar on the right edge: the thumb shows how much of the column is on the panel
+     c.drawFastVLine(477,4,792,0);const int th=std::max(24,792*800/L.height),ty=4+(792-th)*off/(L.height-800);c.fillRect(475,ty,5,th,0);}
    }
   }else if(u.page==Page::Update){ // over-the-air update: a status line, then what to do
    center(150,"UPDATE",4);{int y=300;for(const auto& line:wrapLines(u.updateNote,30,5)){center(y,line,2);y+=36;}}

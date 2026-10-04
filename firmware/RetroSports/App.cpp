@@ -989,7 +989,7 @@ static void keyAction(const Key& k){
    dirty=true;return;
   }
   else {int count=1;switch(ui.page){case Page::Home:count=HOME_ALL_ROW+(int)ui.recent.size();break;case Page::Games:{count=visibleGames(ui).size()+1;if(!ui.filter.empty()){int d=-1,c=-1;if(ui.standings.league==ui.league)teamGroups(ui.standings,ui.filter,d,c);count+=(d>=0||c>=0)?(d>=0?1:0)+(c>=0?1:0):1;}}break;
-   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=6;break;case Page::TextSize:count=3;break;case Page::Characters:count=std::max(1,(int)ui.characters.size());break;case Page::Devotional:count=3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
+   case Page::Standings:count=ui.standingsAlt>=0?2:1;break;case Page::BibleHome:count=6;break;case Page::TextSize:count=3;break;case Page::Characters:count=std::max(1,(int)ui.characters.size());break;case Page::Devotional:count=devotionalLayout(ui).scrolls+3;break;case Page::Update:count=1;break;case Page::Detail:count=3;break;case Page::Favorites:count=std::max(1,(int)ui.favorites.size());break;case Page::Settings:count=9;break;case Page::Translation:count=std::max(1,(int)ui.translations.size());break;break;default:break;}ui.selected=(ui.selected+step+count)%count;
    if(ui.page==Page::Home&&ui.selected<HOME_TABS&&ui.selected!=ui.tab){ui.tab=ui.selected;buildRecent();} // landing on a tab switches the list (the gear does not)
    if(ui.page==Page::Games&&!ui.filter.empty()&&ui.selected==0)ui.selected=step>0?std::min(1,count-1):count-1; // team pages skip the phantom header slot
   }
@@ -1046,12 +1046,13 @@ static void keyAction(const Key& k){
  case Page::Characters:if(!ui.characters.empty()){ui.characterIndex=ui.selected;openCharacter();}break;
  case Page::Character:if(ui.characterIndex<(int)ui.characters.size()&&!ui.characters[ui.characterIndex].passages.empty()){BibleRef r=parseBibleRef(ui.characters[ui.characterIndex].passages[0]);if(r.valid())openBible(r);}break;
  case Page::TextSize:ui.page=Page::BibleHome;ui.selected=5;break;
- case Page::Devotional:
-  if(ui.selected==0&&speakState){stopSpeaking();} // reading: a press stops it
-  else if(ui.selected==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
-  else if(ui.selected==1){stopSpeaking();ui.page=Page::BibleHome;ui.selected=0;}
+ case Page::Devotional:{const int btn=ui.selected-devotionalLayout(ui).scrolls; // below the buttons while scrolling: a press scrolls on
+  if(btn<0){ui.selected++;}
+  else if(btn==0&&speakState){stopSpeaking();} // reading: a press stops it
+  else if(btn==0){if(ui.devotional.valid&&!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",devotionalSpeech(ui.devotional).c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("DEVOTIONAL reading aloud");}}
+  else if(btn==1){stopSpeaking();ui.page=Page::BibleHome;ui.selected=0;}
   else{stopSpeaking();goLauncher(LAUNCH_BIBLE);}
-  break;
+  break;}
  case Page::Bible:ui.bible.pick=ui.bible.book-1;ui.bible.pickBook=ui.bible.book;ui.page=Page::BibleBooks;break;
  case Page::BibleBooks:ui.bible.pickBook=ui.bible.pick+1;ui.bible.pick=ui.bible.pickBook==ui.bible.book?ui.bible.chapter-1:0;ui.page=Page::BibleChapters;break;
  case Page::BibleChapters:{BibleRef r;r.book=ui.bible.pickBook;r.chapter=ui.bible.pick+1;openBible(r);break;}

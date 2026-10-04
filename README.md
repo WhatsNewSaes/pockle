@@ -21,10 +21,10 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Small, normal or large text
 
 **Daily devotional**
-- One screen a day for ages 7–13: the verse, a title, one truth, three bullets, something to do today, a one-line prayer
+- A short page a day for ages 7–13: the picture, the verse, a title, one truth, three bullets, something to do today, a one-line prayer; the rocker scrolls it
 - Gospel-centered — points to what Jesus has done before what we do
 - Read aloud by the speaker
-- A picture for every day of the year: a Sweet Publishing illustration of the verse's story, on the devotional page and on the sleep screen
+- A picture for every day of the year: a Sweet Publishing illustration of the verse's story, on the devotional page and the sleep screen
 - The verse of the day everywhere on the device is the devotional's verse
 - Written as Markdown files in `devotionals/`, delivered over Wi-Fi, kept on the board for offline reading; a day with no file gets one written on the spot
 
