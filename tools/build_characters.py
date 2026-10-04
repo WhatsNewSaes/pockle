@@ -6,6 +6,8 @@
     name: David
     scene: david-and-goliath          # a scene id from scenes/
     passages: 1 Samuel 17, Psalm 23   # what to read, in order
+    chapters: 1 Samuel 16, 1 Samuel 17 # where draft_characters.py may pick the plate from
+    order: 28                         # place in the list (story order); drafted by tools/draft_characters.py
     ---
     Two or three short sentences for a 7-13 year old.
 
@@ -30,6 +32,7 @@ def main():
   for k,v in {'’':"'",'“':'"','”':'"','—':' - '}.items():blurb=blurb.replace(k,v);bullets=[b.replace(k,v) for b in bullets]
   if meta.get('scene') and meta['scene'] not in scenes:sys.exit(f'{f.name}: unknown scene {meta["scene"]}')
   if len(blurb)>420:sys.exit(f'{f.name}: blurb is {len(blurb)} characters (max 420)')
-  out.append({'id':f.stem,'name':meta.get('name',f.stem.title()),'scene':meta.get('scene',''),'passages':[p.strip() for p in meta.get('passages','').split(',') if p.strip()],'blurb':blurb,'bullets':bullets[:4]})
+  out.append({'order':int(meta.get('order','999')),'id':f.stem,'name':meta.get('name',f.stem.title()),'scene':meta.get('scene',''),'passages':[p.strip() for p in meta.get('passages','').split(',') if p.strip()],'blurb':blurb,'bullets':bullets[:4]})
+ out.sort(key=lambda c:(c['order'],c['name']));[c.pop('order') for c in out]
  (OUT/'index.json').write_text(json.dumps(out,indent=1));print('characters:',', '.join(c['name'] for c in out))
 if __name__=='__main__':main()

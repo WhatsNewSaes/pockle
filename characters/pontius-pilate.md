@@ -1,0 +1,12 @@
+---
+name: Pontius Pilate
+scene: jhn-18-8
+chapters: Matthew 27, John 18, John 19
+passages: Matthew 27, John 18
+order: 73
+---
+Pontius Pilate was a Roman ruler in Judea. He was the one who decided what would happen to Jesus, even though he knew Jesus hadn't done anything wrong. Pilate tried to let Jesus go, but the crowd wanted Jesus crucified. Pilate washed his hands, saying he was innocent, and Jesus was sent to die. This shows us that Jesus died for our sins, even though he was innocent.
+
+- Roman ruler in Judea
+- Tried Jesus, found him innocent
+- Sent Jesus to be crucified

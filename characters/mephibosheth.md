@@ -1,0 +1,12 @@
+---
+name: Mephibosheth
+scene: 2sa-9-3
+chapters: 2 Samuel 9
+passages: 2 Samuel 9
+order: 33
+---
+Mephibosheth was Jonathan's son, and his feet were hurt. King David, who was Jonathan's best friend, found Mephibosheth and showed him amazing kindness. Even though Mephibosheth was from King Saul's family, David brought him to live in the palace and eat at his own table, just like one of his sons. This shows us how God loves us and brings us close to Him, even when we don't deserve it, just like Jesus does for us!
+
+- Grandson of King Saul
+- Jonathan's son
+- Ate at King David's table

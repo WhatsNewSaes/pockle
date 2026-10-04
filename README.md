@@ -16,7 +16,7 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 
 **Bible**
 - The whole Bible on the board, readable offline
-- Four translations with a one-line description of each: Berean Standard, Free Bible Version, Bible in Basic English, King James
+- Three translations with a one-line description of each: Berean Standard, Free Bible Version, Bible in Basic English
 - Book and chapter picker, pages turn across chapters and books, reading position remembered
 - Small, normal or large text
 
@@ -24,8 +24,13 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - One screen a day for ages 7–13: the verse, a title, one truth, three bullets, something to do today, a one-line prayer
 - Gospel-centered — points to what Jesus has done before what we do
 - Read aloud by the speaker
+- A picture for every day of the year: a Sweet Publishing illustration of the verse's story, on the devotional page and on the sleep screen
 - The verse of the day everywhere on the device is the devotional's verse
 - Written as Markdown files in `devotionals/`, delivered over Wi-Fi, kept on the board for offline reading; a day with no file gets one written on the spot
+
+**Bible characters**
+- Cards for the people of the Bible, Adam and Eve to Priscilla and Aquila: a picture, who they were, three facts to remember, and the passage to read
+- Written as Markdown files in `characters/`; "tell me about Esther" opens her card by voice
 
 **Sports scores**
 - MLB, NFL, NBA and college football
@@ -42,7 +47,7 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Seven-day forecast page for your ZIP code
 
 **Voice** — hold the rocker and ask
-- "Bears score", "NFL standings", "upcoming NFL games", "go to Psalm 23", "read today's devotional", "will it rain tomorrow", "who won the 1985 Super Bowl"
+- "Bears score", "NFL standings", "upcoming NFL games", "go to Psalm 23", "read today's devotional", "tell me about Moses", "will it rain tomorrow", "who won the 1985 Super Bowl"
 - "Upcoming NFL games" opens a schedule page: the coming week's games only, grouped by day
 - Opens the right page or answers out loud, in a voice you choose
 - Sticks to sports, the Bible and the weather; looks up current facts rather than guessing
@@ -53,7 +58,7 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Check for software updates
 
 **Battery life**
-- Sleeps when idle and overnight, showing the verse of the day
+- Sleeps when idle and overnight, showing the day's picture and verse
 - Wakes on any button; one timed wake each morning for the day's devotional, verse, weather, scores and updates
 - A few percent of battery a day
 
@@ -68,6 +73,7 @@ After that the device looks after itself: it checks GitHub for new firmware each
 ## Making changes
 
 - **Devotionals:** add or edit `devotionals/MM-DD.md`, run `tools/build_devotionals.py` (it checks each one fits the screen, and can draft missing days), commit and push. Devices pick them up within hours.
+- **Pictures and characters:** `tools/pick_scenes.py` chooses a plate for every day's verse (`scenes/days.json`), `tools/draft_characters.py` drafts a card for everyone on its roster, `tools/build_scenes.py` and `tools/build_characters.py` pack them; they go to the device with `tools/upload_bible.sh`. A devotional or character file can name its own plate with `scene:`.
 - **Firmware:** `tools/release.sh 1.7.0 "notes"` runs the tests, builds, tags, and publishes a release that every device installs over Wi-Fi.
 - **Checking a device:** `tools/device_console.py` talks to a board over USB — status, a screen capture, a forced devotional or weather fetch, a storage map.
 
@@ -79,7 +85,8 @@ The code, tools and documentation are released under the [MIT License](LICENSE).
 
 ## Credits and licenses
 
-- Bible text: the Berean Standard Bible (public domain, Bible Hub), the Free Bible Version (© 2018 Jonathan Gallagher, CC BY-SA 4.0), the Bible in Basic English and the King James Version (public domain), the latter three from [eBible.org](https://ebible.org).
+- Bible text: the Berean Standard Bible (public domain, Bible Hub), the Free Bible Version (© 2018 Jonathan Gallagher, CC BY-SA 4.0) and the Bible in Basic English (public domain), the latter two from [eBible.org](https://ebible.org).
+- Bible pictures: illustrations by [Sweet Publishing](https://sweetpublishing.com) (CC BY-SA 3.0), from Wikimedia Commons, reduced to black and white for the panel.
 - Scores from ESPN's public endpoints; weather from [Open-Meteo](https://open-meteo.com); voice, speech and devotional drafting through OpenRouter.
 - Team logos are the property of their owners and are used for identification. Inter font under the SIL Open Font License (`assets/fonts/OFL.txt`).
 - Built on the [Waveshare ESP32-S3-ePaper-3.97](https://docs.waveshare.com/ESP32-S3-ePaper-3.97) with its display driver (`vendor/`), [Adafruit GFX](https://github.com/adafruit/Adafruit-GFX-Library) and [ArduinoJson](https://arduinojson.org/).

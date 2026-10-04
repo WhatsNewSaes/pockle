@@ -15,7 +15,7 @@ namespace retro {
 enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule,Characters,Character};
 // A Bible character card (characters/out/index.json) and the scene plate it shows (scenes/out/<id>.img).
 struct Character { std::string id,name,scene,blurb; std::vector<std::string> bullets,passages; };
-struct Scene { std::vector<uint8_t> bits; int w=0,h=0; std::string credit; };
+struct Scene { std::vector<uint8_t> bits; int w=0,h=0; std::string id,credit,passage,caption; };
 // A translation installed on the data partition (/bible/<code>/), from /bible/index.json.
 struct Translation { std::string code,name,shortName,license,blurb,closest; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
@@ -43,7 +43,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::vector<Character> characters;int characterIndex=0;Scene scene;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::vector<Character> characters;int characterIndex=0;Scene scene,dayScene;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -260,8 +260,12 @@ class Renderer {
  // under the top banner the caller adds (falls back to the current page).
  void sleepVerse(const UI& u){
   if(!u.votd.valid()){render(u);return;}
-  c.fillScreen(1);c.setTextWrap(false);
-  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=52+(748-total)/2;
+  c.fillScreen(1);c.setTextWrap(false);int top=52;
+  if(u.dayScene.w>0&&!u.dayScene.bits.empty()){ // the day's picture under the banner, its caption beneath
+   const int x=(480-u.dayScene.w)/2;c.drawBitmap(x,66,u.dayScene.bits.data(),u.dayScene.w,u.dayScene.h,0);c.drawRect(x-1,65,u.dayScene.w+2,u.dayScene.h+2,0);top=66+u.dayScene.h+10;
+   for(const auto& cl:wrapWidth(u.dayScene.caption,[&](const std::string& s){return smallWidth(s);},440,2)){small(240-smallWidth(cl)/2,top,cl,0,440);top+=16;}
+  }
+  const auto lines=wrapLines(u.votdText,36,16);const int total=76+int(lines.size())*24;int y=top+(800-top-total)/2;
   center(y,"VERSE OF THE DAY",2);center(y+30,bibleRefLabel(u.votd),3);y+=76;
   for(const auto& line:lines){center(y,line,2);y+=24;}
  }
@@ -390,7 +394,9 @@ class Renderer {
      y+=f.line;}}
   }else if(u.page==Page::Characters){ // the list of cards
    bold(12,22,"BIBLE CHARACTERS",2);c.drawFastHLine(12,46,456,0);
-   for(size_t i=0;i<u.characters.size()&&i<11;i++)row(60+int(i)*60,upperText(u.characters[i].name),u.selected==(int)i);
+   const int per=11,pages=std::max(1,(int(u.characters.size())+per-1)/per),page=std::min(u.selected/per,pages-1);
+   {std::string pg=std::to_string(page+1)+"/"+std::to_string(pages);text(468-int(pg.size())*12,22,pg,2);}
+   for(int i=page*per;i<(int)u.characters.size()&&i<(page+1)*per;i++)row(60+(i-page*per)*60,upperText(u.characters[i].name),u.selected==i);
    if(u.characters.empty())center(300,"NO CHARACTERS LOADED",2);
   }else if(u.page==Page::Character){ // one card: the plate, then who they were; up/down moves between cards, press opens their passage
    if(u.characterIndex<(int)u.characters.size()){const Character& ch=u.characters[u.characterIndex];int y=12;
@@ -429,7 +435,15 @@ class Renderer {
    const Devotional& d=u.devotional;
    if(!d.valid){center(300,"TODAY'S DEVOTIONAL",3);center(380,u.devotionalLoading?"WRITING IT NOW...":u.online?"COMING AT THE NEXT CHECK":"CONNECT WI-FI TO GET IT",2);center(420,"PRESS BOOT TO GO BACK",2);}
    else{
-    bold(12,20,bibleRefLabel(d.ref),2);int y=46;
+    int y=12;
+    if(u.dayScene.w>0&&!u.dayScene.bits.empty()){ // the middle of the day's picture, as tall as the text leaves room for
+     int textH=34+int(wrapWidth(d.verse,readWidth,456,4).size())*READ_LINE+28+42+48+int(wrapWidth(d.truth,readWidth,456,3).size())*READ_LINE+14;
+     for(const auto& p:d.points)textH+=int(wrapWidth(p,readWidth,430,2).size())*READ_LINE+8;
+     textH+=48+int(wrapWidth(d.apply,readWidth,456,4).size())*READ_LINE+48+int(wrapWidth(d.prayer,readWidth,456,4).size())*READ_LINE;
+     const int band=std::min(u.dayScene.h,std::min(170,732-24-textH));
+     if(band>=96){const int x=(480-u.dayScene.w)/2,top=(u.dayScene.h-band)/2,rb=(u.dayScene.w+7)/8;c.drawBitmap(x,y,u.dayScene.bits.data()+rb*top,u.dayScene.w,band,0);c.drawRect(x-1,y-1,u.dayScene.w+2,band+2,0);y+=band+14;}
+    }
+    bold(12,y+8,bibleRefLabel(d.ref),2);y+=34;
     for(const auto& line:wrapWidth(d.verse,readWidth,456,4)){read(12,y,line);y+=READ_LINE;}
     y+=10;c.drawFastHLine(16,y,448,0);y+=18;bold(12,y,upperText(d.title),3,0,25);y+=42;
     auto section=[&](const char* head,const std::string& body,int maxLines){bold(12,y,head,2);y+=26;for(const auto& line:wrapWidth(body,readWidth,456,maxLines)){read(12,y,line);y+=READ_LINE;}y+=22;};

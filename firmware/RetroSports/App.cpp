@@ -696,17 +696,32 @@ static void loadCharacters(){
   if(!ch.name.empty())ui.characters.push_back(ch);}
  Serial.printf("CHARACTERS %u\n",(unsigned)ui.characters.size());
 }
-static bool loadScene(const std::string& id){
- ui.scene=Scene{};if(id.empty())return false;File f=LittleFS.open(("/scenes/"+id+".img").c_str(),"r");if(!f)return false;
- const size_t len=f.size();if(len<=4){f.close();return false;}uint8_t* in=(uint8_t*)heap_caps_malloc(len,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!in){f.close();return false;}
+// A plate file: width, height and a text length (uint16 each), the text "credit<US>passage<US>caption", then the zlib-packed 1-bit rows (tools/build_scenes.py).
+static bool loadSceneInto(Scene& sc,const std::string& id){
+ sc=Scene{};if(id.empty())return false;File f=LittleFS.open(("/scenes/"+id+".img").c_str(),"r");if(!f)return false;
+ const size_t len=f.size();if(len<=6){f.close();return false;}uint8_t* in=(uint8_t*)heap_caps_malloc(len,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!in){f.close();return false;}
  size_t got=0;while(got<len){int n=f.read(in+got,len-got);if(n<=0)break;got+=n;}f.close();
- const int w=in[0]|(in[1]<<8),h=in[2]|(in[3]<<8);const size_t rowBytes=(w+7)/8,raw=rowBytes*h;
- bool ok=false;if(w>0&&w<=480&&h>0&&h<=800&&got==len){ui.scene.bits.resize(raw);const size_t n=tinfl_decompress_mem_to_mem(ui.scene.bits.data(),raw,in+4,len-4,TINFL_FLAG_PARSE_ZLIB_HEADER);ok=n==raw;if(ok){ui.scene.w=w;ui.scene.h=h;}else ui.scene.bits.clear();}
- heap_caps_free(in);
- {JsonDocument idx;if(!deserializeJson(idx,readFileText("/scenes/index.json"))){const char* cr=idx[id]["credit"].as<const char*>();if(cr)ui.scene.credit=cr;}}
- Serial.printf("SCENE %s %dx%d ok=%d\n",id.c_str(),w,h,ok);return ok;
+ const int w=in[0]|(in[1]<<8),h=in[2]|(in[3]<<8);const size_t tl=in[4]|(in[5]<<8),head=6+tl,rowBytes=(w+7)/8,raw=rowBytes*h;
+ bool ok=false;if(w>0&&w<=480&&h>0&&h<=800&&got==len&&head<len){sc.bits.resize(raw);const size_t n=tinfl_decompress_mem_to_mem(sc.bits.data(),raw,in+head,len-head,TINFL_FLAG_PARSE_ZLIB_HEADER);ok=n==raw;
+  if(ok){sc.w=w;sc.h=h;sc.id=id;std::string t((const char*)in+6,tl);size_t a=t.find('\x1f'),b=a==std::string::npos?a:t.find('\x1f',a+1);
+   sc.credit=t.substr(0,a);if(a!=std::string::npos)sc.passage=t.substr(a+1,b==std::string::npos?std::string::npos:b-a-1);if(b!=std::string::npos)sc.caption=t.substr(b+1);}
+  else sc.bits.clear();}
+ heap_caps_free(in);Serial.printf("SCENE %s %dx%d ok=%d\n",id.c_str(),w,h,ok);return ok;
 }
+static bool loadScene(const std::string& id){return loadSceneInto(ui.scene,id);}
+// Today's picture: the devotional file's own choice, else the plate tools/pick_scenes.py chose for the day's verse (/scenes/days.json).
+static std::string daySceneId(){
+ if(ui.devotional.valid&&ui.devotional.day==dayOfYear()&&!ui.devotional.scene.empty())return ui.devotional.scene;
+ JsonDocument j;if(deserializeJson(j,readFileText("/scenes/days.json")))return "";JsonArrayConst t=j["table"].as<JsonArrayConst>();if(t.size()==0)return "";const char* s=t[dayOfYear()%t.size()].as<const char*>();return s?s:"";
+}
+static void loadDayScene(){const std::string id=daySceneId();if(ui.dayScene.w>0&&ui.dayScene.id==id)return;loadSceneInto(ui.dayScene,id);}
+static void openDevotionalPage();
 static void openCharacter(){ui.page=Page::Character;ui.selected=0;if(ui.characterIndex<(int)ui.characters.size())loadScene(ui.characters[ui.characterIndex].scene);dirty=true;}
+static bool openCharacterNamed(std::string name){ // "tell me about Moses": the card whose name contains the words, or whose words the name contains
+ for(auto& ch:name)ch=tolower((unsigned char)ch);if(name.empty())return false;
+ for(size_t i=0;i<ui.characters.size();i++){std::string n=ui.characters[i].name;for(auto& ch:n)ch=tolower((unsigned char)ch);if(n.find(name)!=std::string::npos||name.find(n)!=std::string::npos){ui.characterIndex=i;openCharacter();return true;}}
+ return false;
+}
 // Reader text size: re-paginate the open chapter and stay on the verse that was at the top.
 static void setTextSize(int size){
  size=size<0?2:size>2?0:size;if(size==ui.textSize)return;
@@ -761,6 +776,8 @@ static void refreshDevoHash(){tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt)
 // Stale: nothing for today, a model-written one while the library now has today's file, or a file that changed since.
 static bool devotionalStale(){if(!ui.devotional.valid||ui.devotional.day!=dayOfYear())return true;if(ui.devotional.fromFile)return ui.devotional.hash!=devoHashToday;return devoHaveToday;}
 static bool devotionalWantsFile(){return false;}
+static void warmVoice();
+static void openDevotionalPage(){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;loadDayScene();warmVoice();}
 static uint32_t nextDevoSync=0;static bool devoSyncPending=false;static const int64_t DEVO_SYNC_S=6*3600;
 static bool devoSyncDue(){return time(nullptr)-prefs.getLong64("devosync",0)>DEVO_SYNC_S;}
 static void requestDevoSync(){if(requestBusy||!ui.online||!ui.clockValid)return;FetchRequest r{};r.devoSync=true;if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;nextDevoSync=millis()+1800000;}}
@@ -852,7 +869,7 @@ static void startAP(){
  ui.ap=true;apStarted=millis();ui.notice="Setup stays open for 10 minutes.";ui.page=Page::Wifi;ui.selected=0;dirty=true;
 }
 static void sleepScreen(bool scheduled=false){
- ui.now=time(nullptr);renderer.sleepVerse(ui);
+ ui.now=time(nullptr);loadDayScene();renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
  const std::string top="ASLEEP - PRESS ANY BUTTON";canvas.setCursor(240-int(top.size())*6,5);canvas.print(top.c_str());
  std::string line=scheduled?"SINCE "+clockLabel(ui.now)+" - BACK AT 6:30":"ASLEEP SINCE "+clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
@@ -866,7 +883,7 @@ static void sleepScreen(bool scheduled=false){
 // Leave the current page on the panel with a banner explaining it is asleep, then sleep
 // until a button, the 15-minute refresh, or 6:30 am when it is night.
 static void idleSleep(){
- ui.battery=batteryPercent();ui.now=time(nullptr);renderer.sleepVerse(ui);
+ ui.battery=batteryPercent();ui.now=time(nullptr);loadDayScene();renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
  const std::string top="PRESS ANY BUTTON FOR LATEST";canvas.setCursor(240-int(top.size())*6,5);canvas.print(top.c_str());
  std::string line="ASLEEP SINCE "+clockLabel(ui.now);int b=batteryPercent();if(b>=0)line+=" - BATTERY "+std::to_string(b)+"%";
@@ -1018,11 +1035,11 @@ static void keyAction(const Key& k){
  case Page::Wifi:if(!ui.ap)startAP();break;
  case Page::Launcher:
   if(ui.selected==LAUNCH_WEATHER){ui.page=Page::Weather;if(!ui.weather.valid)nextWeather=0;}
-  else if(ui.selected==LAUNCH_BIBLE){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();} // the Bible row opens today's devotional; BIBLE on that page opens the reader home
+  else if(ui.selected==LAUNCH_BIBLE)openDevotionalPage(); // the Bible row opens today's devotional; BIBLE on that page opens the reader home
   else if(ui.selected==LAUNCH_GEAR){ui.page=Page::Settings;ui.selected=0;}
   else{ui.tab=ui.selected-LAUNCH_TAB0;ui.listPage=0;goHome();if(ui.tab==0){if(!ui.recent.empty())ui.selected=HOME_ALL_ROW;}else ui.selected=HOME_NEXT;} // straight into the list
   break;
- case Page::BibleHome:if(ui.selected==1)openBible(BibleRef{});else if(ui.selected==0){ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;warmVoice();}else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
+ case Page::BibleHome:if(ui.selected==1)openBible(BibleRef{});else if(ui.selected==0)openDevotionalPage();else if(ui.selected==2){ui.bible.pick=ui.bible.book-1;ui.page=Page::BibleBooks;ui.selected=0;}
   else if(ui.selected==3){ui.page=Page::Characters;ui.selected=std::min(ui.characterIndex,std::max(0,(int)ui.characters.size()-1));}
   else if(ui.selected==4){translationFrom=Page::BibleHome;translationFromSel=4;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
   else{loadSample();ui.page=Page::TextSize;ui.selected=ui.textSize;}break;
@@ -1049,7 +1066,8 @@ static void handleResults(){
    const VoiceReply& v=r->voice;
    if(!v.ok){ui.voice=VoiceState::Error;ui.voiceNote=v.error;}
    else if(v.action==VoiceAction::Answer||v.action==VoiceAction::Fact){ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer=v.answer;ui.voiceLeague=v.league;ui.voiceTeamId=v.teamId;ui.voiceTeamName=v.teamName;}
-   else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;ui.page=Page::Devotional;ui.selected=0;if(devotionalStale())nextDevotional=0;Serial.println("VOICE opened devotional");}
+   else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;openDevotionalPage();Serial.println("VOICE opened devotional");}
+   else if(v.action==VoiceAction::OpenCharacter){if(openCharacterNamed(v.name)){ui.voice=VoiceState::Idle;Serial.printf("VOICE opened character %s\n",v.name.c_str());}else{ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer="I don't have a card for "+v.name+" yet.";}}
    else if(v.action==VoiceAction::OpenSchedule){ui.voice=VoiceState::Idle;ui.tab=v.league+1;loadLeagueTab();ui.page=Page::Schedule;ui.listPage=0;ui.selected=0;nextFetch=0;Serial.printf("VOICE opened schedule league=%d\n",v.league);}
    else if(v.action==VoiceAction::OpenWeather){ui.voice=VoiceState::Idle;ui.page=Page::Weather;ui.selected=0;if(!ui.weather.valid)nextWeather=0;Serial.println("VOICE opened weather");}
    else if(v.action==VoiceAction::OpenBible){ui.voice=VoiceState::Idle;openBible(v.daily?ui.votd:v.bible);Serial.printf("VOICE opened bible %s\n",bibleRefLabel(v.daily?ui.votd:v.bible).c_str());}
@@ -1076,7 +1094,7 @@ static void handleResults(){
  }
  if(r->isDevotional){
   ui.devotionalLoading=false;Serial.printf("FETCH devotional ok=%d http=%d title=%s\n",r->ok,r->code,r->devotional.title.c_str());
-  if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());
+  if(r->ok){ui.devotional=r->devotional;prefs.putString("devo",encodeDevotional(ui.devotional).c_str());ui.dayScene=Scene{};if(ui.page==Page::Devotional)loadDayScene();
    if(ui.devotional.fromFile&&ui.devotional.ref.valid()){ui.votd=ui.devotional.ref;ui.votdText=ui.devotional.verse;if(ui.page==Page::Launcher){buildLauncher();}dirty=true;}} // the file's verse is the day's verse
   if(devotionalPending){devotionalPending=false;if(refreshWake)refreshPending--;}
   if(ui.page==Page::Devotional||ui.page==Page::BibleHome)dirty=true;delete r;return;
@@ -1148,6 +1166,8 @@ static void serialControl(){
  if(ch=='Y'){prefs.putLong64("devosync",0);nextDevoSync=0;Serial.println("DEVOSYNC requested");}
  if(ch=='U'){requestUpdate(true);Serial.println("UPDATE check requested");}
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
+ if(ch=='K'){String v=Serial.readStringUntil('\n');v.trim();const bool ok=openCharacterNamed(v.c_str());lastKeyAt=millis();dirty=true;Serial.printf("CHARACTER %s %s scene=%s %dx%d\n",ok?"open":"unknown",v.c_str(),ui.scene.id.c_str(),ui.scene.w,ui.scene.h);return;}
+ if(ch=='G'){loadDayScene();ui.now=time(nullptr);renderer.sleepVerse(ui);applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);if(shown)memcpy(shown,canvas.getBuffer(),48000);lastKeyAt=millis();Serial.printf("SLEEP preview scene=%s %dx%d: %s\n",ui.dayScene.id.c_str(),ui.dayScene.w,ui.dayScene.h,ui.dayScene.caption.c_str());return;} // the sleep screen's body, without sleeping; the next button redraws the page
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
  if(ch=='K'){String value=Serial.readStringUntil('\n');value.trim();voiceKey=value;prefs.putString("orkey",voiceKey);Serial.printf("VOICE key %s (%u chars)\n",voiceKey.isEmpty()?"cleared":"saved",(unsigned)voiceKey.length());}
  if(ch=='S'){String text=Serial.readStringUntil('\n');text.trim();static VoiceJob job;memset(&job,0,sizeof(job));snprintf(job.say,sizeof(job.say),"%s",text.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());if(xQueueSend(voiceQueue,&job,0)==pdTRUE)Serial.println("VOICE speaking test text");}

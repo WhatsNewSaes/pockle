@@ -1,47 +1,1227 @@
 [
  {
+  "id": "adam-and-eve",
+  "name": "Adam and Eve",
+  "scene": "gen-2-12",
+  "passages": [
+   "Genesis 2",
+   "Genesis 3"
+  ],
+  "blurb": "Adam and Eve were the very first people God made! They lived in a beautiful garden with God. But they chose to disobey God, which brought sadness into the world. God still loved them and promised to send a Rescuer, Jesus, to make things right again.",
+  "bullets": [
+   "First people God created",
+   "Lived in a perfect garden",
+   "Disobeyed God, but God still loved them"
+  ]
+ },
+ {
+  "id": "cain-and-abel",
+  "name": "Cain and Abel",
+  "scene": "gen-4-3",
+  "passages": [
+   "Genesis 4"
+  ],
+  "blurb": "Cain and Abel were brothers, the first children ever born! Cain grew plants and Abel took care of sheep. They both brought gifts to God, but God liked Abel's gift best because it showed his heart. This made Cain very, very sad and angry. He later hurt his brother, which was a terrible sin.",
+  "bullets": [
+   "First brothers ever born",
+   "Cain farmed, Abel herded sheep",
+   "God cares about our hearts"
+  ]
+ },
+ {
+  "id": "noah",
+  "name": "Noah",
+  "scene": "gen-6-7",
+  "passages": [
+   "Genesis 6",
+   "Genesis 7",
+   "Genesis 8"
+  ],
+  "blurb": "Noah was a good man who loved God in a world that had forgotten Him. God told Noah to build a big boat called an ark to save his family and animals from a great flood. This shows us how God always makes a way to save those who trust Him, just like Jesus saves us.",
+  "bullets": [
+   "He built a giant ark.",
+   "Saved his family and animals.",
+   "God promised never to flood the earth again."
+  ]
+ },
+ {
+  "id": "abraham",
+  "name": "Abraham",
+  "scene": "gen-15-3",
+  "passages": [
+   "Genesis 12",
+   "Genesis 15",
+   "Genesis 22"
+  ],
+  "blurb": "Abraham was a special man God chose to start a big family. God promised him many kids and that his family would bless the whole world! Even when it seemed impossible, Abraham trusted God. This shows us that God always keeps His promises, and through Jesus, God blesses everyone.",
+  "bullets": [
+   "God called him to a new land.",
+   "God promised him many descendants.",
+   "He trusted God even when it was hard."
+  ]
+ },
+ {
+  "id": "sarah",
+  "name": "Sarah",
+  "scene": "gen-21-1",
+  "passages": [
+   "Genesis 18",
+   "Genesis 21"
+  ],
+  "blurb": "Sarah was Abraham's wife. God promised them a baby even when they were very old! Sarah laughed at first, but God kept His promise. Their son, Isaac, was a miracle, showing God's amazing power and love for us. God's grace gives us good things we don't deserve, like Jesus!",
+  "bullets": [
+   "Abraham's wife",
+   "God promised her a baby",
+   "Had son Isaac when very old"
+  ]
+ },
+ {
+  "id": "lot",
+  "name": "Lot",
+  "scene": "gen-19-10",
+  "passages": [
+   "Genesis 13",
+   "Genesis 19"
+  ],
+  "blurb": "Lot was Abraham's nephew. He chose to live near a big city, but it was full of bad people. God saved Lot and his daughters from the city's destruction, showing His amazing grace even when Lot made some poor choices.",
+  "bullets": [
+   "Nephew of Abraham",
+   "Lived near wicked city of Sodom",
+   "God saved him from destruction"
+  ]
+ },
+ {
+  "id": "isaac",
+  "name": "Isaac",
+  "scene": "gen-22-7",
+  "passages": [
+   "Genesis 22",
+   "Genesis 26"
+  ],
+  "blurb": "Isaac was Abraham's special son, a gift from God! One day, God asked Abraham to sacrifice Isaac. But God stopped him, showing He provides a way, just like Jesus was the ultimate sacrifice for us. Isaac later had a family and continued to trust God, even when things were tough.",
+  "bullets": [
+   "Son of Abraham and Sarah",
+   "God saved him from being sacrificed",
+   "He dug wells and trusted God"
+  ]
+ },
+ {
+  "id": "rebekah",
+  "name": "Rebekah",
+  "scene": "gen-24-6",
+  "passages": [
+   "Genesis 24"
+  ],
+  "blurb": "Rebekah was a kind and helpful woman who lived long ago. God chose her to marry Isaac, Abraham's son, because she was so good to strangers and their animals. Her story shows us how God has a special plan for each of us, and how being kind can lead to wonderful things!",
+  "bullets": [
+   "Carried water for a stranger and his camels.",
+   "Brave to leave home and marry Isaac.",
+   "God had a special plan for her life."
+  ]
+ },
+ {
+  "id": "jacob",
+  "name": "Jacob",
+  "scene": "gen-28-5",
+  "passages": [
+   "Genesis 28",
+   "Genesis 32"
+  ],
+  "blurb": "Jacob was a twin who loved God! He had an amazing dream about a ladder to heaven with angels. God promised to be with him and bless his family, showing us that God always keeps His promises, just like He sent Jesus to us.",
+  "bullets": [
+   "Had a special dream about a ladder to heaven",
+   "God changed his name to Israel",
+   "Father of 12 sons who became 12 tribes"
+  ]
+ },
+ {
+  "id": "esau",
+  "name": "Esau",
+  "scene": "gen-25-10",
+  "passages": [
+   "Genesis 25",
+   "Genesis 33"
+  ],
+  "blurb": "Esau was Jacob's older twin brother. He loved hunting and was very hairy! One day, he gave up something very special, his birthright, for a bowl of stew because he was so hungry. Later, he and Jacob made up after many years, showing how God helps people forgive each other.",
+  "bullets": [
+   "Jacob's older twin brother",
+   "Loved hunting",
+   "Traded his birthright for food"
+  ]
+ },
+ {
+  "id": "joseph",
+  "name": "Joseph",
+  "scene": "gen-41-22",
+  "passages": [
+   "Genesis 37",
+   "Genesis 41",
+   "Genesis 45"
+  ],
+  "blurb": "Joseph was a special young man who had amazing dreams! Even when his brothers were mean and sold him as a slave, God was with him. Joseph became a powerful leader in Egypt and saved many people from hunger, showing God's grace and care.",
+  "bullets": [
+   "Had dreams about his family bowing to him",
+   "Sold into slavery by his jealous brothers",
+   "Became a powerful leader in Egypt"
+  ]
+ },
+ {
+  "id": "moses",
+  "name": "Moses",
+  "scene": "exo-20-8",
+  "passages": [
+   "Exodus 3",
+   "Exodus 14",
+   "Exodus 20"
+  ],
+  "blurb": "Moses was a special leader chosen by God to free His people, the Israelites, from slavery in Egypt. God used Moses to do amazing things, like parting the Red Sea! God gave Moses the Ten Commandments to help His people live good lives. Moses' story helps us see how God always rescues His people, just like Jesus rescues us from our sins.",
+  "bullets": [
+   "Rescued from a basket as a baby",
+   "Led God's people out of Egypt",
+   "Received the Ten Commandments"
+  ]
+ },
+ {
+  "id": "aaron",
+  "name": "Aaron",
+  "scene": "exo-4-11",
+  "passages": [
+   "Exodus 4",
+   "Exodus 32"
+  ],
+  "blurb": "Aaron was Moses' older brother and helped him lead God's people out of Egypt. He spoke for Moses because Moses was shy. Later, Aaron made a golden calf, which made God sad. But God forgave him and still chose him to be the first high priest, showing us God's amazing grace!",
+  "bullets": [
+   "Moses' older brother",
+   "Helped lead God's people",
+   "God's first high priest"
+  ]
+ },
+ {
+  "id": "miriam",
+  "name": "Miriam",
+  "scene": "exo-2-12",
+  "passages": [
+   "Exodus 2",
+   "Exodus 15"
+  ],
+  "blurb": "Miriam was Moses' older sister. She was very brave and smart! When baby Moses was in a basket in the river, Miriam watched over him. She helped her mom get to nurse baby Moses, even though Pharaoh's daughter found him. God used her to protect Moses!",
+  "bullets": [
+   "Moses' big sister",
+   "Brave and smart",
+   "Helped save baby Moses"
+  ]
+ },
+ {
+  "id": "balaam",
+  "name": "Balaam",
+  "scene": "num-22-3",
+  "passages": [
+   "Numbers 22"
+  ],
+  "blurb": "Balaam was a prophet who was asked to curse God's people, but God made him bless them instead! Even when people try to do bad things, God can change their plans to do good. He always protects His children, just like Jesus protects us.",
+  "bullets": [
+   "Prophet hired to curse Israel",
+   "His donkey talked to him!",
+   "God made him bless Israel"
+  ]
+ },
+ {
+  "id": "joshua",
+  "name": "Joshua",
+  "scene": "jos-6-5",
+  "passages": [
+   "Joshua 1",
+   "Joshua 6"
+  ],
+  "blurb": "Joshua was a brave leader who took over after Moses. God helped Joshua and his people cross a big river and even made the walls of a strong city fall down just by shouting! God was with Joshua, just like Jesus is always with us.",
+  "bullets": [
+   "Took over leading God's people",
+   "Led people across the Jordan River",
+   "Walls of Jericho fell down"
+  ]
+ },
+ {
+  "id": "caleb",
+  "name": "Caleb",
+  "scene": "num-13-4",
+  "passages": [
+   "Numbers 13",
+   "Joshua 14"
+  ],
+  "blurb": "Caleb was a brave leader who trusted God completely! When others were scared to enter the Promised Land, Caleb said, \"We can do it with God's help!\" God loved Caleb's faith and gave him a special mountain as his own.",
+  "bullets": [
+   "One of the 12 spies sent to Canaan",
+   "Trusted God when others were afraid",
+   "Received a mountain as his reward"
+  ]
+ },
+ {
+  "id": "rahab",
+  "name": "Rahab",
+  "scene": "jos-2-8",
+  "passages": [
+   "Joshua 2"
+  ],
+  "blurb": "Rahab was a brave woman in Jericho. She helped God's spies escape, even when it was dangerous! Because she trusted God, He saved her and her family when Jericho fell. God is full of grace and can save anyone who believes in Him.",
+  "bullets": [
+   "Lived in Jericho",
+   "Helped Israelite spies",
+   "Saved by a scarlet cord"
+  ]
+ },
+ {
+  "id": "deborah",
+  "name": "Deborah",
+  "scene": "jdg-4-3",
+  "passages": [
+   "Judges 4"
+  ],
+  "blurb": "Deborah was a very smart and brave leader who helped God's people, Israel. She was a judge, which meant she helped people make good choices, and a prophetess, which meant she shared God's messages. God used her to help Israel win a big battle! Her story shows us that God can use anyone, even a woman, to do amazing things for Him and to show His power.",
+  "bullets": [
+   "A wise leader and prophetess",
+   "Helped Israel win a big battle",
+   "Showed God uses everyone"
+  ]
+ },
+ {
+  "id": "gideon",
+  "name": "Gideon",
+  "scene": "jdg-6-3",
+  "passages": [
+   "Judges 6",
+   "Judges 7"
+  ],
+  "blurb": "Gideon was a brave leader God chose to save His people. Even though Gideon felt small, God helped him win a big battle with only 300 men! This shows that God can use anyone, no matter how weak they feel, to do amazing things, just like Jesus helps us.",
+  "bullets": [
+   "God chose Gideon to save His people.",
+   "Won a big battle with only 300 men.",
+   "God uses the weak to do great things."
+  ]
+ },
+ {
+  "id": "samson",
+  "name": "Samson",
+  "scene": "jdg-16-11",
+  "passages": [
+   "Judges 13",
+   "Judges 16"
+  ],
+  "blurb": "Samson was a super strong leader chosen by God to save his people from their enemies. Even when he made big mistakes and lost his strength, God still used him. His story reminds us that God can use anyone, and He always keeps His promises, just like Jesus saves us even when we mess up.",
+  "bullets": [
+   "God gave him amazing strength",
+   "His long hair was a special promise to God",
+   "He brought down a temple in the end"
+  ]
+ },
+ {
+  "id": "ruth",
+  "name": "Ruth",
+  "scene": "rut-2-1",
+  "passages": [
+   "Ruth 1",
+   "Ruth 2"
+  ],
+  "blurb": "Ruth was a kind and loyal woman who stayed with her mother-in-law, Naomi, even when times were very hard. She worked hard in the fields to find food for them both. God blessed her faithfulness, and her family tree even led to King David and Jesus!",
+  "bullets": [
+   "Loyal to her mother-in-law, Naomi",
+   "Worked hard in the fields",
+   "Her family led to Jesus"
+  ]
+ },
+ {
+  "id": "naomi",
+  "name": "Naomi",
+  "scene": "rut-4-6",
+  "passages": [
+   "Ruth 1",
+   "Ruth 4"
+  ],
+  "blurb": "Naomi was a mom and grandma who faced sadness but found joy again! God used her, Ruth, and Boaz to bring Jesus' family line into the world. This shows God's amazing grace and how He turns sorrow into happiness.",
+  "bullets": [
+   "Lost her husband and sons",
+   "Returned to Bethlehem with Ruth",
+   "Became grandma to Obed"
+  ]
+ },
+ {
+  "id": "boaz",
+  "name": "Boaz",
+  "scene": "rut-2-2",
+  "passages": [
+   "Ruth 2",
+   "Ruth 4"
+  ],
+  "blurb": "Boaz was a kind and rich man who helped Ruth, a young woman who had lost her husband. He made sure she had food and a safe place to work. Because of his love and care, Ruth became his wife, and they had a baby named Obed, who was an ancestor of Jesus!",
+  "bullets": [
+   "Kind farmer who helped Ruth",
+   "Married Ruth and had a son, Obed",
+   "Ancestor of King David and Jesus"
+  ]
+ },
+ {
+  "id": "hannah",
+  "name": "Hannah",
+  "scene": "1sa-1-4",
+  "passages": [
+   "1 Samuel 1"
+  ],
+  "blurb": "Hannah really wanted a baby, but she couldn't have one. She prayed to God with all her heart, promising to give her child back to Him. God heard her prayer and gave her a special son named Samuel! This shows how God listens to our prayers and gives us good gifts, just like He gave us Jesus.",
+  "bullets": [
+   "Prayed for a baby",
+   "God answered her prayer",
+   "Mother of Samuel"
+  ]
+ },
+ {
+  "id": "samuel",
+  "name": "Samuel",
+  "scene": "1sa-16-10",
+  "passages": [
+   "1 Samuel 3",
+   "1 Samuel 16"
+  ],
+  "blurb": "Samuel was a special prophet who heard God's voice even as a boy. God chose him to pick new leaders for His people, like when he anointed young David to be king. Samuel showed that God sees our hearts, not just what's on the outside, and chooses people for His big plans, just like He chose Jesus to be our forever King.",
+  "bullets": [
+   "Heard God's voice when he was young",
+   "Anointed David to be king",
+   "A prophet who spoke for God"
+  ]
+ },
+ {
+  "id": "saul",
+  "name": "Saul",
+  "scene": "1sa-10-1",
+  "passages": [
+   "1 Samuel 9",
+   "1 Samuel 15"
+  ],
+  "blurb": "Saul was Israel's first king! God chose him, but Saul didn't always obey God. He learned that obeying God is more important than anything else. Even when we make mistakes, God still loves us and has a plan.",
+  "bullets": [
+   "First king of Israel",
+   "Didn't always obey God",
+   "God chose a new king"
+  ]
+ },
+ {
   "id": "david",
   "name": "David",
-  "scene": "david-and-goliath",
+  "scene": "1sa-17-10",
   "passages": [
    "1 Samuel 17",
    "Psalm 23",
    "2 Samuel 7"
   ],
-  "blurb": "David was a shepherd boy who trusted God more than he feared a giant. God chose him to be king of Israel, and he wrote many of the Psalms. Jesus was born from David's family, just as God promised.",
+  "blurb": "David was a brave shepherd boy who became a great king! He trusted God to help him fight a giant named Goliath, even when no one else would. God was with David, just like Jesus, our good shepherd, is always with us.",
   "bullets": [
-   "Beat Goliath with a sling, a stone, and faith in God",
-   "Wrote songs to God, like Psalm 23",
-   "Made big mistakes, but always came back to God"
+   "Shepherd boy who fought a giant",
+   "Became King of Israel",
+   "Wrote many songs to God"
   ]
  },
  {
   "id": "goliath",
   "name": "Goliath",
-  "scene": "goliath-challenges-israel",
+  "scene": "1sa-17-2",
   "passages": [
    "1 Samuel 17"
   ],
-  "blurb": "Goliath was a giant warrior from the Philistines, over nine feet tall. For forty days he dared Israel's army to fight him, and everyone was afraid - until a boy named David stepped up.",
+  "blurb": "Goliath was a huge, strong warrior who scared everyone! He challenged God's people, but a brave young shepherd named David trusted God and won a great victory. This shows that with God, even the smallest can overcome the biggest challenges.",
   "bullets": [
-   "Wore heavy armor and carried a huge spear",
-   "Laughed at David for being small",
-   "Shows that God's power is bigger than any giant"
+   "A giant warrior from the Philistines.",
+   "He was over 9 feet tall!",
+   "Defeated by young David and a slingshot."
   ]
  },
  {
   "id": "jonathan",
   "name": "Jonathan",
-  "scene": "david-and-jonathan",
+  "scene": "1sa-18-3",
   "passages": [
    "1 Samuel 18",
    "1 Samuel 20"
   ],
-  "blurb": "Jonathan was King Saul's son and David's best friend. Even though he could have been king, he loved David and protected him from his own father.",
+  "blurb": "Jonathan was a prince, King Saul's son. But he loved David, a brave shepherd boy, more than anyone! Jonathan helped David escape from his angry father, even though it meant he wouldn't be king. Their friendship reminds us of God's amazing love for us.",
   "bullets": [
-   "Gave David his own robe and sword as a sign of friendship",
-   "Warned David when Saul wanted to hurt him",
-   "Showed what a true, selfless friend looks like"
+   "Son of King Saul",
+   "Best friends with David",
+   "Helped David escape"
+  ]
+ },
+ {
+  "id": "nathan",
+  "name": "Nathan",
+  "scene": "2sa-12-4",
+  "passages": [
+   "2 Samuel 12"
+  ],
+  "blurb": "Nathan was a brave prophet who worked for God. He told King David a special story to help David see that he had done something wrong. Nathan helped David understand that God wants us to be fair and kind to everyone, just like Jesus teaches us to be.",
+  "bullets": [
+   "God's prophet and messenger",
+   "Bravely told King David the truth",
+   "Helped David ask God for forgiveness"
+  ]
+ },
+ {
+  "id": "mephibosheth",
+  "name": "Mephibosheth",
+  "scene": "2sa-9-3",
+  "passages": [
+   "2 Samuel 9"
+  ],
+  "blurb": "Mephibosheth was Jonathan's son, and his feet were hurt. King David, who was Jonathan's best friend, found Mephibosheth and showed him amazing kindness. Even though Mephibosheth was from King Saul's family, David brought him to live in the palace and eat at his own table, just like one of his sons. This shows us how God loves us and brings us close to Him, even when we don't deserve it, just like Jesus does for us!",
+  "bullets": [
+   "Grandson of King Saul",
+   "Jonathan's son",
+   "Ate at King David's table"
+  ]
+ },
+ {
+  "id": "absalom",
+  "name": "Absalom",
+  "scene": "2sa-18-1",
+  "passages": [
+   "2 Samuel 15",
+   "2 Samuel 18"
+  ],
+  "blurb": "Absalom was King David's handsome son. He tried to take his father's kingdom, which made David very sad. Absalom's story reminds us that being disobedient can lead to sad endings, but God always offers forgiveness and new beginnings.",
+  "bullets": [
+   "Son of King David",
+   "Tried to take his father's throne",
+   "Caught in a tree by his hair"
+  ]
+ },
+ {
+  "id": "solomon",
+  "name": "Solomon",
+  "scene": "1ki-3-7",
+  "passages": [
+   "1 Kings 3",
+   "Proverbs 3"
+  ],
+  "blurb": "Solomon was a wise king who asked God for wisdom to lead his people well. God gave him great understanding, and he became famous for his fair judgments. His wisdom reminds us that Jesus is the wisest king of all.",
+  "bullets": [
+   "Asked God for wisdom, not riches",
+   "Judged fairly between two mothers",
+   "Wrote many wise sayings (Proverbs)"
+  ]
+ },
+ {
+  "id": "elijah",
+  "name": "Elijah",
+  "scene": "1ki-18-3",
+  "passages": [
+   "1 Kings 17",
+   "1 Kings 18"
+  ],
+  "blurb": "Elijah was a brave prophet who told people to follow God, not fake gods. God showed everyone that He is the only true God by sending fire from heaven when Elijah prayed. This shows how God is powerful and always keeps His promises.",
+  "bullets": [
+   "Fed by ravens during a drought",
+   "God sent fire from heaven for his sacrifice",
+   "Never died, taken to heaven in a whirlwind"
+  ]
+ },
+ {
+  "id": "elisha",
+  "name": "Elisha",
+  "scene": "2ki-4-12",
+  "passages": [
+   "2 Kings 2",
+   "2 Kings 4"
+  ],
+  "blurb": "Elisha was a special prophet who followed God's friend Elijah. When Elijah went to heaven, Elisha got double his power! God used Elisha to do amazing miracles, like bringing a boy back to life. This shows us how God cares for us and how Jesus has power over death too!",
+  "bullets": [
+   "Got double power from Elijah",
+   "Made a widow's oil never run out",
+   "Brought a boy back to life"
+  ]
+ },
+ {
+  "id": "naaman",
+  "name": "Naaman",
+  "scene": "2ki-5-10",
+  "passages": [
+   "2 Kings 5"
+  ],
+  "blurb": "Naaman was a brave army leader, but he was very sick with leprosy. A young girl told him about God's prophet Elisha. Naaman dipped in the Jordan River seven times and God made him completely well! This shows God's amazing power and grace, like how Jesus heals our hearts.",
+  "bullets": [
+   "Brave army leader",
+   "Healed by dipping in Jordan River",
+   "God showed His power"
+  ]
+ },
+ {
+  "id": "hezekiah",
+  "name": "Hezekiah",
+  "scene": "2ki-19-2",
+  "passages": [
+   "2 Kings 19",
+   "Isaiah 37"
+  ],
+  "blurb": "Hezekiah was a good king who loved God. When a powerful enemy army came to attack, Hezekiah prayed to God for help. God heard his prayer and sent an angel to save his people! This shows how God always listens to us when we trust Him, just like Jesus taught us.",
+  "bullets": [
+   "A good king who trusted God.",
+   "Prayed when a big army came.",
+   "God sent an angel to save his people."
+  ]
+ },
+ {
+  "id": "josiah",
+  "name": "Josiah",
+  "scene": "2ki-22-4",
+  "passages": [
+   "2 Kings 22",
+   "2 Kings 23"
+  ],
+  "blurb": "Josiah became king when he was just 8 years old! He loved God and helped his people follow God again after a special book of God's rules was found. Josiah showed everyone how important it is to listen to God's Word and obey Him with all your heart, just like Jesus always obeyed His Father.",
+  "bullets": [
+   "Became king when he was 8!",
+   "Helped his people follow God",
+   "Tore his clothes when he heard God's Word"
+  ]
+ },
+ {
+  "id": "isaiah",
+  "name": "Isaiah",
+  "scene": "2ki-19-2",
+  "passages": [
+   "Isaiah 6",
+   "Isaiah 53"
+  ],
+  "blurb": "Isaiah was a prophet, a special messenger from God! He told people about God's big plans and warned them to be good. Isaiah also shared amazing news about a special King, Jesus, who would come to save everyone!",
+  "bullets": [
+   "God's special messenger",
+   "Warned people to be good",
+   "Spoke about Jesus, the Savior"
+  ]
+ },
+ {
+  "id": "jeremiah",
+  "name": "Jeremiah",
+  "scene": "jer-38-3",
+  "passages": [
+   "Jeremiah 1",
+   "Jeremiah 29"
+  ],
+  "blurb": "Jeremiah was a special prophet chosen by God when he was very young. He had to tell people difficult messages, even when they didn't want to listen. God was always with Jeremiah, just like He is with us, showing His amazing grace.",
+  "bullets": [
+   "God chose him as a young prophet.",
+   "He shared God's message, even when hard.",
+   "God promised to be with him always."
+  ]
+ },
+ {
+  "id": "ezekiel",
+  "name": "Ezekiel",
+  "scene": "ezk-37-4",
+  "passages": [
+   "Ezekiel 37"
+  ],
+  "blurb": "Ezekiel was a special messenger from God. God showed him a valley full of dry bones and told him to speak to them! When Ezekiel spoke, the bones came back to life, showing us that God can make anything new again, even our hearts.",
+  "bullets": [
+   "God's special messenger",
+   "Saw a valley of dry bones",
+   "Bones came back to life!"
+  ]
+ },
+ {
+  "id": "daniel",
+  "name": "Daniel",
+  "scene": "dan-6-4",
+  "passages": [
+   "Daniel 1",
+   "Daniel 6"
+  ],
+  "blurb": "Daniel was a young man who loved God very much. Even when bad men tried to stop him, Daniel kept praying to God every day. God protected Daniel when he was thrown into a den of hungry lions! This shows us that God always takes care of those who trust in Him, just like Jesus takes care of us.",
+  "bullets": [
+   "Prayed to God 3 times a day",
+   "Thrown into a lions' den",
+   "God saved him from the lions"
+  ]
+ },
+ {
+  "id": "shadrach-meshach-and-abednego",
+  "name": "Shadrach, Meshach and Abednego",
+  "scene": "dan-3-10",
+  "passages": [
+   "Daniel 3"
+  ],
+  "blurb": "Shadrach, Meshach, and Abednego were brave friends who loved God more than anything! They wouldn't bow to a golden statue, so a king threw them into a super-hot fire. But God protected them, and they walked out without a single burn, showing everyone His amazing power!",
+  "bullets": [
+   "Friends of Daniel",
+   "Threw into a fiery furnace",
+   "God saved them!"
+  ]
+ },
+ {
+  "id": "nebuchadnezzar",
+  "name": "Nebuchadnezzar",
+  "scene": "dan-3-2",
+  "passages": [
+   "Daniel 4"
+  ],
+  "blurb": "Nebuchadnezzar was a powerful king who built many amazing things. He sometimes forgot that God was even more powerful. God showed him that He is in charge of everything, even kings! God is patient and wants everyone to know Him.",
+  "bullets": [
+   "King of Babylon",
+   "Learned God is in charge",
+   "Became humble"
+  ]
+ },
+ {
+  "id": "jonah",
+  "name": "Jonah",
+  "scene": "jon-1-6",
+  "passages": [
+   "Jonah 1",
+   "Jonah 2",
+   "Jonah 3"
+  ],
+  "blurb": "Jonah was a prophet who didn't want to tell the city of Nineveh about God. He tried to run away, but God sent a big fish to swallow him! After three days, the fish spit Jonah out, and he finally obeyed God. This story reminds us that God gives second chances, just like Jesus rose after three days.",
+  "bullets": [
+   "Swallowed by a big fish",
+   "Preached to Nineveh",
+   "Learned to obey God"
+  ]
+ },
+ {
+  "id": "esther",
+  "name": "Esther",
+  "scene": "est-7-2",
+  "passages": [
+   "Esther 4",
+   "Esther 7"
+  ],
+  "blurb": "Esther was a brave queen who saved her people! An evil man wanted to hurt all the Jews, but Esther bravely spoke to the king, even though it was very risky. God used her courage to protect many lives, showing us His great love and grace for His people. Her story reminds us that God always has a plan.",
+  "bullets": [
+   "Became queen of Persia",
+   "Bravely spoke to the king",
+   "Saved her people from danger"
+  ]
+ },
+ {
+  "id": "mordecai",
+  "name": "Mordecai",
+  "scene": "est-6-4",
+  "passages": [
+   "Esther 2",
+   "Esther 6"
+  ],
+  "blurb": "Mordecai was a brave man who helped his cousin Esther become queen! He uncovered a plot to hurt the king and later, God used him to save all his people from a bad man named Haman. God always watches over his people, just like he watches over you!",
+  "bullets": [
+   "Esther's cousin and guardian",
+   "Overheard a plot to harm the king",
+   "Honored by the king for his loyalty"
+  ]
+ },
+ {
+  "id": "haman",
+  "name": "Haman",
+  "scene": "est-3-6",
+  "passages": [
+   "Esther 3",
+   "Esther 7"
+  ],
+  "blurb": "Haman was a very proud man who wanted everyone to bow to him. When one man wouldn't, Haman got very angry and tried to hurt all of God's people. But God had a plan to save them through Queen Esther!",
+  "bullets": [
+   "Wanted everyone to bow to him",
+   "Tried to hurt God's people",
+   "Was stopped by Queen Esther"
+  ]
+ },
+ {
+  "id": "ezra",
+  "name": "Ezra",
+  "scene": "ezr-10-5",
+  "passages": [
+   "Ezra 7"
+  ],
+  "blurb": "Ezra was a special priest and teacher who loved God's laws. He helped God's people learn to follow God again after they came back to their home. Ezra showed them how important it is to listen to God's Word, just like Jesus teaches us today.",
+  "bullets": [
+   "A special priest and teacher",
+   "Helped people learn God's laws",
+   "Led people back to God"
+  ]
+ },
+ {
+  "id": "nehemiah",
+  "name": "Nehemiah",
+  "scene": "neh-2-3",
+  "passages": [
+   "Nehemiah 2",
+   "Nehemiah 4"
+  ],
+  "blurb": "Nehemiah was sad because Jerusalem's walls were broken down. He asked God for help and then bravely asked the king if he could go fix them! Even when bad guys tried to stop him, Nehemiah trusted God and led the people to rebuild the walls. God helped them finish the big job!",
+  "bullets": [
+   "Cupbearer to the king",
+   "Inspected Jerusalem's broken walls",
+   "Led people to rebuild the walls"
+  ]
+ },
+ {
+  "id": "job",
+  "name": "Job",
+  "scene": "job-42-3",
+  "passages": [
+   "Job 1",
+   "Job 42"
+  ],
+  "blurb": "Job was a good man who loved God. He lost everything he had, even his children, but he never stopped trusting God. God gave him back even more than he had before. This shows us that God is always good and faithful, and He blesses those who love Him, just like Jesus blesses us.",
+  "bullets": [
+   "Lived in the land of Uz",
+   "Lost everything but kept faith",
+   "God restored all he lost and more"
+  ]
+ },
+ {
+  "id": "mary-the-mother-of-jesus",
+  "name": "Mary, the Mother of Jesus",
+  "scene": "luk-1-11",
+  "passages": [
+   "Luke 1",
+   "Luke 2"
+  ],
+  "blurb": "Mary was a young woman chosen by God to be the mother of Jesus, God's own Son! She humbly said \"yes\" to God's special plan. It shows how God picks ordinary people for amazing things and always keeps His promises.",
+  "bullets": [
+   "Chosen to be Jesus' mother",
+   "Visited by the angel Gabriel",
+   "Trusted God's special plan"
+  ]
+ },
+ {
+  "id": "joseph-of-nazareth",
+  "name": "Joseph of Nazareth",
+  "scene": "mat-1-4",
+  "passages": [
+   "Matthew 1",
+   "Matthew 2"
+  ],
+  "blurb": "Joseph was a kind carpenter chosen by God to be Jesus's earthly father. He listened to angels in dreams and always protected his special family. Joseph shows us how God takes care of us, even when things are confusing.",
+  "bullets": [
+   "Jesus's earthly dad",
+   "Listened to angels in dreams",
+   "Protected Mary and Jesus"
+  ]
+ },
+ {
+  "id": "elizabeth",
+  "name": "Elizabeth",
+  "scene": "luk-1-16",
+  "passages": [
+   "Luke 1"
+  ],
+  "blurb": "Elizabeth was a kind and good woman who loved God. Even though she was old, God gave her a special baby boy named John. Her baby would grow up to tell everyone about Jesus!",
+  "bullets": [
+   "Cousin of Mary, Jesus' mom",
+   "Had a baby boy named John",
+   "John told people about Jesus"
+  ]
+ },
+ {
+  "id": "john-the-baptist",
+  "name": "John the Baptist",
+  "scene": "luk-3-6",
+  "passages": [
+   "Matthew 3",
+   "Luke 3"
+  ],
+  "blurb": "John the Baptist was a special messenger sent by God to tell everyone that Jesus was coming! He wore camel hair clothes and ate locusts and wild honey. He taught people to turn away from bad things and get ready for God's love. John helped people understand that Jesus is the Savior God promised.",
+  "bullets": [
+   "God's special messenger",
+   "Told people Jesus was coming",
+   "Taught about turning to God"
+  ]
+ },
+ {
+  "id": "jesus",
+  "name": "Jesus",
+  "scene": "luk-4-15",
+  "passages": [
+   "Luke 2",
+   "John 3",
+   "Matthew 28"
+  ],
+  "blurb": "Jesus is God's Son, who came to earth as a baby and grew up to show us God's love. He taught people about God, healed the sick, and even came back to life after dying! He wants us to know God and live forever with Him.",
+  "bullets": [
+   "Born in Bethlehem",
+   "Taught about God's love",
+   "Rose from the dead"
+  ]
+ },
+ {
+  "id": "peter",
+  "name": "Peter",
+  "scene": "mat-14-29",
+  "passages": [
+   "Luke 5",
+   "Matthew 14",
+   "Acts 2"
+  ],
+  "blurb": "Peter was a fisherman who became one of Jesus' closest friends. He was brave and sometimes made mistakes, like when he tried to walk on water and started to sink! But Jesus always helped him, showing us God's amazing grace and how He never gives up on us.",
+  "bullets": [
+   "Fisherman called by Jesus",
+   "Walked on water (for a bit!)",
+   "Preached on Pentecost"
+  ]
+ },
+ {
+  "id": "andrew",
+  "name": "Andrew",
+  "scene": "jhn-6-6",
+  "passages": [
+   "John 1",
+   "John 6"
+  ],
+  "blurb": "Andrew was one of Jesus' first friends and a disciple! He was always bringing people to Jesus, like his brother Peter and a boy with some food. God used Andrew to help Jesus feed thousands of people with just a little bit of bread and fish. Andrew shows us how even small acts of kindness can do amazing things with God's help!",
+  "bullets": [
+   "One of Jesus' first friends",
+   "Brother of Peter",
+   "Helped feed 5000 people"
+  ]
+ },
+ {
+  "id": "james",
+  "name": "James",
+  "scene": "mat-17-4",
+  "passages": [
+   "Matthew 4",
+   "Mark 10"
+  ],
+  "blurb": "James was one of Jesus' special friends, called to follow Him while fishing with his brother John and their dad. He saw Jesus do amazing things, like shining super bright on a mountain! James was a brave leader who loved Jesus very much, showing us how to follow God's plan.",
+  "bullets": [
+   "Brother of John",
+   "One of Jesus' first disciples",
+   "Saw Jesus' Transfiguration"
+  ]
+ },
+ {
+  "id": "john",
+  "name": "John",
+  "scene": "jhn-13-4",
+  "passages": [
+   "John 13",
+   "John 21"
+  ],
+  "blurb": "John was one of Jesus' closest friends! He was called the 'disciple Jesus loved.' John wrote a Gospel book and letters to tell everyone about Jesus' amazing love and how we can live for Him.",
+  "bullets": [
+   "One of Jesus' best friends",
+   "Wrote a Gospel and letters",
+   "Taught about God's love"
+  ]
+ },
+ {
+  "id": "matthew",
+  "name": "Matthew",
+  "scene": "luk-5-12",
+  "passages": [
+   "Matthew 9",
+   "Luke 5"
+  ],
+  "blurb": "Matthew was a tax collector, collecting money for the Roman government. Most people didn't like tax collectors, but Jesus saw Matthew's heart. Jesus called Matthew to follow Him, and Matthew left everything to become Jesus' friend and helper. This shows how Jesus loves everyone, no matter what job they do!",
+  "bullets": [
+   "Was a tax collector",
+   "Jesus called him to follow",
+   "Became one of Jesus' 12 special friends"
+  ]
+ },
+ {
+  "id": "thomas",
+  "name": "Thomas",
+  "scene": "jhn-20-5",
+  "passages": [
+   "John 20"
+  ],
+  "blurb": "Thomas was one of Jesus' special friends. When Jesus came back to life, Thomas wasn't there at first and found it hard to believe. But Jesus lovingly showed Thomas his wounds, and then Thomas truly believed! This shows us that Jesus cares for everyone and helps us believe in Him.",
+  "bullets": [
+   "One of Jesus' 12 special friends",
+   "Doubted Jesus was alive again",
+   "Believed after seeing Jesus' wounds"
+  ]
+ },
+ {
+  "id": "judas-iscariot",
+  "name": "Judas Iscariot",
+  "scene": "mat-26-27",
+  "passages": [
+   "Matthew 26"
+  ],
+  "blurb": "Judas was one of Jesus's twelve special friends. But he made a very sad choice to betray Jesus to people who wanted to hurt Him. Judas showed them who Jesus was with a kiss, which led to Jesus's arrest.",
+  "bullets": [
+   "One of Jesus's 12 disciples",
+   "Betrayed Jesus with a kiss",
+   "Felt deep sadness afterwards"
+  ]
+ },
+ {
+  "id": "mary-magdalene",
+  "name": "Mary Magdalene",
+  "scene": "jhn-20-1",
+  "passages": [
+   "John 20"
+  ],
+  "blurb": "Mary Magdalene was a special friend of Jesus. On the first Easter morning, she was the first to see that Jesus' tomb was empty! Then, Jesus appeared to her, and she was the first to tell everyone that Jesus was alive. This shows how much Jesus loved her and chose her to share the best news ever!",
+  "bullets": [
+   "First to see Jesus' empty tomb",
+   "First to see Jesus after He rose",
+   "First to tell others Jesus is alive!"
+  ]
+ },
+ {
+  "id": "martha",
+  "name": "Martha",
+  "scene": "jhn-11-4",
+  "passages": [
+   "Luke 10",
+   "John 11"
+  ],
+  "blurb": "Martha was a kind woman who loved Jesus and welcomed Him into her home. One time, she was very busy serving while her sister Mary sat and listened to Jesus. Martha learned that listening to Jesus is the most important thing. Later, when her brother Lazarus died, Martha believed Jesus could do anything, even raise him from the dead! This shows us Jesus is the King over death.",
+  "bullets": [
+   "Sister of Mary and Lazarus",
+   "Loved to serve Jesus",
+   "Believed Jesus is the Resurrection"
+  ]
+ },
+ {
+  "id": "mary-of-bethany",
+  "name": "Mary of Bethany",
+  "scene": "jhn-12-3",
+  "passages": [
+   "Luke 10",
+   "John 12"
+  ],
+  "blurb": "Mary loved to listen to Jesus. She sat at His feet, learning from Him. Once, she poured expensive perfume on Jesus' feet and wiped them with her hair! This showed how much she loved and honored Jesus, preparing Him for a sad time ahead.",
+  "bullets": [
+   "Sister of Martha and Lazarus",
+   "Loved listening to Jesus",
+   "Anointed Jesus' feet with perfume"
+  ]
+ },
+ {
+  "id": "lazarus",
+  "name": "Lazarus",
+  "scene": "jhn-11-11",
+  "passages": [
+   "John 11"
+  ],
+  "blurb": "Lazarus was a special friend of Jesus. He got very sick and died, which made his sisters and Jesus very sad. But Jesus showed his amazing power by bringing Lazarus back to life! This miracle showed everyone that Jesus is God's Son and has power over death.",
+  "bullets": [
+   "Lived in Bethany with his sisters Mary & Martha",
+   "Jesus's good friend who got very sick",
+   "Jesus brought him back to life!"
+  ]
+ },
+ {
+  "id": "zacchaeus",
+  "name": "Zacchaeus",
+  "scene": "luk-19-2",
+  "passages": [
+   "Luke 19"
+  ],
+  "blurb": "Zacchaeus was a short man who really wanted to see Jesus! He climbed a tree so he could see over the crowd. Jesus saw him and came to his house, showing that Jesus loves everyone and wants to be with them.",
+  "bullets": [
+   "He was a tax collector.",
+   "He climbed a sycamore tree.",
+   "Jesus came to his house."
+  ]
+ },
+ {
+  "id": "nicodemus",
+  "name": "Nicodemus",
+  "scene": "jhn-3-2",
+  "passages": [
+   "John 3"
+  ],
+  "blurb": "Nicodemus was a very important teacher who came to Jesus at night to learn more. Jesus taught him about being born again, which means having a new heart from God. This story shows how Jesus welcomes everyone, even important people, to understand His love and grace.",
+  "bullets": [
+   "Important teacher",
+   "Came to Jesus at night",
+   "Learned about being \"born again\""
+  ]
+ },
+ {
+  "id": "bartimaeus",
+  "name": "Bartimaeus",
+  "scene": "mrk-10-21",
+  "passages": [
+   "Mark 10"
+  ],
+  "blurb": "Bartimaeus was a blind man who sat by the road and begged. When he heard Jesus was nearby, he called out for help! Jesus heard him, and because Bartimaeus had faith, Jesus healed him so he could see again. This shows how Jesus cares for everyone.",
+  "bullets": [
+   "Blind man",
+   "Sat by the road",
+   "Jesus healed him"
+  ]
+ },
+ {
+  "id": "pontius-pilate",
+  "name": "Pontius Pilate",
+  "scene": "jhn-18-8",
+  "passages": [
+   "Matthew 27",
+   "John 18"
+  ],
+  "blurb": "Pontius Pilate was a Roman ruler in Judea. He was the one who decided what would happen to Jesus, even though he knew Jesus hadn't done anything wrong. Pilate tried to let Jesus go, but the crowd wanted Jesus crucified. Pilate washed his hands, saying he was innocent, and Jesus was sent to die. This shows us that Jesus died for our sins, even though he was innocent.",
+  "bullets": [
+   "Roman ruler in Judea",
+   "Tried Jesus, found him innocent",
+   "Sent Jesus to be crucified"
+  ]
+ },
+ {
+  "id": "stephen",
+  "name": "Stephen",
+  "scene": "act-6-3",
+  "passages": [
+   "Acts 6",
+   "Acts 7"
+  ],
+  "blurb": "Stephen was a special helper in the early church, full of God's grace and power! He did amazing things and shared about Jesus. Even when people were mean to him, he bravely told them about God's love, showing us how to be strong in our faith.",
+  "bullets": [
+   "Chosen to help others",
+   "Did amazing things for God",
+   "Bravely shared about Jesus"
+  ]
+ },
+ {
+  "id": "philip",
+  "name": "Philip",
+  "scene": "act-8-4",
+  "passages": [
+   "Acts 8"
+  ],
+  "blurb": "Philip was a special helper for Jesus. He traveled to Samaria and shared the good news, showing everyone God's amazing power by healing sick people! He even helped a man from Ethiopia understand about Jesus and then baptized him.",
+  "bullets": [
+   "Shared Jesus's story in Samaria.",
+   "Healed many sick people.",
+   "Taught the Ethiopian about Jesus."
+  ]
+ },
+ {
+  "id": "the-ethiopian-official",
+  "name": "The Ethiopian Official",
+  "scene": "act-8-22",
+  "passages": [
+   "Acts 8"
+  ],
+  "blurb": "This important official from Ethiopia was reading the Bible but didn't understand it. God sent Philip to explain. When he learned about Jesus, he wanted to be baptized right away! This shows how God wants everyone to know about Him.",
+  "bullets": [
+   "From Ethiopia, a faraway land",
+   "Was reading Isaiah in his chariot",
+   "Philip explained Jesus to him"
+  ]
+ },
+ {
+  "id": "dorcas",
+  "name": "Dorcas",
+  "scene": "act-9-27",
+  "passages": [
+   "Acts 9"
+  ],
+  "blurb": "Dorcas was a kind lady who loved to help others, especially by sewing clothes for people who needed them. When she died, everyone was so sad! But God used Peter to bring her back to life, showing His amazing power and love for those who serve Him.",
+  "bullets": [
+   "Lived in Joppa",
+   "Made clothes for the poor",
+   "Raised from the dead by Peter"
+  ]
+ },
+ {
+  "id": "cornelius",
+  "name": "Cornelius",
+  "scene": "act-10-7",
+  "passages": [
+   "Acts 10"
+  ],
+  "blurb": "Cornelius was a good man who loved God, even though he wasn't Jewish. God sent an angel to tell him to find Peter. When Peter shared about Jesus, Cornelius and his whole family believed and received the Holy Spirit! This showed that God's love and salvation are for everyone.",
+  "bullets": [
+   "Roman army captain",
+   "Prayed and gave to the poor",
+   "First Gentile believer"
+  ]
+ },
+ {
+  "id": "paul",
+  "name": "Paul",
+  "scene": "act-9-13",
+  "passages": [
+   "Acts 9",
+   "Acts 16",
+   "Philippians 4"
+  ],
+  "blurb": "Paul used to hurt Christians, but Jesus changed his heart! He became a brave missionary, traveling far and wide to tell everyone about God's amazing love and Jesus's good news. He showed us that God's grace can change anyone.",
+  "bullets": [
+   "Used to be called Saul",
+   "Traveled to share Jesus's story",
+   "Wrote many Bible letters"
+  ]
+ },
+ {
+  "id": "barnabas",
+  "name": "Barnabas",
+  "scene": "act-11-2",
+  "passages": [
+   "Acts 11",
+   "Acts 13"
+  ],
+  "blurb": "Barnabas was a kind and encouraging friend to Paul. He helped Paul meet other Christians and travel to new places to tell everyone about Jesus. Barnabas showed God's grace by always giving people a second chance.",
+  "bullets": [
+   "His name means \"Son of Encouragement\"",
+   "Helped Paul meet other Christians",
+   "Traveled with Paul to share Jesus"
+  ]
+ },
+ {
+  "id": "silas",
+  "name": "Silas",
+  "scene": "act-16-16",
+  "passages": [
+   "Acts 16"
+  ],
+  "blurb": "Silas was a good friend of Paul, helping him share God's good news. Even when they were beaten and put in jail for telling people about Jesus, they sang songs to God! God heard them and set them free, showing His amazing power and love.",
+  "bullets": [
+   "Traveled with Paul",
+   "Sang praises in jail",
+   "God set him free from prison"
+  ]
+ },
+ {
+  "id": "timothy",
+  "name": "Timothy",
+  "scene": "2ti-1-1",
+  "passages": [
+   "Acts 16",
+   "2 Timothy 1"
+  ],
+  "blurb": "Timothy was a young helper to Paul, a great missionary! He learned about Jesus from his mom and grandma. Timothy was brave and helped tell many people about God's amazing love and grace.",
+  "bullets": [
+   "Learned about God from his family.",
+   "Traveled with Paul on his journeys.",
+   "Helped share the good news of Jesus."
+  ]
+ },
+ {
+  "id": "lydia",
+  "name": "Lydia",
+  "scene": "act-16-9",
+  "passages": [
+   "Acts 16"
+  ],
+  "blurb": "Lydia was a smart businesswoman who sold fancy purple cloth. She loved God and listened carefully when Paul talked about Jesus. Her heart opened up, and she and her whole family believed in Jesus and were baptized! This shows how God touches hearts with His grace.",
+  "bullets": [
+   "Sold purple cloth",
+   "First Christian in Europe",
+   "Opened her home to Paul"
+  ]
+ },
+ {
+  "id": "priscilla-and-aquila",
+  "name": "Priscilla and Aquila",
+  "scene": "act-18-21",
+  "passages": [
+   "Acts 18"
+  ],
+  "blurb": "Priscilla and Aquila were a super team who made tents and shared God's love! They helped Paul learn even more about Jesus and were brave missionaries. God used them to help many people understand His grace.",
+  "bullets": [
+   "Tentmakers by trade",
+   "Friends with Paul the Apostle",
+   "Taught others about Jesus"
   ]
  }
 ]

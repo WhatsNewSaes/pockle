@@ -1,0 +1,12 @@
+---
+name: Priscilla and Aquila
+scene: act-18-21
+chapters: Acts 18
+passages: Acts 18
+order: 84
+---
+Priscilla and Aquila were a super team who made tents and shared God's love! They helped Paul learn even more about Jesus and were brave missionaries. God used them to help many people understand His grace.
+
+- Tentmakers by trade
+- Friends with Paul the Apostle
+- Taught others about Jesus

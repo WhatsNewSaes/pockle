@@ -1,0 +1,12 @@
+---
+name: Lazarus
+scene: jhn-11-11
+chapters: John 11
+passages: John 11
+order: 69
+---
+Lazarus was a special friend of Jesus. He got very sick and died, which made his sisters and Jesus very sad. But Jesus showed his amazing power by bringing Lazarus back to life! This miracle showed everyone that Jesus is God's Son and has power over death.
+
+- Lived in Bethany with his sisters Mary & Martha
+- Jesus's good friend who got very sick
+- Jesus brought him back to life!

@@ -1,0 +1,12 @@
+---
+name: Noah
+scene: gen-6-7
+chapters: Genesis 6, Genesis 7, Genesis 8, Genesis 9
+passages: Genesis 6, Genesis 7, Genesis 8
+order: 3
+---
+Noah was a good man who loved God in a world that had forgotten Him. God told Noah to build a big boat called an ark to save his family and animals from a great flood. This shows us how God always makes a way to save those who trust Him, just like Jesus saves us.
+
+- He built a giant ark.
+- Saved his family and animals.
+- God promised never to flood the earth again.

@@ -1,47 +1,3235 @@
 {
- "david-and-goliath": {
-  "title": "David and Goliath",
-  "source": "dore",
-  "credit": "Gustave Dore, 1866 (public domain)",
+ "1jn-2-1": {
+  "title": "Two men are shown, one looking angry and clenching his fist, the other listening intently.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 John 2",
+  "characters": [],
+  "caption": "Two men are shown, one looking angry and clenching his fist, the other listening intently.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8819,
+  "hash": "b97d67ca"
+ },
+ "1jn-3-2": {
+  "title": "A man gives a basket of food and clothing to a family.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 John 3",
+  "characters": [],
+  "caption": "A man gives a basket of food and clothing to a family.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9114,
+  "hash": "28ca8161"
+ },
+ "1jn-4-1": {
+  "title": "John reads from a scroll to a group of men, teaching them about love.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 John 4",
+  "characters": [
+   "John"
+  ],
+  "caption": "John reads from a scroll to a group of men, teaching them about love.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8431,
+  "hash": "dfa689e1"
+ },
+ "1ki-1-8": {
+  "title": "Adonijah clings to the horns of the altar, fearing for his life from Solomon.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 1",
+  "characters": [
+   "Adonijah",
+   "Solomon"
+  ],
+  "caption": "Adonijah clings to the horns of the altar, fearing for his life from Solomon.",
+  "w": 407,
+  "h": 300,
+  "bytes": 11309,
+  "hash": "46618b06"
+ },
+ "1ki-11-3": {
+  "title": "King Solomon, old and with a long beard, looks downcast, having turned away from God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 11",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "King Solomon, old and with a long beard, looks downcast, having turned away from God.",
+  "w": 405,
+  "h": 300,
+  "bytes": 12173,
+  "hash": "6ead1c5b"
+ },
+ "1ki-16-1": {
+  "title": "A man offers a sacrifice on an altar, while others observe.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 16",
+  "characters": [],
+  "caption": "A man offers a sacrifice on an altar, while others observe.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10641,
+  "hash": "1074cc97"
+ },
+ "1ki-17-1": {
+  "title": "Elijah is fed by ravens with bread and meat by the brook Cherith, as commanded by God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 17",
+  "characters": [
+   "Elijah"
+  ],
+  "caption": "Elijah is fed by ravens with bread and meat by the brook Cherith, as commanded by God.",
+  "w": 409,
+  "h": 300,
+  "bytes": 8070,
+  "hash": "f1d502c0"
+ },
+ "1ki-17-9": {
+  "title": "Elijah returns the widow's son to his mother after raising him from the dead.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 17",
+  "characters": [
+   "Elijah"
+  ],
+  "caption": "Elijah returns the widow's son to his mother after raising him from the dead.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10235,
+  "hash": "4a64bb27"
+ },
+ "1ki-18-3": {
+  "title": "Elijah stands on Mount Carmel, addressing the people of Israel during the contest with the prophets of Baal.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 18",
+  "characters": [
+   "Elijah"
+  ],
+  "caption": "Elijah stands on Mount Carmel, addressing the people of Israel during the contest with the prophets of Baal.",
+  "w": 409,
+  "h": 300,
+  "bytes": 8881,
+  "hash": "ef3e5558"
+ },
+ "1ki-3-10": {
+  "title": "King Solomon orders a baby to be divided between two women, as a soldier holds the child.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "King Solomon orders a baby to be divided between two women, as a soldier holds the child.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10753,
+  "hash": "ae9e53f2"
+ },
+ "1ki-3-11": {
+  "title": "King Solomon judges between two women, ordering a baby to be divided with a sword.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "King Solomon"
+  ],
+  "caption": "King Solomon judges between two women, ordering a baby to be divided with a sword.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9927,
+  "hash": "359fa654"
+ },
+ "1ki-3-12": {
+  "title": "A woman smiles as she holds a baby, illustrating the story of the two mothers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [],
+  "caption": "A woman smiles as she holds a baby, illustrating the story of the two mothers.",
+  "w": 404,
+  "h": 300,
+  "bytes": 11143,
+  "hash": "22812b0d"
+ },
+ "1ki-3-2": {
+  "title": "Solomon dreams of God, who appears to him and grants him wisdom.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "Solomon dreams of God, who appears to him and grants him wisdom.",
+  "w": 411,
+  "h": 300,
+  "bytes": 10718,
+  "hash": "3d9b73c2"
+ },
+ "1ki-3-3": {
+  "title": "God appears to Solomon in a dream and offers him anything he desires.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "God appears to Solomon in a dream and offers him anything he desires.",
+  "w": 411,
+  "h": 300,
+  "bytes": 8707,
+  "hash": "0d643540"
+ },
+ "1ki-3-4": {
+  "title": "God appears to Solomon in a dream, offering him whatever he desires.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon",
+   "God"
+  ],
+  "caption": "God appears to Solomon in a dream, offering him whatever he desires.",
+  "w": 413,
+  "h": 300,
+  "bytes": 8422,
+  "hash": "bb269e46"
+ },
+ "1ki-3-5": {
+  "title": "King Solomon sits on his throne as people bring him gifts and treasures.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "King Solomon sits on his throne as people bring him gifts and treasures.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11377,
+  "hash": "60ba1556"
+ },
+ "1ki-3-7": {
+  "title": "King Solomon listens to the two women disputing over a child.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "King Solomon listens to the two women disputing over a child.",
+  "w": 424,
+  "h": 300,
+  "bytes": 11191,
+  "hash": "a56a0ef5"
+ },
+ "1ki-3-9": {
+  "title": "Two women are arguing, one with her face in her hands, the other gesturing angrily.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Kings 3",
+  "characters": [],
+  "caption": "Two women are arguing, one with her face in her hands, the other gesturing angrily.",
+  "w": 406,
+  "h": 300,
+  "bytes": 8481,
+  "hash": "2de52435"
+ },
+ "1sa-1-4": {
+  "title": "Hannah presents her son Samuel to Eli the priest at the tabernacle.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 1",
+  "characters": [
+   "Hannah",
+   "Samuel",
+   "Eli"
+  ],
+  "caption": "Hannah presents her son Samuel to Eli the priest at the tabernacle.",
+  "w": 412,
+  "h": 300,
+  "bytes": 11566,
+  "hash": "07d32958"
+ },
+ "1sa-10-1": {
+  "title": "Samuel anoints Saul with oil to make him ruler over Israel.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 10",
+  "characters": [
+   "Samuel",
+   "Saul"
+  ],
+  "caption": "Samuel anoints Saul with oil to make him ruler over Israel.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9001,
+  "hash": "dea8435f"
+ },
+ "1sa-16-1": {
+  "title": "Samuel is shown looking out from a doorway, possibly contemplating God's instructions.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel"
+  ],
+  "caption": "Samuel is shown looking out from a doorway, possibly contemplating God's instructions.",
+  "w": 400,
+  "h": 300,
+  "bytes": 10803,
+  "hash": "089b4fa7"
+ },
+ "1sa-16-10": {
+  "title": "Samuel anoints David, pouring oil on his head to make him king.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David"
+  ],
+  "caption": "Samuel anoints David, pouring oil on his head to make him king.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8737,
+  "hash": "98786d3a"
+ },
+ "1sa-16-11": {
+  "title": "Samuel anoints David in the presence of his brothers, as described in 1 Samuel 16.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David"
+  ],
+  "caption": "Samuel anoints David in the presence of his brothers, as described in 1 Samuel 16.",
+  "w": 413,
+  "h": 300,
+  "bytes": 9267,
+  "hash": "2062e332"
+ },
+ "1sa-16-12": {
+  "title": "King Saul is troubled by an evil spirit, while his servants try to help him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "King Saul is troubled by an evil spirit, while his servants try to help him.",
+  "w": 403,
+  "h": 300,
+  "bytes": 10739,
+  "hash": "af6786a0"
+ },
+ "1sa-16-13": {
+  "title": "David plays the lyre for King Saul, who is seated on his throne.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "David",
+   "Saul"
+  ],
+  "caption": "David plays the lyre for King Saul, who is seated on his throne.",
+  "w": 418,
+  "h": 300,
+  "bytes": 10855,
+  "hash": "b85e803d"
+ },
+ "1sa-16-14": {
+  "title": "David plays the lyre while tending sheep, with a fire burning nearby at night.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "David"
+  ],
+  "caption": "David plays the lyre while tending sheep, with a fire burning nearby at night.",
+  "w": 412,
+  "h": 300,
+  "bytes": 11212,
+  "hash": "ec27a01d"
+ },
+ "1sa-16-2": {
+  "title": "Samuel, accompanied by men and a calf, arrives in Bethlehem to anoint a new king.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel"
+  ],
+  "caption": "Samuel, accompanied by men and a calf, arrives in Bethlehem to anoint a new king.",
+  "w": 413,
+  "h": 300,
+  "bytes": 9971,
+  "hash": "c14b1209"
+ },
+ "1sa-16-3": {
+  "title": "Samuel anoints David in the presence of his brothers, as commanded by God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David"
+  ],
+  "caption": "Samuel anoints David in the presence of his brothers, as commanded by God.",
+  "w": 400,
+  "h": 300,
+  "bytes": 10273,
+  "hash": "9afb5fd0"
+ },
+ "1sa-16-5": {
+  "title": "Samuel anoints David in the presence of his brother, as told in 1 Samuel 16.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David"
+  ],
+  "caption": "Samuel anoints David in the presence of his brother, as told in 1 Samuel 16.",
+  "w": 384,
+  "h": 300,
+  "bytes": 8888,
+  "hash": "f872a398"
+ },
+ "1sa-16-6": {
+  "title": "Samuel anoints David in the presence of his brothers, as the Lord has chosen him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David"
+  ],
+  "caption": "Samuel anoints David in the presence of his brothers, as the Lord has chosen him.",
+  "w": 416,
+  "h": 300,
+  "bytes": 11183,
+  "hash": "4ea09435"
+ },
+ "1sa-16-7": {
+  "title": "Samuel anoints David in the presence of his brothers, as Jesse watches.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "David",
+   "Jesse"
+  ],
+  "caption": "Samuel anoints David in the presence of his brothers, as Jesse watches.",
+  "w": 416,
+  "h": 300,
+  "bytes": 10405,
+  "hash": "ebe53a1b"
+ },
+ "1sa-16-9": {
+  "title": "Samuel anoints David, who is presented by his father Jesse, as the future king.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 16",
+  "characters": [
+   "Samuel",
+   "Jesse",
+   "David"
+  ],
+  "caption": "Samuel anoints David, who is presented by his father Jesse, as the future king.",
+  "w": 415,
+  "h": 300,
+  "bytes": 10917,
+  "hash": "25d4ba08"
+ },
+ "1sa-17-10": {
+  "title": "David stands over the fallen Goliath, preparing to strike him with a sword.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
   "passage": "1 Samuel 17",
   "characters": [
    "David",
    "Goliath"
   ],
-  "caption": "David stands over the fallen giant Goliath.",
-  "w": 238,
+  "caption": "David stands over the fallen Goliath, preparing to strike him with a sword.",
+  "w": 401,
   "h": 300,
-  "bytes": 7547,
-  "hash": "271da6a0"
+  "bytes": 7134,
+  "hash": "6b23e90f"
  },
- "david-and-jonathan": {
-  "title": "David and Jonathan",
-  "source": "schnorr",
-  "credit": "Julius Schnorr von Carolsfeld, 1860 (public domain)",
+ "1sa-17-11": {
+  "title": "David stands victorious over the fallen Goliath as the Philistines flee in the background.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David",
+   "Goliath"
+  ],
+  "caption": "David stands victorious over the fallen Goliath as the Philistines flee in the background.",
+  "w": 405,
+  "h": 300,
+  "bytes": 10392,
+  "hash": "6d962078"
+ },
+ "1sa-17-13": {
+  "title": "David, as a shepherd, watches over his flock of sheep as they graze and drink from a stream.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David"
+  ],
+  "caption": "David, as a shepherd, watches over his flock of sheep as they graze and drink from a stream.",
+  "w": 416,
+  "h": 300,
+  "bytes": 11580,
+  "hash": "4bb5954b"
+ },
+ "1sa-17-2": {
+  "title": "Goliath, the Philistine giant, stands with his armor-bearer and other soldiers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "Goliath"
+  ],
+  "caption": "Goliath, the Philistine giant, stands with his armor-bearer and other soldiers.",
+  "w": 400,
+  "h": 300,
+  "bytes": 8882,
+  "hash": "4b116808"
+ },
+ "1sa-17-3": {
+  "title": "David confronts Goliath, who is armored and holds a spear, with armies in the background.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David",
+   "Goliath"
+  ],
+  "caption": "David confronts Goliath, who is armored and holds a spear, with armies in the background.",
+  "w": 401,
+  "h": 300,
+  "bytes": 8962,
+  "hash": "297f4206"
+ },
+ "1sa-17-6": {
+  "title": "David, a young shepherd, is depicted in this illustration from the First Book of Samuel.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David"
+  ],
+  "caption": "David, a young shepherd, is depicted in this illustration from the First Book of Samuel.",
+  "w": 405,
+  "h": 300,
+  "bytes": 10281,
+  "hash": "e9a8ca49"
+ },
+ "1sa-17-8": {
+  "title": "David prepares to sling a stone at Goliath, standing in a grassy field near a body of water.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David"
+  ],
+  "caption": "David prepares to sling a stone at Goliath, standing in a grassy field near a body of water.",
+  "w": 400,
+  "h": 300,
+  "bytes": 10035,
+  "hash": "32864a8d"
+ },
+ "1sa-17-9": {
+  "title": "David slings a stone at Goliath's forehead, while Goliath's shield-bearer looks on in shock.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 17",
+  "characters": [
+   "David",
+   "Goliath"
+  ],
+  "caption": "David slings a stone at Goliath's forehead, while Goliath's shield-bearer looks on in shock.",
+  "w": 404,
+  "h": 300,
+  "bytes": 11376,
+  "hash": "2d6dcd1c"
+ },
+ "1sa-18-3": {
+  "title": "Jonathan gives David his robe, armor, sword, bow, and belt, showing his love for David.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 18",
+  "characters": [
+   "Jonathan",
+   "David"
+  ],
+  "caption": "Jonathan gives David his robe, armor, sword, bow, and belt, showing his love for David.",
+  "w": 413,
+  "h": 300,
+  "bytes": 9917,
+  "hash": "a03ece68"
+ },
+ "1sa-18-6": {
+  "title": "Women sing praises to David, making Saul jealous, as David returns from battle.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 18",
+  "characters": [
+   "David",
+   "Saul"
+  ],
+  "caption": "Women sing praises to David, making Saul jealous, as David returns from battle.",
+  "w": 398,
+  "h": 300,
+  "bytes": 10664,
+  "hash": "a6f65a2b"
+ },
+ "1sa-19-1": {
+  "title": "Saul throws a spear at David, who dodges it, in an attempt to kill him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 19",
+  "characters": [
+   "David",
+   "Saul"
+  ],
+  "caption": "Saul throws a spear at David, who dodges it, in an attempt to kill him.",
+  "w": 424,
+  "h": 300,
+  "bytes": 7515,
+  "hash": "a5ced49f"
+ },
+ "1sa-20-1": {
+  "title": "Jonathan comforts David, who is distressed about King Saul's anger.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
   "passage": "1 Samuel 20",
   "characters": [
    "David",
    "Jonathan"
   ],
-  "caption": "Jonathan and David promise to stay friends before David has to flee from Saul.",
-  "w": 373,
-  "h": 300,
-  "bytes": 10996,
-  "hash": "991670ea"
- },
- "goliath-challenges-israel": {
-  "title": "Goliath Challenges Israel",
-  "source": "sweet",
-  "credit": "Sweet Publishing, CC BY-SA 3.0",
-  "passage": "1 Samuel 17",
-  "characters": [
-   "Goliath",
-   "Saul"
-  ],
-  "caption": "The giant Goliath dares the army of Israel to send out a man to fight him.",
+  "caption": "Jonathan comforts David, who is distressed about King Saul's anger.",
   "w": 413,
   "h": 300,
-  "bytes": 10973,
-  "hash": "2091409e"
+  "bytes": 9700,
+  "hash": "0a72640e"
+ },
+ "1sa-23-6": {
+  "title": "David flees from King Saul and his army in the wilderness of Ziph.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "1 Samuel 23",
+  "characters": [
+   "David",
+   "Saul"
+  ],
+  "caption": "David flees from King Saul and his army in the wilderness of Ziph.",
+  "w": 400,
+  "h": 300,
+  "bytes": 9790,
+  "hash": "9c8ffb8e"
+ },
+ "2ch-1-1": {
+  "title": "Solomon offers sacrifices on the bronze altar at Gibeon, and God appears to him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 1",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "Solomon offers sacrifices on the bronze altar at Gibeon, and God appears to him.",
+  "w": 414,
+  "h": 300,
+  "bytes": 11750,
+  "hash": "2d20ad4a"
+ },
+ "2ch-10-1": {
+  "title": "Rehoboam consults with the young men who grew up with him, rejecting the elders' advice.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 10",
+  "characters": [
+   "Rehoboam"
+  ],
+  "caption": "Rehoboam consults with the young men who grew up with him, rejecting the elders' advice.",
+  "w": 406,
+  "h": 300,
+  "bytes": 9877,
+  "hash": "ddf52ba9"
+ },
+ "2ch-3-2": {
+  "title": "Solomon dedicates the temple, with priests and the Ark of the Covenant present.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 3",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "Solomon dedicates the temple, with priests and the Ark of the Covenant present.",
+  "w": 410,
+  "h": 300,
+  "bytes": 12078,
+  "hash": "8fc079ef"
+ },
+ "2ch-34-4": {
+  "title": "Huldah the prophetess speaks to Hilkiah, Shaphan, Ahikam, and Abdon about the newly found Book of the Law.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 34",
+  "characters": [
+   "Huldah",
+   "Hilkiah",
+   "Shaphan",
+   "Ahikam",
+   "Abdon"
+  ],
+  "caption": "Huldah the prophetess speaks to Hilkiah, Shaphan, Ahikam, and Abdon about the newly found Book of the Law.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10357,
+  "hash": "0d2486e2"
+ },
+ "2ch-35-1": {
+  "title": "Josiah and his family are shown celebrating the Passover feast.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 35",
+  "characters": [
+   "Josiah"
+  ],
+  "caption": "Josiah and his family are shown celebrating the Passover feast.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9902,
+  "hash": "45aabd18"
+ },
+ "2ch-6-2": {
+  "title": "King Solomon prays to God with outstretched arms before the newly built Temple.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Chronicles 6",
+  "characters": [
+   "Solomon"
+  ],
+  "caption": "King Solomon prays to God with outstretched arms before the newly built Temple.",
+  "w": 405,
+  "h": 300,
+  "bytes": 9837,
+  "hash": "32c61a64"
+ },
+ "2ki-19-2": {
+  "title": "King Hezekiah receives a message from the prophet Isaiah, who is speaking to him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Kings 19",
+  "characters": [
+   "Hezekiah",
+   "Isaiah"
+  ],
+  "caption": "King Hezekiah receives a message from the prophet Isaiah, who is speaking to him.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9614,
+  "hash": "3b91824f"
+ },
+ "2ki-19-4": {
+  "title": "An angel of the Lord strikes down the Assyrian army, leaving many dead soldiers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Kings 19",
+  "characters": [],
+  "caption": "An angel of the Lord strikes down the Assyrian army, leaving many dead soldiers.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10483,
+  "hash": "d4dd3574"
+ },
+ "2ki-22-4": {
+  "title": "King Josiah tears his clothes in distress as Shaphan reads the Book of the Law.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Kings 22",
+  "characters": [
+   "Josiah",
+   "Shaphan"
+  ],
+  "caption": "King Josiah tears his clothes in distress as Shaphan reads the Book of the Law.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7627,
+  "hash": "edb7e707"
+ },
+ "2ki-4-12": {
+  "title": "Elisha stretches himself upon the dead child of the Shunammite woman to restore him to life.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Kings 4",
+  "characters": [
+   "Elisha"
+  ],
+  "caption": "Elisha stretches himself upon the dead child of the Shunammite woman to restore him to life.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8561,
+  "hash": "b07f0997"
+ },
+ "2ki-5-10": {
+  "title": "Naaman smiles as he bathes in the Jordan River, being cleansed of his leprosy.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Kings 5",
+  "characters": [
+   "Naaman"
+  ],
+  "caption": "Naaman smiles as he bathes in the Jordan River, being cleansed of his leprosy.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10239,
+  "hash": "d8798f2a"
+ },
+ "2sa-11-1": {
+  "title": "David watches Bathsheba bathing from his rooftop, as described in 2 Samuel 11.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 11",
+  "characters": [
+   "David",
+   "Bathsheba"
+  ],
+  "caption": "David watches Bathsheba bathing from his rooftop, as described in 2 Samuel 11.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11146,
+  "hash": "f9c5171f"
+ },
+ "2sa-12-4": {
+  "title": "Nathan confronts King David about his sin with Bathsheba and Uriah.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 12",
+  "characters": [
+   "Nathan",
+   "David"
+  ],
+  "caption": "Nathan confronts King David about his sin with Bathsheba and Uriah.",
+  "w": 416,
+  "h": 300,
+  "bytes": 9262,
+  "hash": "b4f4c1f5"
+ },
+ "2sa-12-5": {
+  "title": "Nathan confronts King David, who weeps in repentance after being rebuked for his sins.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 12",
+  "characters": [
+   "Nathan",
+   "David"
+  ],
+  "caption": "Nathan confronts King David, who weeps in repentance after being rebuked for his sins.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9228,
+  "hash": "3ed9560d"
+ },
+ "2sa-12-6": {
+  "title": "David prays for his sick child while Bathsheba watches over the baby.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 12",
+  "characters": [
+   "David",
+   "Bathsheba"
+  ],
+  "caption": "David prays for his sick child while Bathsheba watches over the baby.",
+  "w": 406,
+  "h": 300,
+  "bytes": 10739,
+  "hash": "27cb42f1"
+ },
+ "2sa-12-7": {
+  "title": "David comforts Bathsheba after the death of their child, while others mourn.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 12",
+  "characters": [
+   "David",
+   "Bathsheba"
+  ],
+  "caption": "David comforts Bathsheba after the death of their child, while others mourn.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8533,
+  "hash": "9b7f7539"
+ },
+ "2sa-12-8": {
+  "title": "David holds his son Solomon, while Bathsheba smiles, after the death of their first child.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 12",
+  "characters": [
+   "David",
+   "Bathsheba",
+   "Solomon"
+  ],
+  "caption": "David holds his son Solomon, while Bathsheba smiles, after the death of their first child.",
+  "w": 409,
+  "h": 300,
+  "bytes": 10378,
+  "hash": "9b5a13d5"
+ },
+ "2sa-15-3": {
+  "title": "David is shown weeping as he flees Jerusalem with his followers, including Ittai the Gittite.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 15",
+  "characters": [
+   "David",
+   "Ittai the Gittite"
+  ],
+  "caption": "David is shown weeping as he flees Jerusalem with his followers, including Ittai the Gittite.",
+  "w": 405,
+  "h": 300,
+  "bytes": 9975,
+  "hash": "d30788c7"
+ },
+ "2sa-15-5": {
+  "title": "Absalom, son of David, plots against his father, stirring up rebellion in Israel.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 15",
+  "characters": [
+   "Absalom"
+  ],
+  "caption": "Absalom, son of David, plots against his father, stirring up rebellion in Israel.",
+  "w": 409,
+  "h": 300,
+  "bytes": 8379,
+  "hash": "2e640b40"
+ },
+ "2sa-15-9": {
+  "title": "David is fleeing Jerusalem with his followers, including Zadok and Abiathar, as Absalom's rebellion begins.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 15",
+  "characters": [
+   "David",
+   "Zadok",
+   "Abiathar"
+  ],
+  "caption": "David is fleeing Jerusalem with his followers, including Zadok and Abiathar, as Absalom's rebellion begins.",
+  "w": 418,
+  "h": 300,
+  "bytes": 10032,
+  "hash": "a27cc949"
+ },
+ "2sa-18-1": {
+  "title": "Absalom is caught by his hair in a tree while riding his mule, as soldiers approach.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 18",
+  "characters": [
+   "Absalom"
+  ],
+  "caption": "Absalom is caught by his hair in a tree while riding his mule, as soldiers approach.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10856,
+  "hash": "2326b6d9"
+ },
+ "2sa-18-5": {
+  "title": "David weeps upon hearing the news of Absalom's death from a messenger.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 18",
+  "characters": [
+   "David"
+  ],
+  "caption": "David weeps upon hearing the news of Absalom's death from a messenger.",
+  "w": 409,
+  "h": 300,
+  "bytes": 9160,
+  "hash": "4572fbf8"
+ },
+ "2sa-18-6": {
+  "title": "King David weeps and mourns the death of his son Absalom.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 18",
+  "characters": [
+   "David"
+  ],
+  "caption": "King David weeps and mourns the death of his son Absalom.",
+  "w": 405,
+  "h": 300,
+  "bytes": 9589,
+  "hash": "e2249578"
+ },
+ "2sa-6-2": {
+  "title": "David dances before the Lord as the Ark of the Covenant is brought to Jerusalem.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 6",
+  "characters": [
+   "David"
+  ],
+  "caption": "David dances before the Lord as the Ark of the Covenant is brought to Jerusalem.",
+  "w": 405,
+  "h": 300,
+  "bytes": 8097,
+  "hash": "b472471a"
+ },
+ "2sa-6-5": {
+  "title": "David and the Israelites celebrate as the Ark of the Covenant is brought into Jerusalem.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 6",
+  "characters": [
+   "David"
+  ],
+  "caption": "David and the Israelites celebrate as the Ark of the Covenant is brought into Jerusalem.",
+  "w": 407,
+  "h": 300,
+  "bytes": 10837,
+  "hash": "399dc020"
+ },
+ "2sa-6-7": {
+  "title": "Michal despises David for dancing before the Lord, as David looks away from her.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 6",
+  "characters": [
+   "David",
+   "Michal"
+  ],
+  "caption": "Michal despises David for dancing before the Lord, as David looks away from her.",
+  "w": 407,
+  "h": 300,
+  "bytes": 9430,
+  "hash": "3ac140db"
+ },
+ "2sa-9-1": {
+  "title": "King David shows kindness to Mephibosheth, the son of Jonathan.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 9",
+  "characters": [
+   "David",
+   "Mephibosheth"
+  ],
+  "caption": "King David shows kindness to Mephibosheth, the son of Jonathan.",
+  "w": 390,
+  "h": 300,
+  "bytes": 9727,
+  "hash": "9869dc22"
+ },
+ "2sa-9-3": {
+  "title": "Mephibosheth bows before King David, who gestures towards him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Samuel 9",
+  "characters": [
+   "David",
+   "Mephibosheth"
+  ],
+  "caption": "Mephibosheth bows before King David, who gestures towards him.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10367,
+  "hash": "8446a454"
+ },
+ "2ti-1-1": {
+  "title": "Paul, in prison, writes his second letter to Timothy, encouraging him to remain faithful.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 1",
+  "characters": [
+   "Paul",
+   "Timothy"
+  ],
+  "caption": "Paul, in prison, writes his second letter to Timothy, encouraging him to remain faithful.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11439,
+  "hash": "170b9ada"
+ },
+ "2ti-2-1": {
+  "title": "Paul instructs Timothy and other men, encouraging them to be strong in the grace that is in Christ Jesus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 2",
+  "characters": [
+   "Paul",
+   "Timothy"
+  ],
+  "caption": "Paul instructs Timothy and other men, encouraging them to be strong in the grace that is in Christ Jesus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7687,
+  "hash": "b4bcda2f"
+ },
+ "2ti-2-3": {
+  "title": "A man with a kind expression has his arms around two angry men, possibly Hymenaeus and Philetus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 2",
+  "characters": [
+   "Hymenaeus",
+   "Philetus"
+  ],
+  "caption": "A man with a kind expression has his arms around two angry men, possibly Hymenaeus and Philetus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9322,
+  "hash": "0fb21da6"
+ },
+ "2ti-4-2": {
+  "title": "A man in white robes holds a golden crown, surrounded by a bright, golden light.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 4",
+  "characters": [],
+  "caption": "A man in white robes holds a golden crown, surrounded by a bright, golden light.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9332,
+  "hash": "5bcfd110"
+ },
+ "2ti-4-3": {
+  "title": "Paul, in chains, is delivered from the lion's mouth by the Lord.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 4",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul, in chains, is delivered from the lion's mouth by the Lord.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10063,
+  "hash": "786f3719"
+ },
+ "2ti-4-4": {
+  "title": "Paul is depicted in chains, looking up and speaking, likely from prison.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "2 Timothy 4",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul is depicted in chains, looking up and speaking, likely from prison.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11886,
+  "hash": "0a257d01"
+ },
+ "act-1-3": {
+  "title": "Jesus ascends into heaven as his disciples watch, according to Acts 1.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 1",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus ascends into heaven as his disciples watch, according to Acts 1.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8774,
+  "hash": "6db6e099"
+ },
+ "act-10-7": {
+  "title": "Cornelius, a Roman centurion, looks up and speaks, perhaps to the angel who appeared to him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 10",
+  "characters": [
+   "Cornelius"
+  ],
+  "caption": "Cornelius, a Roman centurion, looks up and speaks, perhaps to the angel who appeared to him.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10057,
+  "hash": "7e8ae8ff"
+ },
+ "act-11-2": {
+  "title": "Barnabas and other believers welcome Paul (Saul) to Antioch, rejoicing in his conversion.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 11",
+  "characters": [
+   "Barnabas",
+   "Paul"
+  ],
+  "caption": "Barnabas and other believers welcome Paul (Saul) to Antioch, rejoicing in his conversion.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10318,
+  "hash": "d79a4dee"
+ },
+ "act-12-3": {
+  "title": "The church is praying earnestly to God for Peter, who is in prison.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 12",
+  "characters": [
+   "Peter"
+  ],
+  "caption": "The church is praying earnestly to God for Peter, who is in prison.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11156,
+  "hash": "07c7c5c8"
+ },
+ "act-13-13": {
+  "title": "Paul rebukes Elymas the sorcerer, who is struck blind, in the presence of Sergius Paulus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 13",
+  "characters": [
+   "Paul",
+   "Elymas"
+  ],
+  "caption": "Paul rebukes Elymas the sorcerer, who is struck blind, in the presence of Sergius Paulus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9264,
+  "hash": "eaef4200"
+ },
+ "act-13-14": {
+  "title": "Elymas the sorcerer is struck blind by Paul, with Sergius Paulus looking on.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 13",
+  "characters": [
+   "Elymas",
+   "Sergius Paulus",
+   "Paul"
+  ],
+  "caption": "Elymas the sorcerer is struck blind by Paul, with Sergius Paulus looking on.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9815,
+  "hash": "4d8fdd6d"
+ },
+ "act-13-16": {
+  "title": "Paul preaches in the synagogue at Pisidian Antioch, with a menorah and other Jewish symbols in the background.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 13",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul preaches in the synagogue at Pisidian Antioch, with a menorah and other Jewish symbols in the background.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11279,
+  "hash": "ca74c5b6"
+ },
+ "act-13-17": {
+  "title": "Paul preaches the Gospel in the synagogue at Pisidian Antioch, as described in Acts 13.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 13",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul preaches the Gospel in the synagogue at Pisidian Antioch, as described in Acts 13.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9329,
+  "hash": "f8e1693e"
+ },
+ "act-14-5": {
+  "title": "Paul and Barnabas tear their clothes as people try to offer sacrifices to them.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 14",
+  "characters": [
+   "Paul",
+   "Barnabas"
+  ],
+  "caption": "Paul and Barnabas tear their clothes as people try to offer sacrifices to them.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9253,
+  "hash": "6947f9e9"
+ },
+ "act-14-8": {
+  "title": "Paul is being stoned and dragged out of the city by the people of Lystra.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 14",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul is being stoned and dragged out of the city by the people of Lystra.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9879,
+  "hash": "d6d22e2a"
+ },
+ "act-15-12": {
+  "title": "Paul and Barnabas discuss with other men about circumcision for Gentile believers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 15",
+  "characters": [
+   "Paul",
+   "Barnabas"
+  ],
+  "caption": "Paul and Barnabas discuss with other men about circumcision for Gentile believers.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9448,
+  "hash": "89609a1d"
+ },
+ "act-16-15": {
+  "title": "Paul and Silas are imprisoned and put in stocks after being beaten.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 16",
+  "characters": [
+   "Paul",
+   "Silas"
+  ],
+  "caption": "Paul and Silas are imprisoned and put in stocks after being beaten.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11310,
+  "hash": "dba4880a"
+ },
+ "act-16-16": {
+  "title": "Paul and Silas are in prison, with their feet in stocks, after being beaten.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 16",
+  "characters": [
+   "Paul",
+   "Silas"
+  ],
+  "caption": "Paul and Silas are in prison, with their feet in stocks, after being beaten.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11163,
+  "hash": "c43f3944"
+ },
+ "act-16-17": {
+  "title": "The Philippian jailer is about to kill himself, but Paul calls out to him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 16",
+  "characters": [
+   "Paul",
+   "Philippian jailer"
+  ],
+  "caption": "The Philippian jailer is about to kill himself, but Paul calls out to him.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11551,
+  "hash": "dcfa32f1"
+ },
+ "act-16-9": {
+  "title": "Lydia is baptized by Paul in the river, as others watch.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 16",
+  "characters": [
+   "Lydia",
+   "Paul"
+  ],
+  "caption": "Lydia is baptized by Paul in the river, as others watch.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10398,
+  "hash": "e94090fd"
+ },
+ "act-17-1": {
+  "title": "Paul and Silas are greeted by Jason in Thessalonica.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 17",
+  "characters": [
+   "Paul",
+   "Silas",
+   "Jason"
+  ],
+  "caption": "Paul and Silas are greeted by Jason in Thessalonica.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8662,
+  "hash": "f1f0440f"
+ },
+ "act-18-21": {
+  "title": "Paul, Aquila, and Priscilla are shown working together making tents.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 18",
+  "characters": [
+   "Paul",
+   "Aquila",
+   "Priscilla"
+  ],
+  "caption": "Paul, Aquila, and Priscilla are shown working together making tents.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10950,
+  "hash": "7820ccf3"
+ },
+ "act-19-5": {
+  "title": "Paul preaches to a crowd of people in Ephesus, teaching them about the Kingdom of God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 19",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul preaches to a crowd of people in Ephesus, teaching them about the Kingdom of God.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9321,
+  "hash": "099490a5"
+ },
+ "act-23-5": {
+  "title": "Paul is chained in prison, looking up as if receiving a vision or divine comfort.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 23",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul is chained in prison, looking up as if receiving a vision or divine comfort.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9179,
+  "hash": "e1a870da"
+ },
+ "act-27-22": {
+  "title": "People are shipwrecked and struggling in the water, as described in Acts 27.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 27",
+  "characters": [],
+  "caption": "People are shipwrecked and struggling in the water, as described in Acts 27.",
+  "w": 408,
+  "h": 300,
+  "bytes": 12147,
+  "hash": "59a34bf3"
+ },
+ "act-6-3": {
+  "title": "Stephen, a man full of God's grace and power, performs great wonders and signs.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 6",
+  "characters": [
+   "Stephen"
+  ],
+  "caption": "Stephen, a man full of God's grace and power, performs great wonders and signs.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10044,
+  "hash": "f97fdd3f"
+ },
+ "act-8-22": {
+  "title": "The Ethiopian eunuch is shown sitting in his chariot, reading from the scroll of Isaiah.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 8",
+  "characters": [
+   "Ethiopian eunuch"
+  ],
+  "caption": "The Ethiopian eunuch is shown sitting in his chariot, reading from the scroll of Isaiah.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9748,
+  "hash": "52ae6ccb"
+ },
+ "act-8-4": {
+  "title": "Philip heals a lame man in Samaria, as others look on in amazement.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 8",
+  "characters": [
+   "Philip"
+  ],
+  "caption": "Philip heals a lame man in Samaria, as others look on in amazement.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9679,
+  "hash": "b5dbc82b"
+ },
+ "act-9-10": {
+  "title": "Ananias lays his hands on Saul, who is blind, to restore his sight.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Ananias",
+   "Saul"
+  ],
+  "caption": "Ananias lays his hands on Saul, who is blind, to restore his sight.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10202,
+  "hash": "d65adb4b"
+ },
+ "act-9-11": {
+  "title": "Ananias is speaking to Saul, who later became Paul, after Saul's conversion.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Ananias",
+   "Saul"
+  ],
+  "caption": "Ananias is speaking to Saul, who later became Paul, after Saul's conversion.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7596,
+  "hash": "f153e041"
+ },
+ "act-9-13": {
+  "title": "Saul preaches boldly in the synagogues at Damascus, proclaiming that Jesus is the Son of God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul preaches boldly in the synagogues at Damascus, proclaiming that Jesus is the Son of God.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10622,
+  "hash": "038b2651"
+ },
+ "act-9-17": {
+  "title": "Paul is lowered in a basket over the city wall by his disciples to escape the Jews.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul is lowered in a basket over the city wall by his disciples to escape the Jews.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10870,
+  "hash": "ef4ec7f9"
+ },
+ "act-9-18": {
+  "title": "Saul is speaking with disciples in Damascus after his conversion.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul is speaking with disciples in Damascus after his conversion.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10260,
+  "hash": "80ac429f"
+ },
+ "act-9-19": {
+  "title": "Saul preaches in the synagogues, proclaiming that Jesus is the Son of God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul preaches in the synagogues, proclaiming that Jesus is the Son of God.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8407,
+  "hash": "fc18539a"
+ },
+ "act-9-2": {
+  "title": "Saul is struck blind by a bright light from heaven on the road to Damascus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul is struck blind by a bright light from heaven on the road to Damascus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11248,
+  "hash": "408eb37c"
+ },
+ "act-9-22": {
+  "title": "Paul preaches the Gospel in Damascus after his conversion, astonishing his listeners.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Paul"
+  ],
+  "caption": "Paul preaches the Gospel in Damascus after his conversion, astonishing his listeners.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10507,
+  "hash": "6185d7e0"
+ },
+ "act-9-25": {
+  "title": "Ananias speaks to Saul after his conversion on the road to Damascus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Ananias",
+   "Saul"
+  ],
+  "caption": "Ananias speaks to Saul after his conversion on the road to Damascus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9758,
+  "hash": "dbe17806"
+ },
+ "act-9-27": {
+  "title": "Dorcas is shown alive, and the widows are showing the coats and garments she made.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Dorcas"
+  ],
+  "caption": "Dorcas is shown alive, and the widows are showing the coats and garments she made.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9418,
+  "hash": "e4fa1d1a"
+ },
+ "act-9-29": {
+  "title": "Ananias speaks to Saul, who is also known as Paul, after his conversion.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Ananias",
+   "Saul",
+   "Paul"
+  ],
+  "caption": "Ananias speaks to Saul, who is also known as Paul, after his conversion.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10149,
+  "hash": "f82ded8f"
+ },
+ "act-9-3": {
+  "title": "Saul is struck blind by a light from heaven on the road to Damascus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul is struck blind by a light from heaven on the road to Damascus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10059,
+  "hash": "71f4a8c7"
+ },
+ "act-9-6": {
+  "title": "Ananias is shown looking up, perhaps after receiving a vision from the Lord.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Ananias"
+  ],
+  "caption": "Ananias is shown looking up, perhaps after receiving a vision from the Lord.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10864,
+  "hash": "04451f3b"
+ },
+ "act-9-7": {
+  "title": "Saul, blinded by a light from heaven, is led by the hand into Damascus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Acts 9",
+  "characters": [
+   "Saul"
+  ],
+  "caption": "Saul, blinded by a light from heaven, is led by the hand into Damascus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10223,
+  "hash": "739ec26c"
+ },
+ "dan-3-10": {
+  "title": "King Nebuchadnezzar looks up in awe as Shadrach, Meshach, and Abednego stand unharmed.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Daniel 3",
+  "characters": [
+   "Nebuchadnezzar",
+   "Shadrach",
+   "Meshach",
+   "Abednego"
+  ],
+  "caption": "King Nebuchadnezzar looks up in awe as Shadrach, Meshach, and Abednego stand unharmed.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9151,
+  "hash": "b624bc36"
+ },
+ "dan-3-2": {
+  "title": "King Nebuchadnezzar sits on his throne while a herald proclaims a decree to the people.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Daniel 3",
+  "characters": [
+   "Nebuchadnezzar"
+  ],
+  "caption": "King Nebuchadnezzar sits on his throne while a herald proclaims a decree to the people.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9832,
+  "hash": "8da85719"
+ },
+ "dan-6-4": {
+  "title": "Daniel kneels by his window, praying to God three times a day as was his custom.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Daniel 6",
+  "characters": [
+   "Daniel"
+  ],
+  "caption": "Daniel kneels by his window, praying to God three times a day as was his custom.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10990,
+  "hash": "e19b27f0"
+ },
+ "deu-32-4": {
+  "title": "Moses addresses the Israelites, with Joshua standing beside him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Deuteronomy 32",
+  "characters": [
+   "Moses",
+   "Joshua"
+  ],
+  "caption": "Moses addresses the Israelites, with Joshua standing beside him.",
+  "w": 404,
+  "h": 300,
+  "bytes": 9245,
+  "hash": "064ad157"
+ },
+ "est-3-6": {
+  "title": "Haman speaks to King Ahasuerus, convincing him to issue a decree to destroy the Jews.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Esther 3",
+  "characters": [
+   "Ahasuerus",
+   "Haman"
+  ],
+  "caption": "Haman speaks to King Ahasuerus, convincing him to issue a decree to destroy the Jews.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8922,
+  "hash": "6665da67"
+ },
+ "est-6-4": {
+  "title": "Haman leads Mordecai, dressed in royal robes, through the city on the king's horse.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Esther 6",
+  "characters": [
+   "Haman",
+   "Mordecai"
+  ],
+  "caption": "Haman leads Mordecai, dressed in royal robes, through the city on the king's horse.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8056,
+  "hash": "7d5956eb"
+ },
+ "est-7-2": {
+  "title": "Queen Esther pleads with King Ahasuerus as Haman looks on in distress.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Esther 7",
+  "characters": [
+   "Esther",
+   "Ahasuerus",
+   "Haman"
+  ],
+  "caption": "Queen Esther pleads with King Ahasuerus as Haman looks on in distress.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8125,
+  "hash": "cba7f43b"
+ },
+ "exo-15-6": {
+  "title": "Moses stands by the sea, holding his staff, as the waters begin to part.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Exodus 15",
+  "characters": [
+   "Moses"
+  ],
+  "caption": "Moses stands by the sea, holding his staff, as the waters begin to part.",
+  "w": 398,
+  "h": 300,
+  "bytes": 11241,
+  "hash": "10ec59a7"
+ },
+ "exo-2-12": {
+  "title": "Pharaoh's daughter sees the baby Moses and asks his sister Miriam to find a nurse.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Exodus 2",
+  "characters": [
+   "Miriam",
+   "Pharaoh's daughter",
+   "Moses"
+  ],
+  "caption": "Pharaoh's daughter sees the baby Moses and asks his sister Miriam to find a nurse.",
+  "w": 400,
+  "h": 300,
+  "bytes": 8670,
+  "hash": "1e1355e6"
+ },
+ "exo-20-6": {
+  "title": "Moses kneels on the ground, looking up to God, with his arms outstretched.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Exodus 20",
+  "characters": [
+   "Moses"
+  ],
+  "caption": "Moses kneels on the ground, looking up to God, with his arms outstretched.",
+  "w": 376,
+  "h": 300,
+  "bytes": 5055,
+  "hash": "c5c13003"
+ },
+ "exo-20-8": {
+  "title": "Moses speaks to the Israelites at Mount Sinai, delivering the Ten Commandments.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Exodus 20",
+  "characters": [
+   "Moses"
+  ],
+  "caption": "Moses speaks to the Israelites at Mount Sinai, delivering the Ten Commandments.",
+  "w": 401,
+  "h": 300,
+  "bytes": 6751,
+  "hash": "d645667d"
+ },
+ "exo-4-11": {
+  "title": "Moses, with a worried expression, holds his head in his hand.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Exodus 4",
+  "characters": [
+   "Moses"
+  ],
+  "caption": "Moses, with a worried expression, holds his head in his hand.",
+  "w": 399,
+  "h": 300,
+  "bytes": 9739,
+  "hash": "073f525f"
+ },
+ "ezk-37-4": {
+  "title": "Ezekiel prophesies to the dry bones in the valley, and they come to life.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ezekiel 37",
+  "characters": [
+   "Ezekiel"
+  ],
+  "caption": "Ezekiel prophesies to the dry bones in the valley, and they come to life.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11949,
+  "hash": "8c37a79a"
+ },
+ "ezr-10-4": {
+  "title": "A large crowd of men, including Ezra, are shown weeping and raising their hands in distress.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ezra 10",
+  "characters": [
+   "Ezra"
+  ],
+  "caption": "A large crowd of men, including Ezra, are shown weeping and raising their hands in distress.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10253,
+  "hash": "68bd9c07"
+ },
+ "ezr-10-5": {
+  "title": "A man with a beard and red headband speaks to a group of men, while women and children stand behind him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ezra 10",
+  "characters": [],
+  "caption": "A man with a beard and red headband speaks to a group of men, while women and children stand behind him.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9887,
+  "hash": "1a907beb"
+ },
+ "ezr-9-2": {
+  "title": "Ezra tears his clothes and pulls out his hair in distress over the people's sins.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ezra 9",
+  "characters": [
+   "Ezra"
+  ],
+  "caption": "Ezra tears his clothes and pulls out his hair in distress over the people's sins.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11158,
+  "hash": "6cd1197e"
+ },
+ "gen-1-4": {
+  "title": "The Spirit of God moved upon the face of the waters during creation, as described in Genesis 1.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 1",
+  "characters": [],
+  "caption": "The Spirit of God moved upon the face of the waters during creation, as described in Genesis 1.",
+  "w": 412,
+  "h": 300,
+  "bytes": 7918,
+  "hash": "0660cdcf"
+ },
+ "gen-15-3": {
+  "title": "God shows Abram the stars and promises him descendants as numerous as the stars.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 15",
+  "characters": [
+   "Abram"
+  ],
+  "caption": "God shows Abram the stars and promises him descendants as numerous as the stars.",
+  "w": 405,
+  "h": 300,
+  "bytes": 10801,
+  "hash": "b2b6aea1"
+ },
+ "gen-15-4": {
+  "title": "Abram falls prostrate before the Lord, who appears as a bright light.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 15",
+  "characters": [
+   "Abram"
+  ],
+  "caption": "Abram falls prostrate before the Lord, who appears as a bright light.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7411,
+  "hash": "ae8c7c03"
+ },
+ "gen-15-9": {
+  "title": "Samson, with his chains broken, stands victorious over the fallen Philistines.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 15",
+  "characters": [
+   "Samson"
+  ],
+  "caption": "Samson, with his chains broken, stands victorious over the fallen Philistines.",
+  "w": 406,
+  "h": 300,
+  "bytes": 9006,
+  "hash": "1d27d744"
+ },
+ "gen-19-10": {
+  "title": "Lot and his daughters flee Sodom as Lot's wife turns into a pillar of salt.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 19",
+  "characters": [
+   "Lot",
+   "Lot's wife"
+  ],
+  "caption": "Lot and his daughters flee Sodom as Lot's wife turns into a pillar of salt.",
+  "w": 399,
+  "h": 300,
+  "bytes": 12006,
+  "hash": "4fa74118"
+ },
+ "gen-2-12": {
+  "title": "Adam and Eve are in the Garden of Eden with animals and plants.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 2",
+  "characters": [
+   "Adam",
+   "Eve"
+  ],
+  "caption": "Adam and Eve are in the Garden of Eden with animals and plants.",
+  "w": 390,
+  "h": 300,
+  "bytes": 8962,
+  "hash": "28bc73b4"
+ },
+ "gen-21-1": {
+  "title": "Abraham and Sarah rejoice over their newborn son, Isaac, as foretold by God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 21",
+  "characters": [
+   "Abraham",
+   "Sarah",
+   "Isaac"
+  ],
+  "caption": "Abraham and Sarah rejoice over their newborn son, Isaac, as foretold by God.",
+  "w": 405,
+  "h": 300,
+  "bytes": 9293,
+  "hash": "f1b0856c"
+ },
+ "gen-22-7": {
+  "title": "Abraham is about to sacrifice his son Isaac, who is bound on an altar of wood.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 22",
+  "characters": [
+   "Abraham",
+   "Isaac"
+  ],
+  "caption": "Abraham is about to sacrifice his son Isaac, who is bound on an altar of wood.",
+  "w": 405,
+  "h": 300,
+  "bytes": 10106,
+  "hash": "40816eec"
+ },
+ "gen-24-6": {
+  "title": "Rebekah carries a water jug on her shoulder, with a village and palm trees in the background.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 24",
+  "characters": [
+   "Rebekah"
+  ],
+  "caption": "Rebekah carries a water jug on her shoulder, with a village and palm trees in the background.",
+  "w": 412,
+  "h": 300,
+  "bytes": 9731,
+  "hash": "b5ede360"
+ },
+ "gen-25-10": {
+  "title": "Esau returns from hunting and sells his birthright to Jacob for a meal of stew.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 25",
+  "characters": [
+   "Esau",
+   "Jacob"
+  ],
+  "caption": "Esau returns from hunting and sells his birthright to Jacob for a meal of stew.",
+  "w": 400,
+  "h": 300,
+  "bytes": 10828,
+  "hash": "692a49fb"
+ },
+ "gen-28-5": {
+  "title": "Jacob rests his head on a stone, dreaming of a ladder to heaven with angels ascending and descending.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 28",
+  "characters": [
+   "Jacob"
+  ],
+  "caption": "Jacob rests his head on a stone, dreaming of a ladder to heaven with angels ascending and descending.",
+  "w": 405,
+  "h": 300,
+  "bytes": 10546,
+  "hash": "3ea39c0d"
+ },
+ "gen-4-3": {
+  "title": "Cain and Abel are offering sacrifices to God, with Cain offering produce and Abel offering a lamb.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 4",
+  "characters": [
+   "Cain",
+   "Abel"
+  ],
+  "caption": "Cain and Abel are offering sacrifices to God, with Cain offering produce and Abel offering a lamb.",
+  "w": 401,
+  "h": 300,
+  "bytes": 10386,
+  "hash": "0df677e8"
+ },
+ "gen-41-22": {
+  "title": "This is a close-up illustration of Joseph, smiling and wearing Egyptian attire.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 41",
+  "characters": [
+   "Joseph"
+  ],
+  "caption": "This is a close-up illustration of Joseph, smiling and wearing Egyptian attire.",
+  "w": 342,
+  "h": 300,
+  "bytes": 8395,
+  "hash": "88d0614a"
+ },
+ "gen-6-7": {
+  "title": "Noah looks up to the heavens, receiving a message from God in Genesis 6.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Genesis 6",
+  "characters": [
+   "Noah"
+  ],
+  "caption": "Noah looks up to the heavens, receiving a message from God in Genesis 6.",
+  "w": 388,
+  "h": 300,
+  "bytes": 8845,
+  "hash": "9018a3e3"
+ },
+ "isa-37-1": {
+  "title": "King Hezekiah kneels before the Lord, spreading out the letter from Sennacherib.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Isaiah 37",
+  "characters": [
+   "Hezekiah"
+  ],
+  "caption": "King Hezekiah kneels before the Lord, spreading out the letter from Sennacherib.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9505,
+  "hash": "cc59108e"
+ },
+ "isa-38-1": {
+  "title": "Isaiah tells King Hezekiah that he will recover from his illness.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Isaiah 38",
+  "characters": [
+   "Isaiah",
+   "Hezekiah"
+  ],
+  "caption": "Isaiah tells King Hezekiah that he will recover from his illness.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9147,
+  "hash": "6c12b9d9"
+ },
+ "isa-7-1": {
+  "title": "A scroll shows the prophecy of a virgin conceiving and bearing a son named Immanuel.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Isaiah 7",
+  "characters": [],
+  "caption": "A scroll shows the prophecy of a virgin conceiving and bearing a son named Immanuel.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7403,
+  "hash": "00849640"
+ },
+ "jas-1-2": {
+  "title": "Three men are engaged in a discussion, with one speaking and gesturing.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "James 1",
+  "characters": [],
+  "caption": "Three men are engaged in a discussion, with one speaking and gesturing.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7181,
+  "hash": "ced4bf26"
+ },
+ "jas-2-1": {
+  "title": "A rich man and a poor man are shown, illustrating James' teaching on favoritism.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "James 2",
+  "characters": [],
+  "caption": "A rich man and a poor man are shown, illustrating James' teaching on favoritism.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8882,
+  "hash": "2d4c4a24"
+ },
+ "jas-2-3": {
+  "title": "Abraham raises a knife to sacrifice his son Isaac, who is bound and lying on an altar.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "James 2",
+  "characters": [
+   "Abraham",
+   "Isaac"
+  ],
+  "caption": "Abraham raises a knife to sacrifice his son Isaac, who is bound and lying on an altar.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8111,
+  "hash": "4a5652a0"
+ },
+ "jdg-15-9": {
+  "title": "Samson breaks the ropes that bind him as the Philistines and Judahites look on.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Judges 15",
+  "characters": [
+   "Samson"
+  ],
+  "caption": "Samson breaks the ropes that bind him as the Philistines and Judahites look on.",
+  "w": 405,
+  "h": 300,
+  "bytes": 9166,
+  "hash": "80a9db10"
+ },
+ "jdg-16-11": {
+  "title": "Samson pushes down the pillars of the temple, killing himself and the Philistines.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Judges 16",
+  "characters": [
+   "Samson"
+  ],
+  "caption": "Samson pushes down the pillars of the temple, killing himself and the Philistines.",
+  "w": 421,
+  "h": 300,
+  "bytes": 10700,
+  "hash": "3364c99a"
+ },
+ "jdg-4-3": {
+  "title": "Deborah, a prophetess and judge, speaks with Barak, the commander of the Israelite army.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Judges 4",
+  "characters": [
+   "Deborah",
+   "Barak"
+  ],
+  "caption": "Deborah, a prophetess and judge, speaks with Barak, the commander of the Israelite army.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10459,
+  "hash": "71130c01"
+ },
+ "jdg-6-3": {
+  "title": "An angel of the Lord appears to Gideon, who is threshing wheat in a winepress.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Judges 6",
+  "characters": [
+   "Gideon"
+  ],
+  "caption": "An angel of the Lord appears to Gideon, who is threshing wheat in a winepress.",
+  "w": 414,
+  "h": 300,
+  "bytes": 10688,
+  "hash": "f4e3f5c9"
+ },
+ "jer-38-1": {
+  "title": "Jeremiah is being pulled out of the cistern by ropes with the help of Ebed-Melech.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Jeremiah 38",
+  "characters": [
+   "Jeremiah",
+   "Ebed-Melech"
+  ],
+  "caption": "Jeremiah is being pulled out of the cistern by ropes with the help of Ebed-Melech.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10929,
+  "hash": "852d7726"
+ },
+ "jer-38-3": {
+  "title": "Jeremiah is being pulled out of the cistern by Ebed-Melech and other men.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Jeremiah 38",
+  "characters": [
+   "Jeremiah",
+   "Ebed-Melech"
+  ],
+  "caption": "Jeremiah is being pulled out of the cistern by Ebed-Melech and other men.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9782,
+  "hash": "8d027c5b"
+ },
+ "jhn-1-1": {
+  "title": "John the Baptist is depicted, likely speaking or looking intently, as described in John chapter 1.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 1",
+  "characters": [
+   "John the Baptist"
+  ],
+  "caption": "John the Baptist is depicted, likely speaking or looking intently, as described in John chapter 1.",
+  "w": 417,
+  "h": 300,
+  "bytes": 6000,
+  "hash": "fd345429"
+ },
+ "jhn-11-11": {
+  "title": "Lazarus, wrapped in grave clothes, stands outside his tomb after being raised from the dead.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 11",
+  "characters": [
+   "Lazarus"
+  ],
+  "caption": "Lazarus, wrapped in grave clothes, stands outside his tomb after being raised from the dead.",
+  "w": 400,
+  "h": 300,
+  "bytes": 11913,
+  "hash": "fb36faf0"
+ },
+ "jhn-11-4": {
+  "title": "Martha speaks to Jesus, expressing her grief over Lazarus's death.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 11",
+  "characters": [
+   "Jesus",
+   "Martha"
+  ],
+  "caption": "Martha speaks to Jesus, expressing her grief over Lazarus's death.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10649,
+  "hash": "3f6a6bd4"
+ },
+ "jhn-12-3": {
+  "title": "Mary anoints Jesus' feet with expensive perfume and wipes them with her hair.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 12",
+  "characters": [
+   "Mary",
+   "Jesus",
+   "Judas Iscariot"
+  ],
+  "caption": "Mary anoints Jesus' feet with expensive perfume and wipes them with her hair.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10748,
+  "hash": "a4cd8b99"
+ },
+ "jhn-13-1": {
+  "title": "Jesus washes the feet of his disciples, demonstrating humility and service to them.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 13",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus washes the feet of his disciples, demonstrating humility and service to them.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10229,
+  "hash": "9b01767b"
+ },
+ "jhn-13-2": {
+  "title": "Jesus washes the feet of his disciples, including Peter, during the Last Supper.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 13",
+  "characters": [
+   "Jesus",
+   "Peter"
+  ],
+  "caption": "Jesus washes the feet of his disciples, including Peter, during the Last Supper.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10366,
+  "hash": "a883e736"
+ },
+ "jhn-13-4": {
+  "title": "Jesus is teaching his disciples, possibly during the Last Supper, as described in John 13.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 13",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is teaching his disciples, possibly during the Last Supper, as described in John 13.",
+  "w": 403,
+  "h": 300,
+  "bytes": 10063,
+  "hash": "d987a7df"
+ },
+ "jhn-13-6": {
+  "title": "Jesus speaks to his disciples, including Judas Iscariot, who looks away.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 13",
+  "characters": [
+   "Jesus",
+   "Judas Iscariot"
+  ],
+  "caption": "Jesus speaks to his disciples, including Judas Iscariot, who looks away.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10006,
+  "hash": "62b128d2"
+ },
+ "jhn-18-8": {
+  "title": "Jesus is questioned by Pontius Pilate during his trial.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 18",
+  "characters": [
+   "Jesus",
+   "Pontius Pilate"
+  ],
+  "caption": "Jesus is questioned by Pontius Pilate during his trial.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9493,
+  "hash": "85a541aa"
+ },
+ "jhn-20-1": {
+  "title": "Mary Magdalene and other women go to the tomb of Jesus to anoint his body.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 20",
+  "characters": [
+   "Mary Magdalene"
+  ],
+  "caption": "Mary Magdalene and other women go to the tomb of Jesus to anoint his body.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8471,
+  "hash": "26867d59"
+ },
+ "jhn-20-5": {
+  "title": "Jesus appears to Thomas, who kneels before him, recognizing him as Lord and God.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 20",
+  "characters": [
+   "Jesus",
+   "Thomas"
+  ],
+  "caption": "Jesus appears to Thomas, who kneels before him, recognizing him as Lord and God.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11501,
+  "hash": "4d543a47"
+ },
+ "jhn-3-2": {
+  "title": "Jesus and Nicodemus are shown talking, with Jesus extending his hand towards Nicodemus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 3",
+  "characters": [
+   "Jesus",
+   "Nicodemus"
+  ],
+  "caption": "Jesus and Nicodemus are shown talking, with Jesus extending his hand towards Nicodemus.",
+  "w": 406,
+  "h": 300,
+  "bytes": 11039,
+  "hash": "abbd53bf"
+ },
+ "jhn-6-6": {
+  "title": "A man offers Jesus a basket of bread, likely before the feeding of the five thousand.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 6",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "A man offers Jesus a basket of bread, likely before the feeding of the five thousand.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10381,
+  "hash": "269e130f"
+ },
+ "jhn-6-8": {
+  "title": "Jesus looks up to heaven, holding a basket of bread, before feeding the five thousand.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 6",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus looks up to heaven, holding a basket of bread, before feeding the five thousand.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7820,
+  "hash": "89d670e7"
+ },
+ "jhn-9-11": {
+  "title": "Jesus heals the man born blind by making mud and anointing his eyes.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "John 9",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus heals the man born blind by making mud and anointing his eyes.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10037,
+  "hash": "a05db428"
+ },
+ "job-42-3": {
+  "title": "Job is shown with his children and his flock of sheep, after his prosperity was restored.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Job 42",
+  "characters": [
+   "Job"
+  ],
+  "caption": "Job is shown with his children and his flock of sheep, after his prosperity was restored.",
+  "w": 415,
+  "h": 300,
+  "bytes": 9803,
+  "hash": "5014c409"
+ },
+ "jon-1-6": {
+  "title": "Jonah is on the beach after being vomited out by the great fish.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Jonah 1",
+  "characters": [
+   "Jonah"
+  ],
+  "caption": "Jonah is on the beach after being vomited out by the great fish.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9979,
+  "hash": "f6fb2759"
+ },
+ "jos-1-1": {
+  "title": "Joshua looks out over the promised land, where the Israelites are camped in the valley below.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Joshua 1",
+  "characters": [
+   "Joshua"
+  ],
+  "caption": "Joshua looks out over the promised land, where the Israelites are camped in the valley below.",
+  "w": 417,
+  "h": 300,
+  "bytes": 10784,
+  "hash": "7ebecb51"
+ },
+ "jos-2-8": {
+  "title": "Rahab helps the two Israelite spies escape from Jericho by lowering them from her window.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Joshua 2",
+  "characters": [
+   "Rahab"
+  ],
+  "caption": "Rahab helps the two Israelite spies escape from Jericho by lowering them from her window.",
+  "w": 412,
+  "h": 300,
+  "bytes": 12455,
+  "hash": "4f89293e"
+ },
+ "jos-6-5": {
+  "title": "Joshua and the Israelites shout as the walls of Jericho fall down.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Joshua 6",
+  "characters": [
+   "Joshua"
+  ],
+  "caption": "Joshua and the Israelites shout as the walls of Jericho fall down.",
+  "w": 417,
+  "h": 300,
+  "bytes": 11794,
+  "hash": "989c0537"
+ },
+ "luk-1-11": {
+  "title": "The angel Gabriel announces to Mary that she will conceive and give birth to Jesus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 1",
+  "characters": [
+   "Mary",
+   "Gabriel"
+  ],
+  "caption": "The angel Gabriel announces to Mary that she will conceive and give birth to Jesus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9765,
+  "hash": "d5813ab2"
+ },
+ "luk-1-13": {
+  "title": "The angel Gabriel appears to Mary to announce that she will conceive a son.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 1",
+  "characters": [
+   "Mary",
+   "Gabriel"
+  ],
+  "caption": "The angel Gabriel appears to Mary to announce that she will conceive a son.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8305,
+  "hash": "788da82f"
+ },
+ "luk-1-16": {
+  "title": "Elizabeth greets Mary, who has come to visit her, as described in Luke chapter 1.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 1",
+  "characters": [
+   "Elizabeth",
+   "Mary"
+  ],
+  "caption": "Elizabeth greets Mary, who has come to visit her, as described in Luke chapter 1.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9697,
+  "hash": "0ba302b6"
+ },
+ "luk-10-5": {
+  "title": "A man, possibly one of the seventy-two disciples, stands in a desert landscape with a staff.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 10",
+  "characters": [],
+  "caption": "A man, possibly one of the seventy-two disciples, stands in a desert landscape with a staff.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9494,
+  "hash": "a6d7aea7"
+ },
+ "luk-18-1": {
+  "title": "Jesus speaks to a group of men, including a rich young ruler, in Luke 18.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 18",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus speaks to a group of men, including a rich young ruler, in Luke 18.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9316,
+  "hash": "84cebdf4"
+ },
+ "luk-19-2": {
+  "title": "Zacchaeus climbs a tree to see Jesus, who is passing by with a crowd.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 19",
+  "characters": [
+   "Zacchaeus",
+   "Jesus"
+  ],
+  "caption": "Zacchaeus climbs a tree to see Jesus, who is passing by with a crowd.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10182,
+  "hash": "0f477d44"
+ },
+ "luk-2-3": {
+  "title": "An angel appears to shepherds in the field, announcing the birth of Jesus.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 2",
+  "characters": [
+   "angel",
+   "shepherds"
+  ],
+  "caption": "An angel appears to shepherds in the field, announcing the birth of Jesus.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10968,
+  "hash": "cacd1b7d"
+ },
+ "luk-3-6": {
+  "title": "John the Baptist preaches to a crowd of people, including tax collectors and soldiers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 3",
+  "characters": [
+   "John the Baptist"
+  ],
+  "caption": "John the Baptist preaches to a crowd of people, including tax collectors and soldiers.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9214,
+  "hash": "7c75c7f8"
+ },
+ "luk-4-15": {
+  "title": "Jesus is depicted in a close-up, looking intently to the side.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 4",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is depicted in a close-up, looking intently to the side.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8461,
+  "hash": "f99e1d77"
+ },
+ "luk-5-12": {
+  "title": "Jesus calls Levi to follow him, as Levi sits at the tax collector's booth.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 5",
+  "characters": [
+   "Jesus",
+   "Levi"
+  ],
+  "caption": "Jesus calls Levi to follow him, as Levi sits at the tax collector's booth.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11294,
+  "hash": "9c535236"
+ },
+ "luk-6-15": {
+  "title": "A Roman soldier strikes a man, illustrating the teaching to turn the other cheek.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Luke 6",
+  "characters": [],
+  "caption": "A Roman soldier strikes a man, illustrating the teaching to turn the other cheek.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10114,
+  "hash": "7661a2e0"
+ },
+ "mat-1-4": {
+  "title": "An angel appears to Joseph in a dream, telling him not to be afraid to take Mary as his wife.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 1",
+  "characters": [
+   "Joseph"
+  ],
+  "caption": "An angel appears to Joseph in a dream, telling him not to be afraid to take Mary as his wife.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10652,
+  "hash": "a783a9a9"
+ },
+ "mat-10-15": {
+  "title": "Jesus is teaching his disciples, who are gathered around him and listening intently.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 10",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is teaching his disciples, who are gathered around him and listening intently.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11358,
+  "hash": "f2c4e0e0"
+ },
+ "mat-14-1": {
+  "title": "Herod Antipas is feasting with his guests, likely before Salome's dance and John the Baptist's beheading.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 14",
+  "characters": [
+   "Herod Antipas"
+  ],
+  "caption": "Herod Antipas is feasting with his guests, likely before Salome's dance and John the Baptist's beheading.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11744,
+  "hash": "a9a4d1db"
+ },
+ "mat-14-29": {
+  "title": "Jesus reaches out to save Peter, who is sinking in the water after losing faith.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 14",
+  "characters": [
+   "Jesus",
+   "Peter"
+  ],
+  "caption": "Jesus reaches out to save Peter, who is sinking in the water after losing faith.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11582,
+  "hash": "8aab0bdc"
+ },
+ "mat-17-4": {
+  "title": "Jesus is transfigured before Peter, James, and John, who are looking on in awe.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 17",
+  "characters": [
+   "Jesus",
+   "Peter",
+   "James",
+   "John"
+  ],
+  "caption": "Jesus is transfigured before Peter, James, and John, who are looking on in awe.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10265,
+  "hash": "13f2f5a1"
+ },
+ "mat-18-11": {
+  "title": "Jesus teaches his disciples, pointing his finger while they listen intently on the grass.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 18",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus teaches his disciples, pointing his finger while they listen intently on the grass.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10749,
+  "hash": "74dbc85d"
+ },
+ "mat-19-8": {
+  "title": "Jesus is speaking to his disciples, who are listening intently to his words.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 19",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is speaking to his disciples, who are listening intently to his words.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8838,
+  "hash": "9cecd862"
+ },
+ "mat-22-3": {
+  "title": "A man with a beard and long hair is depicted, possibly Jesus, looking intently at something.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 22",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "A man with a beard and long hair is depicted, possibly Jesus, looking intently at something.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7762,
+  "hash": "9ffda797"
+ },
+ "mat-26-16": {
+  "title": "Jesus is speaking and pointing his finger, likely teaching or making a declaration.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 26",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is speaking and pointing his finger, likely teaching or making a declaration.",
+  "w": 408,
+  "h": 300,
+  "bytes": 9273,
+  "hash": "0d7068d7"
+ },
+ "mat-26-27": {
+  "title": "Judas betrays Jesus with a kiss as soldiers and an angry man with a torch approach.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 26",
+  "characters": [
+   "Jesus",
+   "Judas"
+  ],
+  "caption": "Judas betrays Jesus with a kiss as soldiers and an angry man with a torch approach.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11649,
+  "hash": "b2ab9083"
+ },
+ "mat-28-8": {
+  "title": "Jesus gives the Great Commission to his disciples on a mountain in Galilee.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 28",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus gives the Great Commission to his disciples on a mountain in Galilee.",
+  "w": 404,
+  "h": 300,
+  "bytes": 9710,
+  "hash": "1e0114fe"
+ },
+ "mat-4-2": {
+  "title": "Jesus is tempted by Satan to turn stones into bread in the wilderness.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 4",
+  "characters": [
+   "Jesus",
+   "Satan"
+  ],
+  "caption": "Jesus is tempted by Satan to turn stones into bread in the wilderness.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8488,
+  "hash": "eca0b261"
+ },
+ "mat-5-1": {
+  "title": "Jesus is shown speaking, likely delivering the Sermon on the Mount from Matthew chapter 5.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 5",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is shown speaking, likely delivering the Sermon on the Mount from Matthew chapter 5.",
+  "w": 408,
+  "h": 300,
+  "bytes": 8089,
+  "hash": "b5992d63"
+ },
+ "mat-5-4": {
+  "title": "A man is angry at another man, possibly from the Sermon on the Mount.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 5",
+  "characters": [],
+  "caption": "A man is angry at another man, possibly from the Sermon on the Mount.",
+  "w": 402,
+  "h": 300,
+  "bytes": 10112,
+  "hash": "2f5a32b3"
+ },
+ "mat-5-8": {
+  "title": "A man is knocking on a door, illustrating the teaching to \"ask, and it will be given to you.\"",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 5",
+  "characters": [],
+  "caption": "A man is knocking on a door, illustrating the teaching to \"ask, and it will be given to you.\"",
+  "w": 408,
+  "h": 300,
+  "bytes": 8020,
+  "hash": "aa78d083"
+ },
+ "mat-6-1": {
+  "title": "A man gives alms to a beggar, while others watch, illustrating a teaching from Matthew 6.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 6",
+  "characters": [],
+  "caption": "A man gives alms to a beggar, while others watch, illustrating a teaching from Matthew 6.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10401,
+  "hash": "7bf19011"
+ },
+ "mat-7-2": {
+  "title": "Four men are listening intently, possibly to Jesus's teachings from the Sermon on the Mount.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 7",
+  "characters": [],
+  "caption": "Four men are listening intently, possibly to Jesus's teachings from the Sermon on the Mount.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10338,
+  "hash": "71f3bcd7"
+ },
+ "mat-8-10": {
+  "title": "Jesus calms the storm while in a boat with his disciples.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Matthew 8",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus calms the storm while in a boat with his disciples.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10872,
+  "hash": "78b2ab85"
+ },
+ "mrk-10-1": {
+  "title": "Jesus speaks with the rich young man who asked what he must do to inherit eternal life.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Mark 10",
+  "characters": [
+   "Jesus",
+   "Rich young man"
+  ],
+  "caption": "Jesus speaks with the rich young man who asked what he must do to inherit eternal life.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10381,
+  "hash": "8e3e637b"
+ },
+ "mrk-10-21": {
+  "title": "Jesus is shown with his arms outstretched, speaking to a group of people.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Mark 10",
+  "characters": [
+   "Jesus"
+  ],
+  "caption": "Jesus is shown with his arms outstretched, speaking to a group of people.",
+  "w": 408,
+  "h": 300,
+  "bytes": 7624,
+  "hash": "81553b9f"
+ },
+ "neh-2-3": {
+  "title": "Nehemiah rides a horse at night, inspecting the walls of Jerusalem with two men.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Nehemiah 2",
+  "characters": [
+   "Nehemiah"
+  ],
+  "caption": "Nehemiah rides a horse at night, inspecting the walls of Jerusalem with two men.",
+  "w": 408,
+  "h": 300,
+  "bytes": 11369,
+  "hash": "81cbe07e"
+ },
+ "neh-4-3": {
+  "title": "Nehemiah's men rebuild the wall, with some holding weapons while others work.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Nehemiah 4",
+  "characters": [
+   "Nehemiah"
+  ],
+  "caption": "Nehemiah's men rebuild the wall, with some holding weapons while others work.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10892,
+  "hash": "a40a659a"
+ },
+ "num-13-4": {
+  "title": "Caleb encourages the Israelites to go up and take the land, despite the other spies' fearful report.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Numbers 13",
+  "characters": [
+   "Caleb"
+  ],
+  "caption": "Caleb encourages the Israelites to go up and take the land, despite the other spies' fearful report.",
+  "w": 409,
+  "h": 300,
+  "bytes": 9458,
+  "hash": "2826f3cf"
+ },
+ "num-21-1": {
+  "title": "The Israelites are shown traveling through the desert with a pillar of cloud leading them.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Numbers 21",
+  "characters": [
+   "Israelites"
+  ],
+  "caption": "The Israelites are shown traveling through the desert with a pillar of cloud leading them.",
+  "w": 410,
+  "h": 300,
+  "bytes": 9116,
+  "hash": "b8c9606d"
+ },
+ "num-22-3": {
+  "title": "Balaam falls to the ground after the angel of the Lord appears to him.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Numbers 22",
+  "characters": [
+   "Balaam"
+  ],
+  "caption": "Balaam falls to the ground after the angel of the Lord appears to him.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10113,
+  "hash": "434033ed"
+ },
+ "psa-119-1": {
+  "title": "A king, possibly David, is shown reading from a scroll, likely the Psalms.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 119",
+  "characters": [
+   "David"
+  ],
+  "caption": "A king, possibly David, is shown reading from a scroll, likely the Psalms.",
+  "w": 413,
+  "h": 300,
+  "bytes": 11766,
+  "hash": "f140eec5"
+ },
+ "psa-119-2": {
+  "title": "A man reads from a scroll to a group of people, including men, women, and a child.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 119",
+  "characters": [],
+  "caption": "A man reads from a scroll to a group of people, including men, women, and a child.",
+  "w": 411,
+  "h": 300,
+  "bytes": 10594,
+  "hash": "34c2c18d"
+ },
+ "psa-23-1": {
+  "title": "A shepherd, likely David, leads his flock of sheep through a dark valley under the moonlight.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 23",
+  "characters": [
+   "David"
+  ],
+  "caption": "A shepherd, likely David, leads his flock of sheep through a dark valley under the moonlight.",
+  "w": 409,
+  "h": 300,
+  "bytes": 12226,
+  "hash": "3954ecad"
+ },
+ "psa-23-2": {
+  "title": "King David is hiding in a cave and cuts off a piece of King Saul's robe.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 23",
+  "characters": [
+   "David",
+   "Saul"
+  ],
+  "caption": "King David is hiding in a cave and cuts off a piece of King Saul's robe.",
+  "w": 404,
+  "h": 300,
+  "bytes": 11065,
+  "hash": "a9133342"
+ },
+ "psa-23-3": {
+  "title": "King David, wearing a crown, is depicted in an illustration for Psalm 23.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 23",
+  "characters": [
+   "David"
+  ],
+  "caption": "King David, wearing a crown, is depicted in an illustration for Psalm 23.",
+  "w": 411,
+  "h": 300,
+  "bytes": 9306,
+  "hash": "e4d6d0bb"
+ },
+ "psa-25-1": {
+  "title": "A man helps another man who has fallen to the ground.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 25",
+  "characters": [],
+  "caption": "A man helps another man who has fallen to the ground.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10444,
+  "hash": "5dd03478"
+ },
+ "psa-31-1": {
+  "title": "A family is shown eating together, illustrating the theme of God's goodness and provision.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 31",
+  "characters": [],
+  "caption": "A family is shown eating together, illustrating the theme of God's goodness and provision.",
+  "w": 411,
+  "h": 300,
+  "bytes": 11648,
+  "hash": "96954ad5"
+ },
+ "psa-51-1": {
+  "title": "King David raises his hands in prayer, asking God for mercy and forgiveness.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 51",
+  "characters": [
+   "David"
+  ],
+  "caption": "King David raises his hands in prayer, asking God for mercy and forgiveness.",
+  "w": 408,
+  "h": 300,
+  "bytes": 10837,
+  "hash": "97483379"
+ },
+ "psa-52-1": {
+  "title": "David, wearing a crown, raises his hands in prayer or praise at sunrise.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Psalm 52",
+  "characters": [
+   "David"
+  ],
+  "caption": "David, wearing a crown, raises his hands in prayer or praise at sunrise.",
+  "w": 406,
+  "h": 300,
+  "bytes": 10788,
+  "hash": "0d77778b"
+ },
+ "rut-2-1": {
+  "title": "Ruth gleans in the field of Boaz, gathering fallen stalks of grain among other reapers.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ruth 2",
+  "characters": [
+   "Ruth",
+   "Boaz"
+  ],
+  "caption": "Ruth gleans in the field of Boaz, gathering fallen stalks of grain among other reapers.",
+  "w": 409,
+  "h": 300,
+  "bytes": 11696,
+  "hash": "6cae1a79"
+ },
+ "rut-2-2": {
+  "title": "Boaz watches his reapers harvesting barley and wheat in the fields.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ruth 2",
+  "characters": [
+   "Boaz"
+  ],
+  "caption": "Boaz watches his reapers harvesting barley and wheat in the fields.",
+  "w": 404,
+  "h": 300,
+  "bytes": 10871,
+  "hash": "b24f9067"
+ },
+ "rut-4-6": {
+  "title": "Naomi holds Obed, the son of Ruth and Boaz, surrounded by other women.",
+  "source": "sweet",
+  "credit": "Sweet Publishing, CC BY-SA 3.0",
+  "passage": "Ruth 4",
+  "characters": [
+   "Naomi",
+   "Ruth",
+   "Boaz",
+   "Obed"
+  ],
+  "caption": "Naomi holds Obed, the son of Ruth and Boaz, surrounded by other women.",
+  "w": 402,
+  "h": 300,
+  "bytes": 9661,
+  "hash": "443479b8"
  }
 }

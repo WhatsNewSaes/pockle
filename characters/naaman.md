@@ -1,0 +1,12 @@
+---
+name: Naaman
+scene: 2ki-5-10
+chapters: 2 Kings 5
+passages: 2 Kings 5
+order: 38
+---
+Naaman was a brave army leader, but he was very sick with leprosy. A young girl told him about God's prophet Elisha. Naaman dipped in the Jordan River seven times and God made him completely well! This shows God's amazing power and grace, like how Jesus heals our hearts.
+
+- Brave army leader
+- Healed by dipping in Jordan River
+- God showed His power

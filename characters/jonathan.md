@@ -1,10 +1,12 @@
 ---
 name: Jonathan
-scene: david-and-jonathan
+scene: 1sa-18-3
+chapters: 1 Samuel 18, 1 Samuel 20
 passages: 1 Samuel 18, 1 Samuel 20
+order: 30
 ---
-Jonathan was King Saul's son and David's best friend. Even though he could have been king, he loved David and protected him from his own father.
+Jonathan was a prince, King Saul's son. But he loved David, a brave shepherd boy, more than anyone! Jonathan helped David escape from his angry father, even though it meant he wouldn't be king. Their friendship reminds us of God's amazing love for us.
 
-- Gave David his own robe and sword as a sign of friendship
-- Warned David when Saul wanted to hurt him
-- Showed what a true, selfless friend looks like
+- Son of King Saul
+- Best friends with David
+- Helped David escape

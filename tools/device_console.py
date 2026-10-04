@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, or devosync."""
+"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, devosync, character <name>, or sleep-preview."""
 import argparse,time,serial,pathlib
 p=argparse.ArgumentParser();p.add_argument('command',nargs='?',default='?');p.add_argument('--port',default='/dev/cu.usbmodem1101');p.add_argument('--seconds',type=float,default=8);p.add_argument('--text');args=p.parse_args()
 class PassiveSerial(serial.Serial):
@@ -73,6 +73,20 @@ elif args.command=='weather': # refetch the forecast now and print the result
   if line:
    text=line.decode(errors='replace').rstrip();print(text)
    if text.startswith('FETCH weather'):break
+elif args.command=='character': # open a Bible character's card by name, as the voice would
+ s.write(b'K'+(args.text or 'David').encode()+b'\n');deadline=time.monotonic()+6
+ while time.monotonic()<deadline:
+  line=s.readline()
+  if line:
+   text=line.decode(errors='replace').rstrip();print(text)
+   if text.startswith('CHARACTER '):break
+elif args.command=='sleep-preview': # draw the sleep screen (today's picture and verse) without sleeping
+ s.write(b'G');deadline=time.monotonic()+8
+ while time.monotonic()<deadline:
+  line=s.readline()
+  if line:
+   text=line.decode(errors='replace').rstrip();print(text)
+   if text.startswith('SLEEP preview'):break
 elif args.command=='bible': # open the reader at a reference ("John 3:16", "Psalm 23", or "daily")
  s.write(b'B'+(args.text or 'daily').encode()+b'\n');deadline=time.monotonic()+6
  while time.monotonic()<deadline:

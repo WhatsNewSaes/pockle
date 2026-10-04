@@ -52,6 +52,9 @@ TRANSLATIONS={
   'blurb':'Plain, everyday English written for readability - the easiest to understand for new readers.'},
  'bbe':{'name':'Bible in Basic English','short':'BBE','source':'ebible:engBBE','license':'Public domain (1949/1965)','closest':'NIrV, ERV',
   'blurb':'Uses only about 1,000 simple words, so young children can read it on their own.'},
+}
+# Dropped from the device to make room for the pictures (1.3 MB each); add one back to TRANSLATIONS to carry it again.
+SPARE={
  'kjv':{'name':'King James Version','short':'KJV','source':'ebible:eng-kjv','license':'Public domain (1611, 1769 text)',
   'blurb':"The classic 1611 English Bible with 'thee' and 'thou' - the wording many hymns and memory verses use."},
 }
@@ -101,6 +104,9 @@ def main():
  for old in base.glob('[0-9][0-9]'):  # the previous one-file-per-chapter layout
   for f in old.glob('*.txt'):f.unlink()
   old.rmdir()
+ for code in SPARE:  # a translation taken off the device
+  for f in (base/code).glob('*'):f.unlink()
+  if (base/code).exists():(base/code).rmdir()
  wanted=a.only.split(',') if a.only else list(TRANSLATIONS)
  for code in wanted:
   t=TRANSLATIONS[code]

@@ -1,0 +1,12 @@
+---
+name: Abraham
+scene: gen-15-3
+chapters: Genesis 12, Genesis 15, Genesis 18, Genesis 22
+passages: Genesis 12, Genesis 15, Genesis 22
+order: 4
+---
+Abraham was a special man God chose to start a big family. God promised him many kids and that his family would bless the whole world! Even when it seemed impossible, Abraham trusted God. This shows us that God always keeps His promises, and through Jesus, God blesses everyone.
+
+- God called him to a new land.
+- God promised him many descendants.
+- He trusted God even when it was hard.

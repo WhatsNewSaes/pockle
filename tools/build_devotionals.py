@@ -11,6 +11,7 @@ A file looks like:
 
     ---
     ref: Psalm 119:9            # optional; becomes that day's verse of the day on the launcher
+    scene: 1sa-17-1             # optional; the picture (a scenes/library.json id), else tools/pick_scenes.py chooses one
     title: Clean Heart, Clean Path
     ---
     ## Truth
@@ -31,10 +32,10 @@ The device fetches devotionals/out/MM-DD.json from the repo's main branch each d
 file falls back to a devotional the model writes on the device.
 """
 import argparse, datetime, hashlib, json, os, pathlib, re, sys, urllib.request
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent));from biblelib import verse_text, book_chapters
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 SRC=ROOT/'devotionals';OUT=SRC/'out'
 LIMITS={'title':40,'truth':140,'point':90,'apply':200,'prayer':160}
-BIBLE=ROOT/'.tools/bible/fs/bible'
 def books():
  src=(ROOT/'firmware/RetroSports/Bible.h').read_text()
  table=re.search(r'bibleBooks\[\]\s*=\s*\{(.*?)\};',src,re.S).group(1)
@@ -52,11 +53,6 @@ def parse_ref(text):
   if b.lower()==name or (name in('psalms',) and b=='Psalm') or (name=='song of songs' and b=='Song of Solomon'):
    if 1<=chapter<=chapters:return i,chapter,verse
  return None
-def verse_text(book,chapter,verse):
- f=BIBLE/f'{book:02d}'/f'{chapter:03d}.txt'
- if not f.exists():return None
- lines=f.read_text().split('\n')
- return lines[verse-1] if 1<=verse<=len(lines) and lines[verse-1] else None
 def parse_md(path):
  text=path.read_text()
  m=re.match(r'^---\n(.*?)\n---\n(.*)$',text,re.S)
@@ -75,6 +71,7 @@ def parse_md(path):
  points=[l.lstrip()[1:].strip() for l in sections.get('truth',[]) if l.lstrip().startswith('-')]
  d={'title':meta.get('title','').strip(),'truth':para('truth'),'points':points,'apply':para('do it today'),'prayer':para('pray')}
  if meta.get('ref'):d['ref']=meta['ref']
+ if meta.get('scene'):d['scene']=meta['scene']
  return d
 def validate(name,d):
  errs=[]
@@ -98,7 +95,7 @@ def day_verse(month,day):
 def draft(month,day):
  key=re.search(r'OPENROUTER_API_KEY=(\S+)',pathlib.Path(os.path.expanduser('~/.hermes/.env')).read_text()).group(1)
  b,c,v=day_verse(month,day);ref=f'{BOOKS[b-1][0]} {c}:{v}';text=verse_text(b,c,v)
- chapter=(BIBLE/f'{b:02d}'/f'{c:03d}.txt').read_text().split('\n')
+ chapter=book_chapters(b)[c-1]
  ctx=' '.join(f'{i} {chapter[i-1]}' for i in range(max(1,v-6),min(len(chapter),v+6)+1) if chapter[i-1])
  src=(ROOT/'firmware/RetroSports/Devotional.h').read_text()
  body=src[src.index('devotionalSystemPrompt(){'):src.index('inline std::string devotionalRequestBody')]
@@ -117,11 +114,12 @@ def main():
    if f.exists():continue
    f.write_text(draft(day.month,day.day));made+=1;print('drafted',f.name)
   print(f'{made} drafts written; edit them, then run again to export')
- bad=0;count=0
+ bad=0;count=0;days=json.loads((ROOT/'scenes/days.json').read_text()) if (ROOT/'scenes/days.json').exists() else {'files':{}}
  for f in sorted(SRC.glob('*.md')):
   if not re.match(r'^\d\d-\d\d\.md$',f.name):print(f'skip {f.name}: name must be MM-DD.md');continue
   try:d=parse_md(f)
   except ValueError as e:print(e);bad+=1;continue
+  if 'scene' not in d and f.stem in days['files']:d['scene']=days['files'][f.stem]  # the plate tools/pick_scenes.py chose for this day's verse
   errs=validate(f.name,d)
   if errs:bad+=1;print(f'{f.name}:');[print('  -',e) for e in errs];continue
   (OUT/f.name.replace('.md','.json')).write_text(json.dumps(d,ensure_ascii=True,indent=1));count+=1
