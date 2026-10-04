@@ -55,7 +55,8 @@ static int lastSleepDay=-1; // yday of the last automatic bedtime, so a BOOT wak
 // "asleep" banner and the board deep-sleeps; any button wakes it, and a timer wakes it
 // every REFRESH_S to refresh that page and sleep again. State survives in RTC memory.
 static const uint32_t IDLE_MS=10*60*1000UL;static const int REFRESH_S=15*60;
-RTC_DATA_ATTR static int rtcTab=0;RTC_DATA_ATTR static int rtcSleeps=0;
+RTC_DATA_ATTR static int rtcTab=0;RTC_DATA_ATTR static int rtcSleeps=0;RTC_DATA_ATTR static int rtcSelfHeal=0; // set before a self-heal restart so the boot keeps the tab
+static int connFails=0; // fetches in a row that never connected (http<=0): two of them with little contiguous RAM left means TLS is starved
 static bool refreshWake=false;static int refreshPending=0,refreshMaskBits=0;static uint32_t refreshStarted=0;
 // While awake, a league is polled every minute only if it has a game on; idle leagues wait 15 minutes.
 static bool leagueLive[4]={false,false,false,false};static uint32_t leagueFetched[4]={0,0,0,0};static const uint32_t IDLE_POLL_MS=15*60*1000UL;
@@ -1132,6 +1133,7 @@ static void handleResults(){
   if(ui.page==Page::Detail&&ui.gameIndex<(int)ui.snapshot.games.size()&&ui.snapshot.games[ui.gameIndex].id==r->game){ui.detail=r->ok?r->detail:GameDetail{};ui.detail.id=r->game;dirty=true;}
   detailFetchedAt=millis();delete r;return;
  }
+ connFails=r->ok?0:(r->code<=0?connFails+1:connFails);
  Serial.printf("FETCH league=%d date=%s feed=%d team=%s http=%d ok=%d games=%u more=%d\n",r->league,r->date.c_str(),r->feed,r->team.c_str(),r->code,r->ok,(unsigned)r->snapshot.games.size(),r->more);
  if(r->ok){ui.storage=r->stored;if(lastDateSaved!=r->date.c_str()){lastDateSaved=r->date.c_str();prefs.putString("lastDate",lastDateSaved);}
   if(r->feed&&ui.page==Page::Home&&(ui.tab==0||r->league==ui.league)){const int keep=ui.selected;buildRecent();ui.selected=std::min(keep,ui.tab>0?HOME_NEXT+(int)visibleGames(ui).size():HOME_ALL_ROW-1+(int)ui.recent.size());dirty=true;}
@@ -1181,6 +1183,7 @@ static void serialControl(){
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='K'){String v=Serial.readStringUntil('\n');v.trim();const bool ok=openCharacterNamed(v.c_str());lastKeyAt=millis();dirty=true;Serial.printf("CHARACTER %s %s scene=%s %dx%d\n",ok?"open":"unknown",v.c_str(),ui.scene.id.c_str(),ui.scene.w,ui.scene.h);return;}
  if(ch=='J'){openDevotionalPage();lastKeyAt=millis();dirty=true;Serial.printf("DEVOTIONAL page scene=%s %dx%d\n",ui.dayScene.id.c_str(),ui.dayScene.w,ui.dayScene.h);return;}
+ if(ch=='X'){Serial.println("SELF-HEAL test restart");Serial.flush();rtcTab=ui.tab;rtcSelfHeal=1;delay(200);ESP.restart();} // exercise the self-heal path
  if(ch=='G'){loadDayScene();ui.now=time(nullptr);renderer.sleepVerse(ui);applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);if(shown)memcpy(shown,canvas.getBuffer(),48000);lastKeyAt=millis();Serial.printf("SLEEP preview scene=%s %dx%d: %s\n",ui.dayScene.id.c_str(),ui.dayScene.w,ui.dayScene.h,ui.dayScene.caption.c_str());return;} // the sleep screen's body, without sleeping; the next button redraws the page
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}
  if(ch=='K'){String value=Serial.readStringUntil('\n');value.trim();voiceKey=value;prefs.putString("orkey",voiceKey);Serial.printf("VOICE key %s (%u chars)\n",voiceKey.isEmpty()?"cleared":"saved",(unsigned)voiceKey.length());}
@@ -1228,7 +1231,8 @@ void setupApp(){
  shown=(uint8_t*)malloc(48000);ui.page=Page::Launcher;ui.selected=LAUNCH_TAB0+ui.tab;buildLauncher();
  {tm lt{};time_t now=time(nullptr);localtime_r(&now,&lt);if(lt.tm_hour==23&&lt.tm_min==0)lastSleepDay=lt.tm_yday;
   const auto cause=esp_sleep_get_wakeup_cause();refreshWake=cause==ESP_SLEEP_WAKEUP_TIMER;refreshStarted=millis();
-  if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
+  if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1||rtcSelfHeal){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
+  if(rtcSelfHeal){Serial.printf("SELF-HEAL restarted, back on tab %d\n",ui.tab);rtcSelfHeal=0;}
   refreshMaskBits=15;refreshPending=4; // the morning wake (or a button) refreshes every league
   if(ui.clockValid){Snapshot f;const std::string today=localDate(time(nullptr));for(int l=0;l<4;l++)leagueLive[l]=loadCache(l,today,true,"",f)&&leagueActive(f,time(nullptr));} // live leagues (from the caches) are fetched first after a wake
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
@@ -1286,6 +1290,13 @@ void loopApp(){
   if(ui.detail.id!=g.id||(g.state!="post"&&now-detailFetchedAt>60000))requestDetail(g);
  }
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextWeather)>=0&&(!ui.weather.valid||ui.now-ui.weather.fetched>3000||nextWeather==0)){requestWeather();nextWeather=now+300000;}
+ // Self-heal: fetches that cannot even connect while the largest free internal block is under 48 KB mean TLS is starved of RAM
+ // (fragmentation after a long session); a restart takes seconds, keeps every cache and setting, and returns to the same tab.
+ if(connFails>=2&&!requestBusy&&!audio::playing()&&!ui.ap&&ui.voice==VoiceState::Idle){
+  const size_t largest=heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+  if(largest<48*1024){Serial.printf("SELF-HEAL restart: %d fetches could not connect, heap=%u largest=%u\n",connFails,ESP.getFreeHeap(),(unsigned)largest);Serial.flush();rtcTab=ui.tab;rtcSelfHeal=1;delay(200);ESP.restart();}
+  connFails=0; // RAM is fine: the failures were the network's, keep retrying normally
+ }
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextFetch)>=0){
   if(viewPage())requestScores(ui.league,ui.date,ui.feed,ui.filter);
   else { // background rotation: on a refresh wake only the planned leagues; awake, back to back until every league is fresh, then live leagues each minute and idle ones every 15
