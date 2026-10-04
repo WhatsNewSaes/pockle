@@ -14,3 +14,7 @@ The MIT license in `LICENSE` covers this project's own code, tools and documenta
 - Team logos are trademarks of their respective owners, used for identification only.
 - The devotionals in devotionals/ are licensed separately under CC BY 4.0
   (devotionals/LICENSE).
+- Bible scene illustrations loaded onto devices are © Sweet Publishing, licensed CC BY-SA 3.0
+  (https://sweetpublishing.com, via Wikimedia Commons); engravings by Gustave Doré (1866) and
+  Julius Schnorr von Carolsfeld (1860) are public domain. They are fetched by tools/build_scenes.py
+  and are not stored in this repository.

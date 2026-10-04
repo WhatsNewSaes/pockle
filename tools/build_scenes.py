@@ -10,7 +10,7 @@ Sources: Schnorr von Carolsfeld (1860) and Gustave Dore (1866) are public domain
 illustrations are CC BY-SA 3.0 and carry a credit line.
 """
 import hashlib, io, json, pathlib, re, struct, sys, urllib.parse, urllib.request, zlib
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter, ImageEnhance
 ROOT=pathlib.Path(__file__).resolve().parent.parent
 SRC=ROOT/'scenes';OUT=SRC/'out';CACHE=ROOT/'.tools/scenes'
 UA={'User-Agent':'Pockle/1.0 (e-paper devotional; https://github.com/WhatsNewSaes/pockle)'}
@@ -33,7 +33,9 @@ def dither(im,crop=None):
  im=im.convert('L')
  if crop:  # fractions: left, top, right, bottom
   l,t,r,b=[float(x) for x in crop.split(',')];w,h=im.size;im=im.crop((int(w*l),int(h*t),int(w*r),int(h*b)))
- im=ImageOps.autocontrast(im,cutoff=1);w,h=im.size;scale=min(MAXW/w,MAXH/h);im=im.resize((max(1,int(w*scale)),max(1,int(h*scale))),Image.Resampling.LANCZOS)
+ w,h=im.size;scale=min(MAXW/w,MAXH/h);im=im.resize((max(1,int(w*scale)),max(1,int(h*scale))),Image.Resampling.LANCZOS)
+ # Painted sources dither into noise; a light blur and a contrast lift before Floyd-Steinberg keep the figures crisp and calm the skies.
+ im=ImageOps.autocontrast(im.filter(ImageFilter.GaussianBlur(0.8)),cutoff=2);im=ImageEnhance.Contrast(im).enhance(1.3)
  return im.convert('1')
 def pack(im):
  w,h=im.size;px=im.load();rows=bytearray()

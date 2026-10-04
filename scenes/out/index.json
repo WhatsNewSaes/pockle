@@ -11,8 +11,8 @@
   "caption": "David stands over the fallen giant Goliath.",
   "w": 238,
   "h": 300,
-  "bytes": 8164,
-  "hash": "e6b3626b"
+  "bytes": 7547,
+  "hash": "271da6a0"
  },
  "david-and-jonathan": {
   "title": "David and Jonathan",
@@ -26,8 +26,8 @@
   "caption": "Jonathan and David promise to stay friends before David has to flee from Saul.",
   "w": 373,
   "h": 300,
-  "bytes": 12207,
-  "hash": "7e28df9a"
+  "bytes": 10996,
+  "hash": "991670ea"
  },
  "goliath-challenges-israel": {
   "title": "Goliath Challenges Israel",
@@ -41,7 +41,7 @@
   "caption": "The giant Goliath dares the army of Israel to send out a man to fight him.",
   "w": 413,
   "h": 300,
-  "bytes": 11781,
-  "hash": "955decda"
+  "bytes": 10973,
+  "hash": "2091409e"
  }
 }
