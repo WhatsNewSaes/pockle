@@ -141,11 +141,10 @@ class Renderer {
  }
  // The score tabs and the settings gear; `cursor` is 0-4 for a tab, 5 for the gear, -1 for none.
  void tabStrip(int y,int activeTab,int cursor){
-  static const char* tabs[]={"ALL","MLB","NFL","NBA","CFB"};
-  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;
+  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;static const char* shortNames[4]={"MLB","NFL","NBA","CFB"};const char* label=i==0?"ALL":shortNames[tabLeague(i)];
    c.fillRect(x,y,79,40,active?0:1);c.drawRect(x,y,79,40,0);if(cur&&!active)c.drawRect(x+2,y+2,75,36,0);
    if(cur&&active)c.drawRect(x+3,y+3,73,34,1);
-   int w=int(strlen(tabs[i]))*12;text(x+(79-w)/2,y+12,tabs[i],2,active?1:0);}
+   int w=int(strlen(label))*12;text(x+(79-w)/2,y+12,label,2,active?1:0);}
   const bool sel=cursor==HOME_GEAR;const int x=407,cx=437,cy=y+20,color=sel?1:0;c.fillRect(x,y,61,40,sel?0:1);c.drawRect(x,y,61,40,0);
   for(int t=0;t<8;t++){double a=t*3.14159/4;int tx=cx+int(11*cos(a)),ty=cy+int(11*sin(a));c.fillRect(tx-2,ty-2,5,5,color);}
   c.fillCircle(cx,cy,9,color);c.fillCircle(cx,cy,4,sel?0:1);

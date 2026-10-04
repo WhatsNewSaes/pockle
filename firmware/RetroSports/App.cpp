@@ -547,6 +547,10 @@ static void inputTask(void*){
  const int pins[]={4,6,5,0};Button buttons[4];for(int p:pins)pinMode(p,INPUT_PULLUP);
  for(;;){uint32_t now=millis();for(int i=0;i<4;i++){auto event=buttons[i].update(digitalRead(pins[i])==LOW,now,i==2);if(event!=ButtonEvent::None){Key k{i,event};xQueueSend(inputQueue,&k,0);}}vTaskDelay(pdMS_TO_TICKS(10));}
 }
+// Which pages fetch only their own league (the rest rotate through the leagues in the background).
+static bool viewPage(){return ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher||ui.page==Page::Schedule)&&ui.tab>0);}
+// A league wants a background fetch: never fetched since the wake, live and a minute old, or idle and fifteen minutes old (on a refresh wake, the planned ones).
+static bool leagueWanted(int x,uint32_t now){if(refreshWake)return ((refreshMaskBits>>x)&1)!=0;return leagueFetched[x]==0||(leagueLive[x]&&now-leagueFetched[x]>60000)||now-leagueFetched[x]>IDLE_POLL_MS;}
 static bool sameView(int league,const std::string& date,bool feed,const std::string& team){
  return league==ui.league&&team==ui.filter&&(!team.empty()||(date==ui.date&&feed==ui.feed));
 }
@@ -631,7 +635,7 @@ static void loadRecent(int avail){
 // A league tab's feed into ui.snapshot (shared by the launcher and the sports home).
 static void loadLeagueTab(){
  const std::string today=ui.clockValid?localDate(time(nullptr)):ui.date;
- ui.recent.clear();ui.league=ui.tab-1;ui.filter.clear();ui.feed=true;ui.date=today;followToday=true;
+ ui.recent.clear();ui.league=tabLeague(ui.tab);ui.filter.clear();ui.feed=true;ui.date=today;followToday=true;
  ui.snapshot=Snapshot{};ui.snapshot.league=ui.league;ui.snapshot.date=today;ui.snapshot.span=feedDays[ui.league];
  loadCache(ui.league,today,true,"",ui.snapshot);ui.failed=false;ui.fetching=false;
 }
@@ -1069,14 +1073,14 @@ static void handleResults(){
    else if(v.action==VoiceAction::Answer||v.action==VoiceAction::Fact){ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer=v.answer;ui.voiceLeague=v.league;ui.voiceTeamId=v.teamId;ui.voiceTeamName=v.teamName;}
    else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;openDevotionalPage();Serial.println("VOICE opened devotional");}
    else if(v.action==VoiceAction::OpenCharacter){if(openCharacterNamed(v.name)){ui.voice=VoiceState::Idle;Serial.printf("VOICE opened character %s\n",v.name.c_str());}else{ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer="I don't have a card for "+v.name+" yet.";}}
-   else if(v.action==VoiceAction::OpenSchedule){ui.voice=VoiceState::Idle;ui.tab=v.league+1;loadLeagueTab();ui.page=Page::Schedule;ui.listPage=0;ui.selected=0;nextFetch=0;Serial.printf("VOICE opened schedule league=%d\n",v.league);}
+   else if(v.action==VoiceAction::OpenSchedule){ui.voice=VoiceState::Idle;ui.tab=leagueTab(v.league);loadLeagueTab();ui.page=Page::Schedule;ui.listPage=0;ui.selected=0;nextFetch=0;Serial.printf("VOICE opened schedule league=%d\n",v.league);}
    else if(v.action==VoiceAction::OpenWeather){ui.voice=VoiceState::Idle;ui.page=Page::Weather;ui.selected=0;if(!ui.weather.valid)nextWeather=0;Serial.println("VOICE opened weather");}
    else if(v.action==VoiceAction::OpenBible){ui.voice=VoiceState::Idle;openBible(v.daily?ui.votd:v.bible);Serial.printf("VOICE opened bible %s\n",bibleRefLabel(v.daily?ui.votd:v.bible).c_str());}
    else{ // go straight to the page that shows what was asked for
     ui.voice=VoiceState::Idle;ui.league=v.league;ui.filter.clear();ui.date=ui.clockValid?localDate(time(nullptr)):ui.date;ui.feed=true;followToday=true;
     if(v.action==VoiceAction::OpenStandings){ui.origin={Page::Home,ui.league,ui.date,"",true};openStandings(v.league,v.teamId,v.group,v.scope,false);}
     else if(v.action==VoiceAction::OpenTeam){Team t;t.id=v.teamId;t.name=v.teamName;openTeam(t,Page::Home,"");}
-    else if(v.action==VoiceAction::OpenLeague){ui.tab=v.league+1;ui.listPage=0;goHome();}
+    else if(v.action==VoiceAction::OpenLeague){ui.tab=leagueTab(v.league);ui.listPage=0;goHome();}
     else{ui.page=Page::Games;loadView();
      if(v.action==VoiceAction::OpenGame){auto it=std::find_if(ui.snapshot.games.begin(),ui.snapshot.games.end(),[&](const Game& g){return g.id==v.gameId;});
       if(it!=ui.snapshot.games.end()){ui.gameIndex=it-ui.snapshot.games.begin();ui.page=Page::Detail;ui.selected=0;}}
@@ -1139,7 +1143,8 @@ static void handleResults(){
  }
  // A feed with days still to backfill continues almost immediately.
  bool other=(ui.page==Page::Games||ui.page==Page::Detail)&&!sameView(r->league,r->date,r->feed,r->team);
- nextFetch=other?0:millis()+(r->ok?(r->more?1500:60000):120000);delete r;
+ bool pending=false;if(!viewPage()){const uint32_t now=millis();for(int x=0;x<4;x++)if(leagueWanted(x,now))pending=true;} // another league is stale or still unfetched since the wake
+ nextFetch=other?0:millis()+(r->ok?(r->more||pending?1500:60000):120000);delete r;
 }
 static void serialControl(){
  // Local USB diagnostic commands. No credentials or private state are logged.
@@ -1218,6 +1223,7 @@ void setupApp(){
   const auto cause=esp_sleep_get_wakeup_cause();refreshWake=cause==ESP_SLEEP_WAKEUP_TIMER;refreshStarted=millis();
   if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
   refreshMaskBits=15;refreshPending=4; // the morning wake (or a button) refreshes every league
+  if(ui.clockValid){Snapshot f;const std::string today=localDate(time(nullptr));for(int l=0;l<4;l++)leagueLive[l]=loadCache(l,today,true,"",f)&&leagueActive(f,time(nullptr));} // live leagues (from the caches) are fetched first after a wake
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
   refreshDevoHash();if(refreshWake&&ui.clockValid&&devoSyncDue()){devoSyncPending=true;refreshPending++;} // the library sync rides on a wake every six hours
@@ -1274,12 +1280,11 @@ void loopApp(){
  }
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextWeather)>=0&&(!ui.weather.valid||ui.now-ui.weather.fetched>3000||nextWeather==0)){requestWeather();nextWeather=now+300000;}
  if(ui.online&&ui.clockValid&&!requestBusy&&(int32_t)(now-nextFetch)>=0){
-  if(ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher||ui.page==Page::Schedule)&&ui.tab>0))requestScores(ui.league,ui.date,ui.feed,ui.filter);
-  else { // background rotation: on a refresh wake only the planned leagues; awake, idle leagues only every 15 minutes
-   int l=backgroundLeague,tries=0;
-   auto wanted=[&](int x){return refreshWake?((refreshMaskBits>>x)&1)!=0:(leagueLive[x]||leagueFetched[x]==0||now-leagueFetched[x]>IDLE_POLL_MS);};
-   while(tries<4&&!wanted(l)){l=(l+1)%4;tries++;}
-   if(tries<4){requestScores(l,localDate(ui.now),true);backgroundLeague=(l+1)%4;}else nextFetch=now+60000;
+  if(viewPage())requestScores(ui.league,ui.date,ui.feed,ui.filter);
+  else { // background rotation: on a refresh wake only the planned leagues; awake, back to back until every league is fresh, then live leagues each minute and idle ones every 15
+   int l=-1;
+   for(int pass=0;pass<2&&l<0;pass++)for(int t=0;t<4&&l<0;t++){const int x=(backgroundLeague+t)%4;if(leagueWanted(x,now)&&(pass==1||leagueLive[x]))l=x;} // live leagues first
+   if(l>=0){requestScores(l,localDate(ui.now),true);backgroundLeague=(l+1)%4;}else nextFetch=now+60000;
   }
  }
  static bool wasFresh=false;bool isFresh=fresh(ui.snapshot,ui.now,ui.online,ui.failed);if(wasFresh!=isFresh){wasFresh=isFresh;if(ui.page==Page::Games||ui.page==Page::Detail)dirty=true;}

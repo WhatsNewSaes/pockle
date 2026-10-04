@@ -174,6 +174,10 @@ inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fet
 }
 // Home page feed: the newest games already played (or in progress) across all
 // leagues, drawn from the cached league feeds.
+// Tab order on the home strip (tab 1..4): NFL first, then MLB, NBA and college football; league indices stay as they are.
+constexpr int TAB_LEAGUES[4]={1,0,2,3};
+inline int tabLeague(int tab){return tab>=1&&tab<=4?TAB_LEAGUES[tab-1]:0;}
+inline int leagueTab(int league){for(int i=0;i<4;i++)if(TAB_LEAGUES[i]==league)return i+1;return 1;}
 struct RecentGame { int league; Game game; bool next=false; }; // next: the league's soonest upcoming game, shown above its results
 inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit){
  std::vector<RecentGame> out;
