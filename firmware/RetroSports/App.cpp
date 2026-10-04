@@ -548,7 +548,7 @@ static void networkTask(void*){
 }
 static void inputTask(void*){
  const int pins[]={4,6,5,0};Button buttons[4];for(int p:pins)pinMode(p,INPUT_PULLUP);
- for(;;){uint32_t now=millis();for(int i=0;i<4;i++){auto event=buttons[i].update(digitalRead(pins[i])==LOW,now,i==2);if(event!=ButtonEvent::None){Key k{i,event};xQueueSend(inputQueue,&k,0);}}vTaskDelay(pdMS_TO_TICKS(10));}
+ for(;;){uint32_t now=millis();for(int i=0;i<4;i++){auto event=buttons[i].update(digitalRead(pins[i])==LOW,now,i==2||i==3);/* holds: rocker = voice, BOOT = sleep */if(event!=ButtonEvent::None){Key k{i,event};xQueueSend(inputQueue,&k,0);}}vTaskDelay(pdMS_TO_TICKS(10));}
 }
 // Which pages fetch only their own league (the rest rotate through the leagues in the background).
 static bool viewPage(){return ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher||ui.page==Page::Schedule)&&ui.tab>0);}
@@ -954,6 +954,8 @@ static void goBack(){
 static void keyAction(const Key& k){
  if(k.button==2&&k.event==ButtonEvent::Hold){if(ui.page!=Page::Voice){ui.returnPage=ui.page;ui.page=Page::Voice;}startVoice();return;}
  if(k.button==2&&k.event==ButtonEvent::ReleaseHold){if(ui.page==Page::Voice)finishVoice();return;}
+ if(k.button==3&&k.event==ButtonEvent::Hold){Serial.println("KEY boot held: sleeping on release");return;} // the sleep waits for the release, or the still-pressed button would wake it at once
+ if(k.button==3&&k.event==ButtonEvent::ReleaseHold){if(ui.page==Page::Voice||ui.ap)return;stopSpeaking();idleSleep();return;}
  if(k.event!=ButtonEvent::Click)return;
  if(ui.page==Page::Voice&&(ui.voice==VoiceState::Listening||ui.voice==VoiceState::Thinking))return;
  Serial.printf("KEY %d\n",k.button);
@@ -1183,6 +1185,7 @@ static void serialControl(){
  if(ch=='W'){nextWeather=0;Serial.printf("WEATHER requested (cached: %s)\n",weatherSpeech(ui.weather).c_str());}
  if(ch=='K'){String v=Serial.readStringUntil('\n');v.trim();const bool ok=openCharacterNamed(v.c_str());lastKeyAt=millis();dirty=true;Serial.printf("CHARACTER %s %s scene=%s %dx%d\n",ok?"open":"unknown",v.c_str(),ui.scene.id.c_str(),ui.scene.w,ui.scene.h);return;}
  if(ch=='J'){openDevotionalPage();lastKeyAt=millis();dirty=true;Serial.printf("DEVOTIONAL page scene=%s %dx%d\n",ui.dayScene.id.c_str(),ui.dayScene.w,ui.dayScene.h);return;}
+ if(ch=='z'){keyAction({3,ButtonEvent::Hold});keyAction({3,ButtonEvent::ReleaseHold});} // a BOOT hold: sleep now
  if(ch=='X'){Serial.println("SELF-HEAL test restart");Serial.flush();rtcTab=ui.tab;rtcSelfHeal=1;delay(200);ESP.restart();} // exercise the self-heal path
  if(ch=='G'){loadDayScene();ui.now=time(nullptr);renderer.sleepVerse(ui);applyTheme(canvas.getBuffer());EPD_3IN97_WaitIdle();EPD_3IN97_Display_Partial(canvas.getBuffer(),shown);if(shown)memcpy(shown,canvas.getBuffer(),48000);lastKeyAt=millis();Serial.printf("SLEEP preview scene=%s %dx%d: %s\n",ui.dayScene.id.c_str(),ui.dayScene.w,ui.dayScene.h,ui.dayScene.caption.c_str());return;} // the sleep screen's body, without sleeping; the next button redraws the page
  if(ch=='B'){String v=Serial.readStringUntil('\n');v.trim();BibleRef r=v.equalsIgnoreCase("daily")?ui.votd:parseBibleRef(v.c_str());openBible(r);lastKeyAt=millis();Serial.printf("BIBLE open %s page=%d/%u votd=%s\n",bibleRefLabel(r).c_str(),ui.bible.page+1,(unsigned)ui.bible.pages.size(),bibleRefLabel(ui.votd).c_str());}

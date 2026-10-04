@@ -58,7 +58,7 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Check for software updates
 
 **Battery life**
-- Sleeps when idle and overnight, showing the day's picture and verse
+- Sleeps when idle, overnight, or when you hold BOOT, showing the day's picture and verse
 - Wakes on any button; one timed wake each morning for the day's devotional, verse, weather, scores and updates
 - A few percent of battery a day
 
