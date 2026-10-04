@@ -39,7 +39,7 @@ ROSTER=[
  ('Paul','Acts 9, Acts 16, Acts 27, Acts 28','Acts 9, Acts 16, Philippians 4'),('Barnabas','Acts 11, Acts 13, Acts 14','Acts 11, Acts 13'),('Silas','Acts 16','Acts 16'),('Timothy','Acts 16, 1 Timothy 4, 2 Timothy 1','Acts 16, 2 Timothy 1'),
  ('Lydia','Acts 16','Acts 16'),('Priscilla and Aquila','Acts 18','Acts 18'),
 ]
-def slug(name):return re.sub(r'[^a-z0-9]+','-',name.lower()).strip('-')
+def slug(name):return re.sub(r'[^a-z0-9]+','-',name.lower().replace(' and ',' ')).strip('-')[:26]  # LittleFS file names are short
 def draft(lib,name,chapters,passages):
  ids=[]
  for ch in chapters.split(','):

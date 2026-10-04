@@ -195,13 +195,15 @@ static bool fetchBody(const String& url,ScoreBody& body,int& code){
  if(WiFi.status()!=WL_CONNECTED||time(nullptr)<=1700000000)return false;
  NetworkClientSecure client;client.setCACert(SCORE_ROOTS);client.setHandshakeTimeout(10);
  HTTPClient http;http.useHTTP10(true);http.setTimeout(10000);http.setConnectTimeout(8000);
- bool ok=false;
+ bool ok=false;const uint32_t t0=millis();
  if(http.begin(client,url)){
   http.addHeader("Accept-Encoding","identity");
   code=http.GET();
   if(code==200){int received=http.writeToStream(&body);ok=received>=0&&!body.failed;if(!ok)Serial.printf("SCORE transport error=%d limited=%d\n",received,body.failed);}
+  else{char err[96]={0};client.lastError(err,sizeof(err)); // the TLS handshake needs ~40 KB of contiguous internal RAM; when it is short, GET returns -1
+   Serial.printf("FETCH FAIL http=%d err=\"%s\" tls=\"%s\" %lums heap=%u largest=%u rssi=%d wifi=%d\n",code,HTTPClient::errorToString(code).c_str(),err,(unsigned long)(millis()-t0),ESP.getFreeHeap(),(unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),WiFi.RSSI(),WiFi.status());}
   http.end();
- }
+ }else Serial.printf("FETCH FAIL begin url=%s heap=%u\n",url.c_str(),ESP.getFreeHeap());
  return ok;
 }
 static bool fetchJson(const String& url,const char* what,int league,const std::string& date,const std::string& start,bool allDates,Snapshot& out,int& code,bool rankedOnly=false){
@@ -694,11 +696,16 @@ static void loadVerseOfDay();static bool loadBibleChapter(int book,int chapter);
 static void loadCharacters(){
  ui.characters.clear();JsonDocument j;if(deserializeJson(j,readFileText("/chars/index.json")))return;
  for(JsonObjectConst o:j.as<JsonArrayConst>()){Character ch;auto str=[&](const char* k){const char* v=o[k].as<const char*>();return std::string(v?v:"");};
-  ch.id=str("id");ch.name=str("name");ch.scene=str("scene");ch.blurb=str("blurb");
-  for(JsonVariantConst b:o["bullets"].as<JsonArrayConst>()){const char* v=b.as<const char*>();if(v)ch.bullets.push_back(v);}
-  for(JsonVariantConst p:o["passages"].as<JsonArrayConst>()){const char* v=p.as<const char*>();if(v)ch.passages.push_back(v);}
+  ch.id=str("id");ch.name=str("name");ch.scene=str("scene"); // the blurb, bullets and passages stay in /chars/<id>.json until the card opens (83 cards would hold 40 KB of internal RAM)
   if(!ch.name.empty())ui.characters.push_back(ch);}
- Serial.printf("CHARACTERS %u\n",(unsigned)ui.characters.size());
+ Serial.printf("CHARACTERS %u heap=%u\n",(unsigned)ui.characters.size(),ESP.getFreeHeap());
+}
+static bool loadCard(const Character& light,Character& out){
+ out=light;JsonDocument j;if(deserializeJson(j,readFileText("/chars/"+light.id+".json")))return false;
+ auto str=[&](const char* k){const char* v=j[k].as<const char*>();return std::string(v?v:"");};out.blurb=str("blurb");if(!str("scene").empty())out.scene=str("scene");
+ for(JsonVariantConst b:j["bullets"].as<JsonArrayConst>()){const char* v=b.as<const char*>();if(v)out.bullets.push_back(v);}
+ for(JsonVariantConst p:j["passages"].as<JsonArrayConst>()){const char* v=p.as<const char*>();if(v)out.passages.push_back(v);}
+ return !out.blurb.empty();
 }
 // A plate file: width, height and a text length (uint16 each), the text "credit<US>passage<US>caption", then the zlib-packed 1-bit rows (tools/build_scenes.py).
 static bool loadSceneInto(Scene& sc,const std::string& id){
@@ -720,7 +727,7 @@ static std::string daySceneId(){
 }
 static void loadDayScene(){const std::string id=daySceneId();if(ui.dayScene.w>0&&ui.dayScene.id==id)return;loadSceneInto(ui.dayScene,id);}
 static void openDevotionalPage();
-static void openCharacter(){ui.page=Page::Character;ui.selected=0;if(ui.characterIndex<(int)ui.characters.size())loadScene(ui.characters[ui.characterIndex].scene);dirty=true;}
+static void openCharacter(){ui.page=Page::Character;ui.selected=0;if(ui.characterIndex<(int)ui.characters.size()){loadCard(ui.characters[ui.characterIndex],ui.card);loadScene(ui.card.scene);}dirty=true;}
 static bool openCharacterNamed(std::string name){ // "tell me about Moses": the card whose name contains the words, or whose words the name contains
  for(auto& ch:name)ch=tolower((unsigned char)ch);if(name.empty())return false;
  for(size_t i=0;i<ui.characters.size();i++){std::string n=ui.characters[i].name;for(auto& ch:n)ch=tolower((unsigned char)ch);if(n.find(name)!=std::string::npos||name.find(n)!=std::string::npos){ui.characterIndex=i;openCharacter();return true;}}
@@ -935,7 +942,7 @@ static void goBack(){
  case Page::Translation:ui.page=translationFrom;ui.selected=translationFromSel;break;
  case Page::TextSize:ui.page=Page::BibleHome;ui.selected=5;break;
  case Page::Characters:ui.page=Page::BibleHome;ui.selected=3;break;
- case Page::Character:ui.scene=Scene{};ui.page=Page::Characters;ui.selected=ui.characterIndex;break;
+ case Page::Character:ui.scene=Scene{};ui.card=Character{};ui.page=Page::Characters;ui.selected=ui.characterIndex;break;
  case Page::Launcher:break;
  case Page::Bible:ui.page=Page::BibleHome;ui.selected=0;break;
  case Page::BibleBooks:ui.page=Page::Bible;ui.selected=0;break;
@@ -1048,7 +1055,7 @@ static void keyAction(const Key& k){
   else if(ui.selected==4){translationFrom=Page::BibleHome;translationFromSel=4;ui.page=Page::Translation;ui.selected=0;for(size_t i=0;i<ui.translations.size();i++)if(ui.translations[i].code==bibleCode.c_str())ui.selected=i;}
   else{loadSample();ui.page=Page::TextSize;ui.selected=ui.textSize;}break;
  case Page::Characters:if(!ui.characters.empty()){ui.characterIndex=ui.selected;openCharacter();}break;
- case Page::Character:if(ui.characterIndex<(int)ui.characters.size()&&!ui.characters[ui.characterIndex].passages.empty()){BibleRef r=parseBibleRef(ui.characters[ui.characterIndex].passages[0]);if(r.valid())openBible(r);}break;
+ case Page::Character:if(!ui.card.passages.empty()){BibleRef r=parseBibleRef(ui.card.passages[0]);if(r.valid())openBible(r);}break;
  case Page::TextSize:ui.page=Page::BibleHome;ui.selected=5;break;
  case Page::Devotional:{const int btn=ui.selected-devotionalLayout(ui).scrolls; // below the buttons while scrolling: a press scrolls on
   if(btn<0){ui.selected++;}
@@ -1188,7 +1195,7 @@ static void serialControl(){
   String value=Serial.readStringUntil('\n');int64_t epoch=strtoll(value.c_str(),nullptr,10);
   if(epoch>=1700000000LL&&epoch<4102444800LL){timeval tv{(time_t)epoch,0};settimeofday(&tv,nullptr);ui.clockValid=true;writeRtc();nextFetch=0;dirty=true;Serial.println("CLOCK set from USB host");}
  }
- if(ch=='?')Serial.printf("STATUS page=%d sel=%d tab=%d league=%d feed=%d team=%s conf=%s standings=%d/%s games=%u covered=%u wifi=%d clock=%d heap=%u psram=%u saved=%lld uptime=%lu epoch=%lld reason=%d\n",(int)ui.page,ui.selected,ui.tab,ui.league,ui.feed,ui.filter.c_str(),teamConference(ui.filter).c_str(),ui.standings.league,ui.standings.scope.c_str(),(unsigned)ui.snapshot.games.size(),(unsigned)ui.snapshot.covered.size(),ui.online,ui.clockValid,ESP.getFreeHeap(),ESP.getFreePsram(),ui.snapshot.updated,(unsigned long)millis(),(long long)time(nullptr),disconnectReason.load());
+ if(ch=='?')Serial.printf("STATUS page=%d sel=%d tab=%d league=%d feed=%d team=%s conf=%s standings=%d/%s games=%u covered=%u wifi=%d clock=%d heap=%u largest=%u psram=%u saved=%lld uptime=%lu epoch=%lld reason=%d\n",(int)ui.page,ui.selected,ui.tab,ui.league,ui.feed,ui.filter.c_str(),teamConference(ui.filter).c_str(),ui.standings.league,ui.standings.scope.c_str(),(unsigned)ui.snapshot.games.size(),(unsigned)ui.snapshot.covered.size(),ui.online,ui.clockValid,ESP.getFreeHeap(),(unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),ESP.getFreePsram(),ui.snapshot.updated,(unsigned long)millis(),(long long)time(nullptr),disconnectReason.load());
  if(ch=='?')Serial.printf("LOCAL IP %s\n",WiFi.localIP().toString().c_str());
  if(ch=='?')Serial.printf("VOICE state=%d key=%u codec=%d recording=%d playing=%d speak=%d\n",(int)ui.voice,(unsigned)voiceKey.length(),audio::available(),audio::recording(),audio::playing(),speakReplies);
  if(ch=='?')Serial.printf("PANEL partials=%d pending=%d busy=%d idleMs=%lu sinceFull=%lu keysQueued=%u\n",partialCount,panelPending,EPD_3IN97_Busy(),(unsigned long)(millis()-lastKeyAt),(unsigned long)(millis()-lastFullRefresh),(unsigned)uxQueueMessagesWaiting(inputQueue));

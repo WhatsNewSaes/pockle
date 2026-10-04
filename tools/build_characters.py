@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Bible characters: one Markdown file each, exported to the index the device reads.
+"""Bible characters: one Markdown file each, exported to a light index (id, name, scene) the device keeps
+in RAM and one JSON file per card (characters/out/cards/<id>.json) it reads when the card opens.
 
   characters/david.md:
     ---
@@ -32,7 +33,11 @@ def main():
   for k,v in {'’':"'",'“':'"','”':'"','—':' - '}.items():blurb=blurb.replace(k,v);bullets=[b.replace(k,v) for b in bullets]
   if meta.get('scene') and meta['scene'] not in scenes:sys.exit(f'{f.name}: unknown scene {meta["scene"]}')
   if len(blurb)>420:sys.exit(f'{f.name}: blurb is {len(blurb)} characters (max 420)')
+  if len(f.stem)>26:sys.exit(f'{f.name}: the file name must be at most 26 characters (LittleFS names are limited to 31 with .json)')
   out.append({'order':int(meta.get('order','999')),'id':f.stem,'name':meta.get('name',f.stem.title()),'scene':meta.get('scene',''),'passages':[p.strip() for p in meta.get('passages','').split(',') if p.strip()],'blurb':blurb,'bullets':bullets[:4]})
  out.sort(key=lambda c:(c['order'],c['name']));[c.pop('order') for c in out]
- (OUT/'index.json').write_text(json.dumps(out,indent=1));print('characters:',', '.join(c['name'] for c in out))
+ cards=OUT/'cards';cards.mkdir(exist_ok=True)
+ for old in cards.glob('*.json'):old.unlink()
+ for c in out:(cards/f"{c['id']}.json").write_text(json.dumps(c,indent=1))  # the device reads a card when it opens
+ (OUT/'index.json').write_text(json.dumps([{'id':c['id'],'name':c['name'],'scene':c['scene']} for c in out],separators=(',',':')))  # the list the device keeps in RAM;print('characters:',', '.join(c['name'] for c in out))
 if __name__=='__main__':main()

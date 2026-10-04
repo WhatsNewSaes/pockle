@@ -43,7 +43,7 @@ struct UI {
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
  Standings standings;int standingsGroup=-1,standingsAlt=-1;bool standingsLoading=false;std::string standingsWant; /* 0 = all sports, 1..4 = league+1 */ bool speak=true;VoiceState voice=VoiceState::Idle;std::string voiceHeard,voiceAnswer,voiceNote,voiceTeamId,voiceTeamName;int voiceLeague=-1;
- BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::vector<Character> characters;int characterIndex=0;Scene scene,dayScene;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
+ BibleView bible;BibleRef votd;std::string votdText;Weather weather;std::string updateNote,version;Devotional devotional;bool devotionalLoading=false;int speaking=0;std::string ttsVoice="alloy";std::vector<Translation> translations;std::string bibleCode="bsb";int textSize=1;std::vector<Character> characters;int characterIndex=0;Character card;Scene scene,dayScene;std::string sample; // John 3:16-18 in the current translation, for the size preview // 0 idle, 1 fetching speech, 2 playing
 };
 // Launcher geometry shared by the renderer and the recent-games builder: the
 // verse takes up to seven lines, the SPORTS bar follows, rows fill the rest.
@@ -416,7 +416,7 @@ class Renderer {
    for(int i=page*per;i<(int)u.characters.size()&&i<(page+1)*per;i++)row(60+(i-page*per)*60,upperText(u.characters[i].name),u.selected==i);
    if(u.characters.empty())center(300,"NO CHARACTERS LOADED",2);
   }else if(u.page==Page::Character){ // one card: the plate, then who they were; up/down moves between cards, press opens their passage
-   if(u.characterIndex<(int)u.characters.size()){const Character& ch=u.characters[u.characterIndex];int y=12;
+   if(u.characterIndex<(int)u.characters.size()){const Character& ch=u.card;int y=12;
     if(u.scene.w>0&&!u.scene.bits.empty()){const int x=(480-u.scene.w)/2;c.drawBitmap(x,y,u.scene.bits.data(),u.scene.w,u.scene.h,0);c.drawRect(x-1,y-1,u.scene.w+2,u.scene.h+2,0);y+=u.scene.h+8;
      for(const auto& cl:wrapWidth(u.scene.caption,[&](const std::string& s){return smallWidth(s);},456,2)){small(12,y,cl,0,456);y+=16;} // what the picture shows
      if(!u.scene.credit.empty()){small(12,y,u.scene.credit);y+=18;}}
