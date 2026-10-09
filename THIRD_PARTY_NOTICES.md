@@ -5,6 +5,8 @@ The MIT license in `LICENSE` covers this project's own code, tools and documenta
 - The Waveshare e-paper display driver (vendor/ and firmware/RetroSports/EPD_3in97.*,
   DEV_Config.*) and Espressif's ES8311 codec driver (firmware/RetroSports/es8311.*)
   carry their original notices.
+- The QR code encoder (firmware/RetroSports/qrcodegen.c, qrcodegen.h) is Project Nayuki's
+  QR Code generator library, MIT License (https://www.nayuki.io/page/qr-code-generator-library).
 - The Inter typeface (assets/fonts/) is licensed under the SIL Open Font License 1.1
   (assets/fonts/OFL.txt).
 - Bible texts loaded onto devices are the Berean Standard Bible (public domain), the

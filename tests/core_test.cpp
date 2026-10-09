@@ -11,6 +11,7 @@ int main(){
  Button b;assert(b.update(true,0,true)==ButtonEvent::None);assert(b.update(true,31,true)==ButtonEvent::None);assert(b.update(false,100,true)==ButtonEvent::None);assert(b.update(false,131,true)==ButtonEvent::Click);
  Button hold;hold.update(true,0,true);hold.update(true,31,true);assert(hold.update(true,732,true)==ButtonEvent::Hold);assert(hold.update(true,800,true)==ButtonEvent::None);hold.update(false,850,true);assert(hold.update(false,881,true)==ButtonEvent::ReleaseHold);
  Button bounce;bounce.update(true,0);bounce.update(false,10);assert(bounce.update(false,50)==ButtonEvent::None);
+ assert(wifiJoinText("Pockle-734C","play12345678")=="WIFI:T:WPA;S:Pockle-734C;P:play12345678;;");assert(wifiJoinText("a;b","c:d")=="WIFI:T:WPA;S:a\\;b;P:c\\:d;;");assert(wifiJoinText("open","")=="WIFI:T:nopass;S:open;P:;;");
  assert(shiftDate("20260308",1)=="20260309");assert(shiftDate("20261101",1)=="20261102");assert(shiftDate("20261231",1)=="20270101");assert(!validDate("20260230"));assert(localDate(isoEpoch("2026-09-30T01:00Z"))=="20260929");
  std::ifstream file("tests/fixtures/cfb.json");JsonDocument d,filter;makeScoreFilter(filter);auto error=deserializeJson(d,file,DeserializationOption::Filter(filter),DeserializationOption::NestingLimit(30));if(error){std::cerr<<error.c_str()<<"\n";return 1;};Snapshot s;assert(decodeScores(d,3,"20260926",1790460000,s));assert(!s.games.empty());assert(!s.games[0].home.conf.empty());
  for(auto& g:s.games)assert(localDate(isoEpoch(g.start))=="20260926");
@@ -30,6 +31,8 @@ int main(){
   Game moved=window.games[0];moved.start="2026-09-29T20:00Z";today.games.push_back(moved);
   mergeFeed(feed,today,"20260929","20260915","20260929",14);assert(feed.games.size()==3);assert(feed.games[0].id=="later");assert(feed.games[1].id==moved.id&&gameDate(feed.games[1])=="20260929");assert(feed.updated==1790470000);
   for(size_t i=1;i<feed.games.size();i++)assert(isoEpoch(feed.games[i-1].start)>=isoEpoch(feed.games[i].start));
+  {Snapshot copy=feed;Game ahead;ahead.id="ahead";ahead.start="2026-10-04T17:00Z";ahead.state="pre";Snapshot up;up.games.push_back(ahead);mergeUpcoming(copy,up,"20260929",14,1790470000);assert(copy.games.size()==4&&copy.games[0].id=="ahead");
+   Snapshot again;again.games.push_back(g);mergeFeed(copy,again,"20260929","20260915","20260929",14);assert(copy.games.size()==3&&copy.games[0].id=="ahead");} // a day's merge keeps the schedule ahead (the moved game was not in this day's fetch, so it goes)
   auto missing=feedMissing(feed,"20260915","20260929");assert(missing[0]=="20260929");assert(missing.size()==4&&missing[1]=="20260928"&&missing[2]=="20260926");assert(feedHasGaps(feed,"20260915","20260929"));
   Snapshot none;mergeFeed(feed,none,"20260928","20260915","20260929",14);assert(feed.games.size()==3&&covers(feed,"20260928"));assert(feedMissing(feed,"20260915","20260929")[1]=="20260926");
   assert(dayLabel(isoEpoch(feed.games[0].start),isoEpoch("2026-09-29T12:00Z"))=="TODAY");assert(dayLabel(isoEpoch(feed.games[2].start),isoEpoch("2026-09-29T12:00Z"))=="SUN 9/27");assert(compactStatus("10:23 - 3rd")=="10:23 3RD");assert(clockLabel(isoEpoch("2026-09-30T00:15Z"))=="8:15 PM");
@@ -78,9 +81,23 @@ int main(){
  {Snapshot a;a.league=0;Game g1;g1.id="a1";g1.start="2026-09-29T22:00Z";g1.state="in";Game g2;g2.id="a2";g2.start="2026-09-30T23:00Z";g2.state="pre";a.games={g2,g1};
   Snapshot b;b.league=1;Game g3;g3.id="b1";g3.start="2026-09-28T00:15Z";g3.state="post";Game g4;g4.id="b2";g4.start="2026-09-29T23:15Z";g4.state="post";b.games={g4,g3};
   const Snapshot* f[4]={&a,&b,nullptr,nullptr};auto rec=recentGames(f,10);assert(rec.size()==3&&rec[0].game.id=="b2"&&rec[1].game.id=="a1"&&rec[2].game.id=="b1"&&rec[0].league==1);assert(recentGames(f,2).size()==2);
-  auto grp=recentGamesGrouped(f,1000);assert(grp.size()==4&&grp[0].league==1&&grp[1].league==1&&grp[2].league==0&&grp[2].next&&grp[2].game.id=="a2"&&grp[3].game.id=="a1"); // NFL had the newest game, so it leads; MLB's NEXT row leads its group
-  auto tight=recentGamesGrouped(f,28+28+56+56);assert(tight.size()==2&&tight[0].league==1&&tight[1].league==0&&tight[1].next); // two rows fit: one per league, not two NFL
-  auto three=recentGamesGrouped(f,28+28+56*3);assert(three.size()==3);}
+  // Nobody followed: per league, the next game above the last result (a live game in the result's place).
+  auto grp=recentGamesGrouped(f,1000);assert(grp.size()==3&&grp[0].league==0&&grp[0].next&&grp[0].game.id=="a2"&&grp[1].game.id=="a1"&&grp[2].league==1&&grp[2].game.id=="b2"&&grp[0].header.empty()); // MLB's next game is the newest, so MLB leads: next, then the live game; NFL has only a result
+  auto tight=recentGamesGrouped(f,28+56+56);assert(tight.size()==2&&tight[0].game.id=="a2"&&tight[1].game.id=="a1"); // MLB's pair fills it; the NFL group needs a divider and a row, which no longer fit
+  // Followed teams: two rows each, grouped by league; a shared game is one row; a team with nothing saved adds nothing.
+  g1.away={"10","New York Yankees","NYY","4"};g1.home={"2","Boston Red Sox","BOS","2"};g2.away={"2","Boston Red Sox","BOS","0"};g2.home={"10","New York Yankees","NYY","0"};a.games={g2,g1};
+  std::vector<Favorite> none,sox{{0,"2","Boston Red Sox"}},both{{0,"2","Boston Red Sox"},{0,"10","New York Yankees"}},bears{{1,"3","Chicago Bears"}},mixed{{1,"3","Chicago Bears"},{0,"10","New York Yankees"}};
+  assert(recentGamesGrouped(f,1000,56,28,&none).size()==3);
+  auto mine=recentGamesGrouped(f,1000,56,28,&sox);assert(mine.size()==2&&mine[0].next&&mine[0].game.id=="a2"&&mine[1].game.id=="a1"&&mine[0].league==0&&mine[0].header=="Boston Red Sox"); // NFL games are not theirs; rows carry the team for the divider
+  assert(recentGamesGrouped(f,1000,56,28,&both).size()==4); // the two followed teams meet: each gets its own pair under its own name
+  assert(recentGamesGrouped(f,1000,56,28,&bears).empty());
+  auto mix=recentGamesGrouped(f,1000,56,28,&mixed);assert(mix.size()==2&&mix[0].league==0);
+  // Order: whoever plays soonest first. A team whose next game is nearer leads one playing later; a team with nothing ahead goes last.
+  Game g5;g5.id="b3";g5.start="2026-10-02T00:00Z";g5.state="pre";g5.away={"3","Chicago Bears","CHI","0"};g5.home={"12","Kansas City Chiefs","KC","0"};b.games={g5,g4,g3};
+  Game g6;g6.id="a3";g6.start="2026-10-05T00:00Z";g6.state="pre";g6.away={"10","New York Yankees","NYY","0"};g6.home={"7","Tampa Bay Rays","TB","0"};g1.state="post";a.games={g6,g1};
+  std::vector<Favorite> three{{0,"10","New York Yankees"},{1,"3","Chicago Bears"},{0,"2","Boston Red Sox"}};
+  auto soon=recentGamesGrouped(f,1000,56,28,&three);assert(soon.size()==4&&soon[0].header=="Chicago Bears"&&soon[1].header=="New York Yankees"&&soon[3].header=="Boston Red Sox"); // Bears 10/2 (next only), Yankees 10/5 (next and last), Red Sox nothing ahead
+  a.games={g2,g1};b.games={g4,g3};}
  // Voice: JSON escaping, grounded context, reply parsing with team resolution, wrapping.
  {assert(jsonEscape("a\"b\\c\nd")=="a\\\"b\\\\c\\nd");
   Snapshot nfl;nfl.league=1;Game g;g.id="x";g.start="2026-09-27T20:25Z";g.state="post";g.status="Final";g.week=3;g.seasonType=2;g.away={"14","Los Angeles Rams","LAR","26"};g.home={"7","Denver Broncos","DEN","30"};nfl.games.push_back(g);
@@ -98,6 +115,14 @@ int main(){
   VoiceReply t4=parseVoiceReply(d4,feeds);assert(t4.ok&&t4.action==VoiceAction::Answer&&t4.answer=="I don't have that.");
   JsonDocument d5;deserializeJson(d5,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"1985 Super Bowl\\\",\\\"action\\\":\\\"fact\\\",\\\"league\\\":\\\"NFL\\\",\\\"team\\\":null,\\\"answer\\\":\\\"The 49ers won Super Bowl XIX in January 1985.\\\"}\"}}]}");
   VoiceReply t5=parseVoiceReply(d5,feeds);assert(t5.ok&&t5.action==VoiceAction::Fact&&t5.league==1&&t5.answer.find("49ers")!=std::string::npos);
+  JsonDocument f6;deserializeJson(f6,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"follow the Rams\\\",\\\"action\\\":\\\"follow_team\\\",\\\"league\\\":\\\"NFL\\\",\\\"team\\\":\\\"LAR\\\",\\\"answer\\\":\\\"ok\\\"}\"}}]}");
+  VoiceReply f6r=parseVoiceReply(f6,feeds);assert(f6r.ok&&f6r.action==VoiceAction::Follow&&f6r.league==1&&f6r.teamId=="14"&&f6r.answer=="Added the Los Angeles Rams to your favorites tab on the home screen."); // resolved through the saved game
+  JsonDocument f7;deserializeJson(f7,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"stop following the Bears\\\",\\\"action\\\":\\\"unfollow_team\\\",\\\"league\\\":\\\"NFL\\\",\\\"team\\\":\\\"CHI\\\",\\\"answer\\\":\\\"ok\\\"}\"}}]}");
+  VoiceReply f7r=parseVoiceReply(f7,feeds);assert(f7r.ok&&f7r.action==VoiceAction::Answer&&f7r.answer.find("saved scores")!=std::string::npos); // CHI has no saved game to resolve against
+  Snapshot nba;nba.league=2;Game bulls=g;bulls.id="y";bulls.away={"4","Chicago Bulls","CHI","99"};bulls.home={"5","Boston Celtics","BOS","101"};nba.games.push_back(bulls);const Snapshot* two[4]={nullptr,&nfl,&nba,nullptr};
+  VoiceReply f8r=parseVoiceReply(f7,two);assert(f8r.ok&&f8r.action==VoiceAction::Answer); // the Bulls share CHI but were not asked for
+  JsonDocument f9;deserializeJson(f9,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"follow the Bulls\\\",\\\"action\\\":\\\"follow_team\\\",\\\"league\\\":\\\"NBA\\\",\\\"team\\\":\\\"CHI\\\",\\\"answer\\\":\\\"ok\\\"}\"}}]}");
+  VoiceReply f9r=parseVoiceReply(f9,two);assert(f9r.ok&&f9r.action==VoiceAction::Follow&&f9r.league==2&&f9r.teamId=="4");
   JsonDocument d6;deserializeJson(d6,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"x\\\",\\\"action\\\":\\\"fact\\\",\\\"answer\\\":\\\"\\\"}\"}}]}");assert(!parseVoiceReply(d6,feeds).ok);
   JsonDocument d7;deserializeJson(d7,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"last Super Bowl\\\",\\\"action\\\":\\\"fact\\\",\\\"answer\\\":\\\"I'm not sure about that one.\\\",\\\"needs_lookup\\\":true}\"}}]}");
   VoiceReply t7=parseVoiceReply(d7,feeds);assert(t7.ok&&t7.action==VoiceAction::Fact&&t7.lookup);
@@ -126,7 +151,7 @@ int main(){
    s.games={b,a,d,c,e};std::vector<int> ids{0,1,2,3,4};const auto order=sectionedOrder(s,ids);
    assert(order.size()==5&&order[0].section==Section::Live&&s.games[ids[order[0].pos]].id=="live"&&s.games[ids[order[1].pos]].id=="next1"&&s.games[ids[order[2].pos]].id=="next2"&&s.games[ids[order[3].pos]].id=="old"&&s.games[ids[order[4].pos]].id=="older");
    assert(currentWeek(s)==4);Snapshot done=s;done.games={d,e};assert(currentWeek(done)==4);assert(sectionName(Section::Next)==std::string("UP NEXT"));
-   const Snapshot* f[4]={nullptr,&s,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(!rows.empty()&&rows[0].next&&rows[0].game.id=="next1"&&!rows[1].next);
+   const Snapshot* f[4]={nullptr,&s,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(rows.size()==2&&rows[0].next&&rows[0].game.id=="next1"&&rows[1].game.id=="live"&&!rows[1].next); // the soonest upcoming, then the live game
    Snapshot part;Game n;n.id="wk5";n.state="pre";n.start="2026-10-11T17:00Z";n.week=5;n.seasonType=2;n.away=a.away;n.home=a.home;Game far;far=n;far.id="far";far.start="2026-10-25T17:00Z";part.games={n,far,b};
    mergeUpcoming(s,part,"20260930",14,1790800000);int pre=0;bool hasFar=false,hasWk5=false;for(const auto& g:s.games){if(g.state=="pre")pre++;if(g.id=="far")hasFar=true;if(g.id=="wk5")hasWk5=true;}
    assert(hasWk5&&!hasFar&&pre==2&&s.upcomingAt==1790800000); // next1 (today-dated, kept) + wk5; next2 was replaced by the fresh set which carried it... 

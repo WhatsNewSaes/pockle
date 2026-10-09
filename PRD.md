@@ -21,7 +21,7 @@ Target: Waveshare ESP32-S3-ePaper-3.97, 800 × 480 e-paper display, Wi-Fi, micro
 
 Home presents the four leagues and Favorites. Selecting a league opens its games. Selecting a game opens a scorecard with team names, scores, game status, and period/inning where available. Support today's games, recent results, and upcoming games through a date selector. Clearly distinguish scheduled, live, final, postponed, and canceled games using available source data.
 
-Favorites provides quick access to selected teams across leagues. Users can add or remove favorites from a team or game context menu. Preserve favorites through restarts.
+Followed teams come first: the MINE tab lists their games across every league, each team's next game leading. Teams are followed from the parent's phone page (planned) or by voice ("follow the Bears", "stop following the Bears"); the device carries no per-team favoriting controls. Followed teams persist through restarts.
 
 Empty schedules show a friendly message and an option to browse another date. Missing data must never appear as a fabricated score or a zero score.
 

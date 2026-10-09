@@ -11,8 +11,9 @@
 #include "Core.h"
 #include "Voice.h"
 #include "TeamLogos.h"
+#include "qrcodegen.h"
 namespace retro {
-enum class Page {Home,Games,Detail,Date,Favorites,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule,Characters,Character};
+enum class Page {Home,Games,Detail,Date,Settings,Wifi,Voice,Standings,Bible,BibleBooks,BibleChapters,Launcher,BibleHome,Weather,Update,Devotional,Translation,TextSize,Schedule,Characters,Character};
 // A Bible character card (characters/out/index.json) and the scene plate it shows (scenes/out/<id>.img).
 struct Character { std::string id,name,scene,blurb; std::vector<std::string> bullets,passages; };
 struct Scene { std::vector<uint8_t> bits; int w=0,h=0; std::string id,credit,passage,caption; };
@@ -21,6 +22,7 @@ struct Translation { std::string code,name,shortName,license,blurb,closest; };
 // The launcher is the first screen: the verse of the day (press: the Bible) over the latest scores (press: the sports scoreboard).
 // Launcher selections: the weather strip, the Bible row, the five score tabs, and the settings gear.
 constexpr int LAUNCH_WEATHER=0,LAUNCH_BIBLE=1,LAUNCH_TAB0=2,LAUNCH_GEAR=7,LAUNCH_COUNT=8;
+constexpr int LAUNCH_WIFI=LAUNCH_COUNT,LAUNCH_WIFI_H=68; // the CONNECT TO WI-FI banner across the top, only while UI::wifiPrompt is set: the stop above the weather strip (the rocker wraps to it from the gear)
 // Sports Home selections: tabs 0-4 (ALL, four leagues), the gear, then the rows.
 constexpr int HOME_TABS=5,HOME_GEAR=5,HOME_ALL_ROW=6,HOME_PREV=6,HOME_NEXT=7,HOME_ROW=8;
 // Bible reader state: the loaded chapter laid out in pages, the page shown, a verse to highlight, and the picker cursors.
@@ -38,7 +40,10 @@ struct Origin { Page page=Page::Home; int league=0; std::string date,gameId; boo
 struct UI {
  Page page=Page::Home,returnPage=Page::Home;int selected=0,league=0,gameIndex=0,dateOffset=0;Origin origin;
  std::string date="",filter,filterName,apName,apPass,notice,ip;
- bool online=false,fetching=false,failed=false,clockValid=false,storage=true,ap=false,feed=false;
+ bool online=false,fetching=false,failed=false,clockValid=false,storage=true,ap=false,joined=false,feed=false; // joined: the connection came after Wi-Fi setup opened
+ int apClients=0; // phones on the hotspot: the setup screen moves to its second step once one joins
+ bool wifiPrompt=false; // never set up, or offline past the first seconds of a join: the launcher offers Wi-Fi setup
+ bool readPaused=false; // a reading stopped on the reader, waiting to continue
  int64_t now=0,offlineSince=0;Snapshot snapshot;std::vector<Favorite> favorites;GameDetail detail;
  std::vector<RecentGame> recent;int tab=0,listPage=0,battery=-1;bool detailFromHome=false,dark=false,nightSleep=true;
  // Standings for the current league; the page shows `standingsGroup`, up/down flips to `standingsAlt` (-1 = none).
@@ -66,10 +71,13 @@ inline DevoLayout devotionalLayout(const UI& u){
  return L;
 }
 inline std::vector<std::string> launcherVerseLines(const UI& u){return u.votd.valid()?wrapWidth(u.votdText,readWidth,456,7):std::vector<std::string>{};}
-inline int launcherSportsBar(const UI& u){return 110+std::max(1,(int)launcherVerseLines(u).size())*READ_LINE;}
+inline int launcherSportsBar(const UI& u){return (u.wifiPrompt?LAUNCH_WIFI_H:0)+110+std::max(1,(int)launcherVerseLines(u).size())*READ_LINE;}
 inline int launcherScoresTop(const UI& u){return launcherSportsBar(u)+48;}
+inline int launcherCount(const UI& u){return LAUNCH_COUNT+(u.wifiPrompt?1:0);}
 inline std::vector<int> visibleGames(const UI& u){std::vector<int> a;for(size_t i=0;i<u.snapshot.games.size();i++)if(matches(u.snapshot.games[i],u.filter))a.push_back(i);return a;}
 inline bool isFavorite(const UI& u,const Team& t){for(const auto& f:u.favorites)if(f.league==u.league&&f.id==t.id)return true;return false;}
+// The MINE tab shows every league until a team is followed; a line above the list says how.
+inline int mineHint(const UI& u){return u.favorites.empty()?24:0;}
 // Scoreboard list layout shared by the renderer and the navigation: visible
 // games, week dividers, and page boundaries packed by height.
 struct GamesLayout {
@@ -140,15 +148,19 @@ class Renderer {
   }
  }
  // The score tabs and the settings gear; `cursor` is 0-4 for a tab, 5 for the gear, -1 for none.
+ // A five-point star, filled: the followed-teams tab.
+ void star(int cx,int cy,int r,int ink){int px[10],py[10];for(int i=0;i<10;i++){const double a=-1.5707963+i*0.6283185;const double rr=i%2?r*0.42:r;px[i]=cx+int(std::round(rr*cos(a)));py[i]=cy+int(std::round(rr*sin(a)));}
+  for(int i=0;i<10;i+=2)c.fillTriangle(px[i],py[i],px[(i+1)%10],py[(i+1)%10],px[(i+9)%10],py[(i+9)%10],ink);c.fillTriangle(px[1],py[1],px[3],py[3],px[5],py[5],ink);c.fillTriangle(px[1],py[1],px[5],py[5],px[7],py[7],ink);c.fillTriangle(px[1],py[1],px[7],py[7],px[9],py[9],ink);}
  void tabStrip(int y,int activeTab,int cursor){
-  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;static const char* shortNames[4]={"MLB","NFL","NBA","CFB"};const char* label=i==0?"ALL":shortNames[tabLeague(i)];
+  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;static const char* shortNames[4]={"MLB","NFL","NBA","CFB"};const char* label=i==0?"MINE":shortNames[tabLeague(i)];
    c.fillRect(x,y,79,40,active?0:1);c.drawRect(x,y,79,40,0);if(cur&&!active)c.drawRect(x+2,y+2,75,36,0);
    if(cur&&active)c.drawRect(x+3,y+3,73,34,1);
-   int w=int(strlen(label))*12;text(x+(79-w)/2,y+12,label,2,active?1:0);}
+   if(i==0)star(x+39,y+20,12,active?1:0);else{int w=int(strlen(label))*12;text(x+(79-w)/2,y+12,label,2,active?1:0);}}
   const bool sel=cursor==HOME_GEAR;const int x=407,cx=437,cy=y+20,color=sel?1:0;c.fillRect(x,y,61,40,sel?0:1);c.drawRect(x,y,61,40,0);
   for(int t=0;t<8;t++){double a=t*3.14159/4;int tx=cx+int(11*cos(a)),ty=cy+int(11*sin(a));c.fillRect(tx-2,ty-2,5,5,color);}
   c.fillCircle(cx,cy,9,color);c.fillCircle(cx,cy,4,sel?0:1);
  }
+ void wifiGlyph(int x,int y,int ink){for(int r:{7,13,19})for(double a=-2.4;a<=-0.74;a+=0.01)for(int t=0;t<3;t++)c.drawPixel(x+int((r+t)*cos(a)),y+int((r+t)*sin(a)),ink);c.fillCircle(x,y,3,ink);} // three arcs over a dot; (x,y) is the dot
  // One page of a league scoreboard (week dividers and rows) with no cursor, for the launcher.
  void leaguePage(const UI& u){
   const GamesLayout L=layoutGames(u);
@@ -161,14 +173,18 @@ class Renderer {
  }
  // Recent games grouped by league with dividers; selBase < 0 draws them without a cursor.
  void recentList(const UI& u,int ry,int selBase){
-  int lastLeague=-1;
+  if(u.favorites.empty()){smallCenter(240,ry+2,"FOLLOW A TEAM: HOLD THE ROCKER AND SAY \"FOLLOW THE BEARS\"");ry+=mineHint(u);}
+  std::string lastGroup="\x01";
   for(size_t i=0;i<u.recent.size();i++){const auto& rg=u.recent[i];const int64_t start=isoEpoch(rg.game.start);
-   if(rg.league!=lastLeague){std::string s=std::string(" ")+leagues[rg.league].name+" ";int w=int(s.size())*12;c.fillRect(16,ry+13,448,3,0);c.fillRect(240-w/2,ry+6,w+1,16,1);text(240-w/2,ry+6,s,2);text(240-w/2+1,ry+6,s,2);ry+=28;lastLeague=rg.league;}
+   const std::string group=rg.header.empty()?leagues[rg.league].name:upperText(rg.header); // a divider per followed team, or per league when nobody is followed
+   if(group!=lastGroup){std::string s=" "+clean(group,34)+" ";int w=int(s.size())*12;c.fillRect(16,ry+13,448,3,0);c.fillRect(240-w/2,ry+6,w+1,16,1);text(240-w/2,ry+6,s,2);text(240-w/2+1,ry+6,s,2);ry+=28;lastGroup=group;}
    if(ry+56>770)break;
    std::string status=rg.next?"NEXT: "+dayLabel(start,u.now)+" "+clockLabel(start):dayLabel(start,u.now)+" "+(rg.game.state=="in"&&!u.online?"SAVED ":"")+compactStatus(rg.game.status);
-   const bool beforeDivider=i+1<u.recent.size()&&u.recent[i+1].league!=rg.league;
+   const bool beforeDivider=i+1<u.recent.size()&&(u.recent[i+1].league!=rg.league||u.recent[i+1].header!=rg.header);
    gameRow(ry,rg.league,rg.game,selBase>=0&&u.selected==selBase+(int)i,status,!beforeDivider);ry+=56;}
-  if(u.recent.empty()){center(ry+70,"NO RECENT GAMES YET",3);center(ry+130,u.online?"LOADING SCORES...":"CONNECT WI-FI TO LOAD SCORES",2);}
+  if(u.recent.empty()){
+   if(!u.favorites.empty()){center(ry+70,"NO GAMES FOR YOUR TEAMS",3);center(ry+130,u.online?"THEIR NEXT GAMES WILL SHOW HERE":"CONNECT WI-FI TO LOAD SCORES",2);}
+   else{center(ry+70,"NO RECENT GAMES YET",3);center(ry+130,u.online?"LOADING SCORES...":"CONNECT WI-FI TO LOAD SCORES",2);}}
  }
  // The day/status line under a matchup: Inter SemiBold at 13 px, a step heavier than the captions.
  int rowWidth(const std::string& s){int w=0;for(unsigned char ch:s)if(ch>=32&&ch<=126)w+=InterRowGlyphs[ch-32].xAdvance;return w;}
@@ -178,6 +194,14 @@ class Renderer {
  }
  void smallCenter(int cx,int y,const std::string& s,int color=0,int maxWidth=432){std::string t=fitSmall(clean(s,120),maxWidth);small(cx-smallWidth(t)/2,y,t,color,maxWidth);}
  void center(int y,std::string s,int size=2){s=clean(s,440/(6*size));text((480-int(s.size())*6*size)/2,y,s,size);}
+ // A QR code centered at the given top edge, sized to fit the width given; returns its height (0 if the text would not fit).
+ int qr(int top,const std::string& s,int width){
+  uint8_t code[qrcodegen_BUFFER_LEN_FOR_VERSION(10)],tmp[qrcodegen_BUFFER_LEN_FOR_VERSION(10)];
+  if(!qrcodegen_encodeText(s.c_str(),tmp,code,qrcodegen_Ecc_MEDIUM,1,10,qrcodegen_Mask_AUTO,true))return 0;
+  const int n=qrcodegen_getSize(code),scale=std::max(2,width/(n+8)),side=n*scale,x0=(480-side)/2; // the eight modules are the quiet zone on each side
+  for(int y=0;y<n;y++)for(int x=0;x<n;x++)if(qrcodegen_getModule(code,x,y))c.fillRect(x0+x*scale,top+y*scale,scale,scale,0);
+  return side;
+ }
  void row(int y,std::string label,bool selected,int size=2){
   c.fillRect(12,y,456,54,selected?0:1);c.drawRect(12,y,456,54,0);
   if(selected)text(22,y+18,">",2,1);text(46,y+18,label,size,selected?1:0,32);
@@ -382,14 +406,6 @@ class Renderer {
   }else if(u.page==Page::Date){
    center(138,"PICK A GAME DAY",3);center(302,prettyDate(shiftDate(u.date,u.dateOffset)),4);
    center(405,"UP / DOWN: CHANGE DAY",2);center(451,"PRESS: SHOW GAMES",2);center(493,"BOOT: CANCEL",2);center(580,"UP TO 30 DAYS EITHER WAY",2);
-  }else if(u.page==Page::Favorites){
-   center(124,"YOUR ALL-STAR ROSTER",3);
-   if(u.favorites.empty()){center(300,"NO FAVORITES YET",3);center(380,"OPEN A GAME AND",2);center(414,"FAVORITE A TEAM",2);center(480,"YOUR TEAMS WILL APPEAR HERE",2);}
-   int start=(u.selected/6)*6;
-   for(int i=0;i<6&&start+i<(int)u.favorites.size();i++){
-    auto& f=u.favorites[start+i];int y=190+i*88;bool sel=u.selected==start+i;c.fillRect(12,y,456,80,sel?0:1);c.drawRect(12,y,456,80,0);
-    logo(30,y+8,64,f.league,f.id,"");text(110,y+15,leagues[f.league].name,1,sel?1:0);text(110,y+40,f.name,2,sel?1:0,28);
-   }
   }else if(u.page==Page::Settings){
    center(90,"LOCKER ROOM",3);row(140,"CONNECT / CHANGE WI-FI",u.selected==0);row(196,"REFRESH SAVED SCORES",u.selected==1);row(252,"SLEEP DISPLAY",u.selected==2);
    row(308,std::string("SPOKEN REPLIES: ")+(u.speak?"ON":"OFF"),u.selected==3);row(364,std::string("DARK MODE: ")+(u.dark?"ON":"OFF"),u.selected==4);
@@ -475,33 +491,63 @@ class Renderer {
    center(150,"UPDATE",4);{int y=300;for(const auto& line:wrapLines(u.updateNote,30,5)){center(y,line,2);y+=36;}}
    center(560,"INSTALLED: v"+u.version,2);
   }else if(u.page==Page::Wifi){
-   center(132,"WI-FI SETUP",3);
-   if(u.online){center(285,"CONNECTED!",4);center(377,u.clockValid?"READY TO LOAD SCORES":"SETTING THE CLOCK...",2);center(457,"PRESS BOOT TWICE",2);center(491,"TO CHOOSE A LEAGUE",2);}
-   else if(u.ap){text(20,218,"1. JOIN WI-FI ON YOUR PHONE",2);text(20,259,u.apName,3);text(20,315,"PASSWORD: "+u.apPass,2);text(20,393,"2. OPEN IN YOUR BROWSER",2);text(20,436,"http://192.168.4.1",3);text(20,520,"3. ENTER HOME WI-FI",2);text(64,554,"AND YOUR TIMEZONE",2);}
-   else {center(290,"SETUP CLOSED",4);center(398,"PRESS TO START WI-FI SETUP",2);}
-   center(654,u.notice,1);center(700,"USE A 2.4 GHz NETWORK",2);
+   // Three screens, each headed by a black band naming its step, so a change is obvious from across the room.
+   auto band=[&](int y,int h,const std::string& s,int size){c.fillRect(12,y,456,h,0);const std::string t=clean(s,440/(6*size));text((480-int(t.size())*6*size)/2,y+(h-8*size)/2,t,size,1);};
+   // The panel's font has no emoji, so the fun comes from drawn icons: camera, phone, hourglass, check, Wi-Fi arcs, sparkles.
+   auto camera=[&](int x,int y,int ink){c.fillRoundRect(x,y+8,40,26,5,ink);c.fillRect(x+12,y+2,16,8,ink);c.fillCircle(x+20,y+21,9,!ink);c.fillCircle(x+20,y+21,5,ink);c.fillRect(x+31,y+12,5,3,!ink);};
+   auto phone=[&](int x,int y,int ink){c.fillRoundRect(x,y,22,40,4,ink);c.fillRect(x+3,y+5,16,27,!ink);c.fillCircle(x+11,y+36,2,!ink);};
+   auto hourglass=[&](int x,int y,int ink){c.fillTriangle(x,y+3,x+24,y+3,x+12,y+15,ink);c.fillTriangle(x,y+27,x+24,y+27,x+12,y+15,ink);c.fillRect(x-2,y,28,3,ink);c.fillRect(x-2,y+27,28,3,ink);c.fillRect(x+6,y+6,12,3,!ink);};
+   auto check=[&](int x,int y,int ink){for(int o=0;o<7;o++){c.drawLine(x,y+16+o,x+12,y+28+o,ink);c.drawLine(x+12,y+28+o,x+36,y+4+o,ink);}};
+   auto sparkle=[&](int x,int y,int r,int ink){const int w=std::max(2,r/4);c.fillTriangle(x,y-r,x-w,y,x+w,y,ink);c.fillTriangle(x,y+r,x-w,y,x+w,y,ink);c.fillTriangle(x-r,y,x,y-w,x,y+w,ink);c.fillTriangle(x+r,y,x,y-w,x,y+w,ink);};
+   // Three numbered circles across the top of every setup screen: done ones ticked, the current one filled, so the move from step to step is visible at a glance.
+   auto steps=[&](int cur){for(int i=1;i<=3;i++){const int cx=140+(i-1)*100,cy=40;if(i<3)c.fillRect(cx+20,cy-2,60,4,0);
+     if(i<cur){c.fillCircle(cx,cy,19,0);for(int o=0;o<4;o++){c.drawLine(cx-9,cy+o,cx-3,cy+6+o,1);c.drawLine(cx-3,cy+6+o,cx+10,cy-7+o,1);}}
+     else if(i==cur){c.fillCircle(cx,cy,19,0);text(cx-6,cy-8,std::to_string(i),2,1);}
+     else{c.fillCircle(cx,cy,19,1);c.drawCircle(cx,cy,19,0);c.drawCircle(cx,cy,18,0);text(cx-6,cy-8,std::to_string(i),2,0);}}};
+   if(u.online&&(!u.ap||u.joined)){steps(3);band(72,50,"ALL SET",3);check(40,80,1);check(404,80,1);
+    center(285,"CONNECTED!",4);sparkle(70,300,20,0);sparkle(410,300,20,0);sparkle(44,250,9,0);sparkle(436,352,9,0);sparkle(100,352,7,0);sparkle(380,250,7,0);
+    center(377,u.clockValid?"POCKLE IS ONLINE":"SETTING THE CLOCK...",2);center(457,u.ap?"TAP FINISH ON YOUR PHONE":"PRESS BOOT TO GO BACK",2);if(u.ap)center(491,"OR PRESS BOOT TO START",2);}
+   else if(u.ap&&u.apClients>0){ // a phone is on the hotspot: a second code opens the setup page (a phone joined by camera does not show the sign-in sheet on its own)
+    steps(2);band(72,50,"PHONE CONNECTED",3);check(36,80,1);check(408,80,1);
+    center(136,"YOUR PHONE IS ON POCKLE",2);center(164,"NOW SCAN THIS NEW CODE TO OPEN",2);center(192,"THE SETUP PAGE IN SAFARI",2);
+    const int side=qr(226,SETUP_URL,300);int y=226+(side?side:0)+26;
+    if(side){const int x0=(480-side)/2;for(int b=10;b<14;b++)c.drawRect(x0-b,226-b,side+2*b,side+2*b,0);}else{center(290,"QR CODE UNAVAILABLE",2);y=340;}
+    wifiGlyph(60,y+32,0);center(y,"THEN TAP YOUR HOME WI-FI",2);center(y+28,"AND TYPE ITS PASSWORD",2);
+    center(y+74,"OR VISIT setup.pockle.kids",2);center(y+102,"OR OPEN SETTINGS > WI-FI",2);smallCenter(240,678,"THE PAGE IS ALSO AT http://192.168.4.1");}
+   else if(u.ap){ // the QR code joins the board's hotspot in one scan; the name and password stay below it for phones without a camera shortcut
+    steps(1);band(72,50,"SCAN TO CONNECT",3);camera(44,78,1);phone(412,77,1);center(136,"SCAN THIS CODE WITH YOUR PHONE'S",2);center(164,"CAMERA, THEN TAP JOIN",2);
+    const int side=qr(198,wifiJoinText(u.apName,u.apPass),300);int y=198+(side?side:0)+24;
+    if(!side){center(260,"QR CODE UNAVAILABLE",2);y=310;}
+    hourglass(26,y-1,0);center(y,"WHEN YOUR PHONE JOINS, POCKLE",2);center(y+28,"CHIMES AND SHOWS STEP 2 HERE",2);
+    center(y+72,"NO CAMERA? JOIN "+u.apName,2);center(y+100,"PASSWORD: "+u.apPass,2);}
+   else {center(132,"WI-FI SETUP",3);center(290,"SETUP CLOSED",4);center(398,"PRESS TO START WI-FI SETUP",2);}
+   center(696,u.notice,1);if(!(u.online&&(!u.ap||u.joined)))center(716,"USE A 2.4 GHz NETWORK",2);
   }else if(u.page==Page::Launcher){ // two doors: the verse of the day and the latest scores
    auto bar=[&](int y,const char* label,bool sel){c.fillRect(12,y,456,40,sel?0:1);c.drawRect(12,y,456,40,0);if(sel)text(24,y+12,">",2,1);text(sel?48:24,y+12,label,2,sel?1:0);text(468-12-6*12,y+12,"OPEN >",2,sel?1:0);};
+   const int o=u.wifiPrompt?LAUNCH_WIFI_H:0; // everything below the banner moves down by its height
+   if(u.wifiPrompt){ // offline: Wi-Fi setup is one press away, across the very top
+    const bool sel=u.selected==LAUNCH_WIFI;const int y=4,ink=sel?1:0;c.fillRect(12,y,456,60,sel?0:1);c.drawRect(12,y,456,60,0);c.drawRect(13,y+1,454,58,0);
+    wifiGlyph(52,y+40,ink);text(96,y+18,"CONNECT TO WI-FI",3,ink);text(426,y+18,">",3,ink);}
    { // weather strip (selection 0): glyph, temperature and condition; press opens the forecast
-    const bool sel=u.selected==LAUNCH_WEATHER;const int ink=sel?1:0;if(sel)c.fillRect(12,4,456,36,0);
-    if(u.weather.valid){const Weather& w=u.weather;weatherGlyph(16,8,weatherIcon(w.code,w.day),1,ink);
-     const std::string t=std::to_string(w.temp);text(54,16,t,2,ink);const int dx=54+int(t.size())*12+3;c.drawCircle(dx,18,2,ink);c.drawCircle(dx,18,1,ink);
-     text(dx+12,16,weatherWord(w.code),2,ink,14); // the same pixel size as the battery figure
-    }else text(16,16,u.online?"WEATHER LOADING...":"WEATHER: CONNECT WI-FI",2,ink);
+    const bool sel=u.selected==LAUNCH_WEATHER;const int ink=sel?1:0;if(sel)c.fillRect(12,o+4,456,36,0);
+    if(u.weather.valid){const Weather& w=u.weather;weatherGlyph(16,o+8,weatherIcon(w.code,w.day),1,ink);
+     const std::string t=std::to_string(w.temp);text(54,o+16,t,2,ink);const int dx=54+int(t.size())*12+3;c.drawCircle(dx,o+18,2,ink);c.drawCircle(dx,o+18,1,ink);
+     text(dx+12,o+16,weatherWord(w.code),2,ink,14); // the same pixel size as the battery figure
+    }else text(16,o+16,u.online?"WEATHER LOADING...":"WEATHER: CONNECT WI-FI",2,ink);
     if(u.battery>=0){ // battery on the far right: percentage, then a cell outline filled to the level; the clock sits before it
-     const std::string pct=std::to_string(u.battery)+"%";const int bx=468-8-30,px=bx-8-int(pct.size())*12;text(px,16,pct,2,ink);
-     if(u.clockValid){const std::string t=clockLabel(u.now);text(px-18-int(t.size())*12,16,t,2,ink);}
-     c.drawRect(bx,15,27,16,ink);c.fillRect(bx+27,19,3,8,ink);const int fill=(23*std::min(100,u.battery)+50)/100;if(fill>0)c.fillRect(bx+2,17,fill,12,ink);
+     const std::string pct=std::to_string(u.battery)+"%";const int bx=468-8-30,px=bx-8-int(pct.size())*12;text(px,o+16,pct,2,ink);
+     if(u.clockValid){const std::string t=clockLabel(u.now);text(px-18-int(t.size())*12,o+16,t,2,ink);}
+     c.drawRect(bx,o+15,27,16,ink);c.fillRect(bx+27,o+19,3,8,ink);const int fill=(23*std::min(100,u.battery)+50)/100;if(fill>0)c.fillRect(bx+2,o+17,fill,12,ink);
     }
-    c.drawFastHLine(16,46,448,0); // rule between the weather and the verse
+    c.drawFastHLine(16,o+46,448,0); // rule between the weather and the verse
    }
    { // Bible row (selection 1): the reference on the left, OPEN BIBLE on the right, the verse beneath
-    const bool sel=u.selected==LAUNCH_BIBLE;const int ink=sel?1:0;if(sel)c.fillRect(12,54,456,36,0);
+    const bool sel=u.selected==LAUNCH_BIBLE;const int ink=sel?1:0;if(sel)c.fillRect(12,o+54,456,36,0);
     std::string ref=u.votd.valid()?bibleRefLabel(u.votd):"BIBLE";
     if(ref.size()>22&&u.votd.valid())ref=upperText(bibleBooks[u.votd.book-1].abbr)+" "+std::to_string(u.votd.chapter)+":"+std::to_string(u.votd.verse); // long book names use the abbreviation here
-    bold(20,64,ref,2,ink,22);text(468-8-12*12,64,"DEVOTIONAL >",2,ink); // the reference at the same size as the label, bold
-    if(u.votd.valid()){int y=98;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
-    else read(12,98,"Bible files missing: run tools/upload_bible.sh");
+    bold(20,o+64,ref,2,ink,22);text(468-8-12*12,o+64,"DEVOTIONAL >",2,ink); // the reference at the same size as the label, bold
+    if(u.votd.valid()){int y=o+98;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
+    else read(12,o+98,"Bible files missing: run tools/upload_bible.sh");
    }
    tabStrip(launcherSportsBar(u),u.tab,u.selected>=LAUNCH_TAB0?u.selected-LAUNCH_TAB0:-1); // press a tab to open its scoreboard
    if(u.tab==0)recentList(u,launcherScoresTop(u),-1);else leaguePage(u);
@@ -535,7 +581,10 @@ class Renderer {
    }
   }else if(u.page==Page::Bible){ // the reader: chapter title and page counter, then flowing verses
    const BibleView& b=u.bible;const int pages=std::max(1,(int)b.pages.size()),page=std::min(b.page,pages-1);
-   text(12,24,bibleRefLabel({b.book,b.chapter,0}),2,0,24);{std::string code=upperText(u.bibleCode);text(468-12*int(code.size())-12*int(std::to_string(pages).size()+std::to_string(std::min(b.page,pages-1)+1).size()+1)-16,24,code,2);}std::string pg=std::to_string(page+1)+"/"+std::to_string(pages);text(468-int(pg.size())*12,24,pg,2);c.drawFastHLine(12,50,456,0);
+   const char* hint=u.readPaused?"PRESS TO RESUME":u.speaking==2?"PRESS TO PAUSE":u.speaking==1?"LOADING...":nullptr; // a reading in progress takes the header's right side
+   text(12,24,bibleRefLabel({b.book,b.chapter,0}),2,0,hint?22:24);
+   if(hint){const int w=int(strlen(hint))*12+12;c.fillRect(468-w,18,w,26,0);text(468-w+6,24,hint,2,1);}
+   else{{std::string code=upperText(u.bibleCode);text(468-12*int(code.size())-12*int(std::to_string(pages).size()+std::to_string(std::min(b.page,pages-1)+1).size()+1)-16,24,code,2);}std::string pg=std::to_string(page+1)+"/"+std::to_string(pages);text(468-int(pg.size())*12,24,pg,2);c.drawFastHLine(12,50,456,0);}
    if(b.pages.empty()){center(360,"NO BIBLE FILES",3);center(420,"RUN TOOLS/UPLOAD_BIBLE.SH",2);}
    else{const int face=u.textSize;const ReadFace& f=READ_FACES[face<0?1:face>2?1:face];int y=60;
     for(const auto& line:b.pages[page].lines){int x=12;
@@ -580,7 +629,7 @@ class Renderer {
    }
   }
   // The scoreboard uses the full height; other pages keep the control hints.
-  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation&&u.page!=Page::Schedule&&u.page!=Page::Character){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK   HOLD ROCKER: VOICE   PWR OR HOLD BOOT: SLEEP",1);}
+  if(u.page!=Page::Games&&u.page!=Page::Detail&&u.page!=Page::Home&&u.page!=Page::Standings&&u.page!=Page::Bible&&u.page!=Page::Launcher&&u.page!=Page::Weather&&u.page!=Page::Voice&&u.page!=Page::Devotional&&u.page!=Page::BibleBooks&&u.page!=Page::BibleHome&&u.page!=Page::Translation&&u.page!=Page::Schedule&&u.page!=Page::Character&&u.page!=Page::Wifi){c.drawFastHLine(12,746,456,0);center(757,"UP/DOWN MOVE   PRESS SELECT",2);center(777,"BOOT BACK   HOLD ROCKER: VOICE   PWR OR HOLD BOOT: SLEEP",1);}
  }
 };
 }

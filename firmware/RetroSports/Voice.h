@@ -31,6 +31,8 @@ inline std::string voiceSystemPrompt(){
   "\"open_schedule\" when they ask what games are coming up, the schedule, who plays this week, tonight or next, for a league (set league; a specific team's next game is \"open_team\"); "
   "\"open_weather\" for anything about the weather, forecast, temperature, rain, snow or what to wear, today or any coming day: the context carries the 7-day forecast, so also put a one-sentence spoken reply in answer (e.g. the day asked about with its high, low and rain chance, or a plain answer like whether to bring a jacket); "
   "\"open_devotional\" when they ask for today's devotional, the daily reading or lesson (set read to true when they want it read aloud); "
+  "\"follow_team\" when they ask to follow, favorite, like, add, save, pin or keep track of a team, add it to their favorites or their teams, or say a team is their team or their favorite (set team); "
+  "\"unfollow_team\" when they ask to unfollow, unfavorite, remove, delete, drop or stop following or liking a team, or take it off their favorites or their teams (set team); "
   "\"open_character\" when they ask who a person in the Bible was, or to tell them about, show or read about a Bible person (Moses, Esther, Peter...): set name to that person's name; "
   "\"open_bible\" when they ask to open the Bible, go to or read a book, chapter, verse or passage (set book to the full English book name, chapter and verse as numbers or null; set daily to true for the verse of the day; set read to true when they want it read aloud or ask what it says); "
   "\"fact\" for sports history, trivia, rules, records, players, teams, championships or seasons before the saved scores: answer from your own knowledge in one or two short sentences and mention the season or year. "
@@ -39,7 +41,7 @@ inline std::string voiceSystemPrompt(){
   "If you are unsure whether something is still current, set needs_lookup to true - never offer an older fact as if it were current; "
   "\"answer\" only for a question about the saved scores that no page fits, or when the saved scores do not have it, "
   "You only talk about sports, the Bible and the weather: for anything else use action \"answer\" with the answer \"I only know about sports, the Bible and the weather. Ask me about a team, a game, or a verse!\" "
-  "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_character\"|\"open_weather\"|\"open_schedule\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
+  "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_character\"|\"open_weather\"|\"open_schedule\"|\"follow_team\"|\"unfollow_team\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
   "\"book\": <Bible book name or null>, \"chapter\": <number or null>, \"verse\": <number or null>, \"daily\": <true or false>, \"read\": <true or false>, "
   "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|null>, \"team\": <team abbreviation exactly as in the saved scores, or null>, "
   "\"opponent\": <opponent abbreviation if a specific matchup was named, else null>, \"name\": <the Bible person's name for open_character, else null>, "
@@ -66,7 +68,7 @@ inline std::string voiceContext(const Snapshot* feeds[4],const std::vector<Favor
  if(!favorites.empty()){ctx+="Favorite teams: ";for(const auto& f:favorites)ctx+=f.name+" ("+names[f.league]+"); ";ctx+="\n";}
  return ctx;
 }
-enum class VoiceAction {Answer,OpenGame,OpenTeam,OpenLeague,Fact,OpenStandings,OpenBible,OpenWeather,OpenDevotional,OpenSchedule,OpenCharacter};
+enum class VoiceAction {Answer,OpenGame,OpenTeam,OpenLeague,Fact,OpenStandings,OpenBible,OpenWeather,OpenDevotional,OpenSchedule,OpenCharacter,Follow,Unfollow};
 struct VoiceReply { bool ok=false,lookup=false; VoiceAction action=VoiceAction::Answer; std::string heard,answer,error; int league=-1; std::string teamAbbr,teamId,teamName,gameId,group,scope,name; BibleRef bible; bool daily=false,read=false; };
 inline std::string upperAbbr(std::string s){for(auto& c:s)c=toupper((unsigned char)c);return s;}
 // Newest game in the feeds involving `team` (and `opponent` if given), preferring `league`.
@@ -94,7 +96,7 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
  auto str=[&](const char* key){const char* v=inner[key].as<const char*>();if(!v)v=inner["navigate"][key].as<const char*>();return std::string(v?v:"");};
  r.league=leagueIndex(str("league"));
  const std::string action=str("action");r.lookup=inner["needs_lookup"]|false;
- r.action=action=="open_game"?VoiceAction::OpenGame:action=="open_team"?VoiceAction::OpenTeam:action=="open_league"?VoiceAction::OpenLeague:action=="fact"?VoiceAction::Fact:action=="open_standings"?VoiceAction::OpenStandings:action=="open_bible"?VoiceAction::OpenBible:action=="open_weather"?VoiceAction::OpenWeather:action=="open_devotional"?VoiceAction::OpenDevotional:action=="open_schedule"?VoiceAction::OpenSchedule:action=="open_character"?VoiceAction::OpenCharacter:VoiceAction::Answer;
+ r.action=action=="open_game"?VoiceAction::OpenGame:action=="open_team"?VoiceAction::OpenTeam:action=="open_league"?VoiceAction::OpenLeague:action=="fact"?VoiceAction::Fact:action=="open_standings"?VoiceAction::OpenStandings:action=="open_bible"?VoiceAction::OpenBible:action=="open_weather"?VoiceAction::OpenWeather:action=="open_devotional"?VoiceAction::OpenDevotional:action=="open_schedule"?VoiceAction::OpenSchedule:action=="open_character"?VoiceAction::OpenCharacter:action=="follow_team"?VoiceAction::Follow:action=="unfollow_team"?VoiceAction::Unfollow:VoiceAction::Answer;
  if(r.action==VoiceAction::OpenDevotional){r.read=inner["read"]|false;r.ok=true;return r;}
  if(r.action==VoiceAction::OpenCharacter){r.name=clean(str("name"),40);r.ok=true;return r;}
  if(r.action==VoiceAction::OpenWeather){r.ok=true;return r;} // the page carries the forecast; the answer, if any, is spoken
@@ -112,7 +114,7 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
   else if(k.rfind("AL",0)==0||k.rfind("NL",0)==0||k.find("LEAGUE")!=std::string::npos)r.league=0;
   else if(k=="EAST"||k=="WEST"||k=="EASTERN"||k=="WESTERN"||k=="ATLANTIC"||k=="CENTRAL"||k=="SOUTHEAST"||k=="NORTHWEST"||k=="PACIFIC"||k=="SOUTHWEST")r.league=2;
   else r.league=3;}
- std::string abbr=upperAbbr(str("team")),opponent=upperAbbr(str("opponent"));
+ std::string abbr=upperAbbr(str("team")),opponent=upperAbbr(str("opponent"));const int askedLeague=r.league;
  if(!abbr.empty()){ // resolve the abbreviation against saved games, preferring the named league
   for(int pass=0;pass<2&&r.teamId.empty();pass++)for(int l=0;l<4&&r.teamId.empty();l++){
    if(pass==0&&l!=r.league)continue;if(pass==1&&l==r.league)continue;if(!feeds[l])continue;
@@ -123,6 +125,10 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
  // cannot find becomes the league page, and no league at all becomes an answer.
  if(r.action==VoiceAction::OpenGame){int l=r.league;std::string id;if(!r.teamAbbr.empty()&&findGame(feeds,r.league,r.teamAbbr,opponent,l,id)){r.league=l;r.gameId=id;}else r.action=VoiceAction::OpenTeam;}
  if(r.action==VoiceAction::OpenTeam&&r.teamId.empty())r.action=VoiceAction::OpenLeague;
+ if(r.action==VoiceAction::Follow||r.action==VoiceAction::Unfollow){ // a team is known only through the saved games; the confirmation names it
+  if(askedLeague>=0&&r.league!=askedLeague)r.teamId.clear(); // "CHI" in the NFL must not land on the Bulls because only the Bulls have a saved game
+  if(r.teamId.empty()){r.action=VoiceAction::Answer;r.answer="I can't find that team in the saved scores yet. Ask again on a game day.";}
+  else r.answer=r.action==VoiceAction::Follow?"Added the "+r.teamName+" to your favorites tab on the home screen.":"Removing the "+r.teamName+" from your favorites."; }
  if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.scope=cfbConferenceId(r.group); // college standings are per conference
  if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenStandings&&r.league<0&&r.teamId.empty())r.action=VoiceAction::Answer;

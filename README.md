@@ -35,8 +35,9 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 **Sports scores**
 - MLB, NFL, NBA and college football
 - Every scoreboard reads as a timeline: LIVE, then UP NEXT (soonest first, with kickoff times), then RESULTS — so after the week's last game you see the coming slate without any extra clicks
+- A MINE tab for the teams you follow, their games across every league with each team's next game on top; follow a team by voice ("follow the Bears")
 - NFL and college football carry this week and next; MLB and NBA carry today and tomorrow; college football shows Top-25 games only, with ranks on the rows
-- The launcher shows each league's NEXT game above its latest results
+- The launcher's MINE tab shows two rows per followed team, its next game above its last result; with nobody followed, the same two rows per league
 - Dense rows grouped by league and week, with team logos
 - Matchup pages: box score, team leaders, headline
 - Team pages: results, next game, division and conference standings
@@ -47,9 +48,10 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Seven-day forecast page for your ZIP code
 
 **Voice** — hold the rocker and ask
-- "Bears score", "NFL standings", "upcoming NFL games", "go to Psalm 23", "read today's devotional", "tell me about Moses", "will it rain tomorrow", "who won the 1985 Super Bowl"
+- "Bears score", "follow the Bears", "NFL standings", "upcoming NFL games", "go to Psalm 23", "read today's devotional", "tell me about Moses", "will it rain tomorrow", "who won the 1985 Super Bowl"
 - "Upcoming NFL games" opens a schedule page: the coming week's games only, grouped by day
 - Opens the right page or answers out loud, in a voice you choose
+- "Read Psalm 23" reads it verse by verse with the reader following along; press the rocker to pause or resume, BOOT to stop
 - Sticks to sports, the Bible and the weather; looks up current facts rather than guessing
 
 **Settings**
@@ -66,7 +68,7 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 
 1. Flash the firmware over USB (`tools/build.sh`, then `tools/flash.sh <port>`), then load the Bible and devotionals (`tools/upload_bible.sh <port>`). `tools/bootstrap.sh` installs the build tools the first time.
 2. Add the voice key over USB (`tools/device_console.py key`); it stays on the device and is never in this repository.
-3. Turn it on and join its Wi-Fi setup page from a phone: home Wi-Fi, timezone, and a ZIP code for the weather.
+3. Turn it on, press the rocker on CONNECT TO WI-FI (already selected on a board with no network), and follow the three steps on its screen: scan the first code to join the board's hotspot, scan the second code (shown once the phone is on) to open the setup page at setup.pockle.kids, then tap your home network and type its password. The timezone comes from the phone and the weather location is worked out once the board is online; Advanced options on the page can override both.
 
 After that the device looks after itself: it checks GitHub for new firmware each morning and installs it on its own, and pulls new or edited devotionals the same way.
 

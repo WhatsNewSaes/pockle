@@ -35,6 +35,8 @@ struct Snapshot { int league=0; std::string date; int64_t updated=0; std::vector
 // How far ahead each league's feed carries upcoming games (days): MLB, NFL, NBA, CFB.
 static const int aheadDays[] = {2, 14, 2, 8};
 struct Favorite { int league; std::string id,name; };
+// The setup page's name: a public A record to the hotspot's own address, so a phone on private DNS still lands on the board. Plain http; the board has no certificate.
+constexpr char SETUP_URL[]="http://setup.pockle.kids/";constexpr char SETUP_IP_URL[]="http://192.168.4.1/";
 // On-demand matchup detail from the scoreboard: records, line scores, a few
 // headline stats per sport, and ESPN's one-line story.
 struct StatLine { std::string label, away, home; };
@@ -43,6 +45,12 @@ inline std::string clean(std::string s, size_t limit=60) {
  for(char &c:s) if((unsigned char)c<32 || (unsigned char)c>126)c='?';
  if(s.size()>limit)s=s.substr(0,limit-3)+"...";
  return s;
+}
+// The Wi-Fi join string phone cameras recognize (WIFI:T:WPA;S:name;P:secret;;), with the
+// characters that string reserves escaped. The setup screen shows it as a QR code.
+inline std::string wifiJoinText(const std::string& ssid,const std::string& pass) {
+ auto esc=[](const std::string& in){std::string out;for(char c:in){if(c=='\\'||c==';'||c==','||c==':'||c=='"')out+='\\';out+=c;}return out;};
+ return "WIFI:T:"+std::string(pass.empty()?"nopass":"WPA")+";S:"+esc(ssid)+";P:"+esc(pass)+";;";
 }
 inline int64_t utcEpoch(int y,unsigned m,unsigned d,int h=0,int min=0,int sec=0) {
  y-=m<=2; const int era=(y>=0?y:y-399)/400; const unsigned yo=y-era*400;
@@ -161,9 +169,12 @@ inline std::vector<Ordered> sectionedOrder(const Snapshot& s,const std::vector<i
 inline const char* sectionName(Section s){return s==Section::Live?"LIVE":s==Section::Next?"UP NEXT":"RESULTS";}
 // Fold one day's response into the feed: replace that day, drop games that
 // moved, keep the window, newest first, and record what has been covered.
+// Games dated after `end` are the schedule ahead, which mergeUpcoming owns; a
+// day's merge leaves them be, or the NEXT rows would vanish between the
+// six-hourly schedule fetches.
 inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fetched,const std::string& start,const std::string& end,int span,size_t cap=150){
  feed.games.erase(std::remove_if(feed.games.begin(),feed.games.end(),[&](const Game& g){
-  std::string d=gameDate(g);if(d==fetched||d<start||d>end)return true;
+  std::string d=gameDate(g);if(d==fetched||d<start)return true;
   for(const auto& p:part.games)if(p.id==g.id)return true;return false;}),feed.games.end());
  for(const auto& p:part.games){std::string d=gameDate(p);if(d>=start&&d<=end)feed.games.push_back(p);}
  std::stable_sort(feed.games.begin(),feed.games.end(),[](const Game& a,const Game& b){return isoEpoch(a.start)>isoEpoch(b.start);});
@@ -178,30 +189,39 @@ inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fet
 constexpr int TAB_LEAGUES[4]={1,0,2,3};
 inline int tabLeague(int tab){return tab>=1&&tab<=4?TAB_LEAGUES[tab-1]:0;}
 inline int leagueTab(int league){for(int i=0;i<4;i++)if(TAB_LEAGUES[i]==league)return i+1;return 1;}
-struct RecentGame { int league; Game game; bool next=false; }; // next: the league's soonest upcoming game, shown above its results
-inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit){
- std::vector<RecentGame> out;
- for(int l=0;l<4;l++){if(!feeds[l])continue;for(const auto& g:feeds[l]->games)if(g.state!="pre")out.push_back({l,g});}
+struct RecentGame { int league; Game game; bool next=false; std::string header; }; // next: an upcoming game; header: the followed team the row belongs to (empty: the league's row)
+inline bool followed(const std::vector<Favorite>& favs,int league,const Game& g){for(const auto& f:favs)if(f.league==league&&(f.id==g.away.id||f.id==g.home.id))return true;return false;}
+// `only`, when it names any team, keeps just that team's games (the MINE tab); empty or null means every game.
+inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit,const std::vector<Favorite>* only=nullptr){
+ std::vector<RecentGame> out;const bool mine=only&&!only->empty();
+ for(int l=0;l<4;l++){if(!feeds[l])continue;for(const auto& g:feeds[l]->games)if(g.state!="pre"&&(!mine||followed(*only,l,g)))out.push_back({l,g});}
  std::stable_sort(out.begin(),out.end(),[](const RecentGame& a,const RecentGame& b){return isoEpoch(a.game.start)>isoEpoch(b.game.start);});
  if(out.size()>limit)out.resize(limit);
  return out;
 }
-// Same games grouped by league (each group newest first, groups ordered by
-// their newest game). The rows that fit `heightPx` are shared evenly between
-// the leagues that have games, leftovers going to the most recent league, so
-// one busy league cannot crowd the others off the page.
-inline std::vector<RecentGame> recentGamesGrouped(const Snapshot* feeds[4],int heightPx,int rowH=56,int dividerH=28){
- std::vector<RecentGame> all=recentGames(feeds,200);std::vector<int> order;
- for(const auto& rg:all)if(std::find(order.begin(),order.end(),rg.league)==order.end())order.push_back(rg.league); // first appearance = newest game
- // Each league's soonest upcoming game leads its group as a NEXT row.
- for(int l=0;l<4;l++){if(!feeds[l])continue;const Game* soonest=nullptr;for(const auto& g:feeds[l]->games)if(g.state=="pre"&&(!soonest||isoEpoch(g.start)<isoEpoch(soonest->start)))soonest=&g;
-  if(soonest){RecentGame n{l,*soonest,true};all.insert(all.begin(),n);if(std::find(order.begin(),order.end(),l)==order.end())order.push_back(l);}}
- if(order.empty())return {};
- std::vector<int> have(4,0),take(4,0);for(const auto& rg:all)have[rg.league]++;
- int rows=std::max(0,(heightPx-int(order.size())*dividerH)/rowH);
- for(int round=0;rows>0;round++){bool any=false;for(int l:order){if(take[l]<have[l]&&rows>0){take[l]++;rows--;any=true;}}if(!any)break;}
- std::vector<RecentGame> out;
- for(int l:order){int n=0;for(const auto& rg:all){if(rg.league!=l||n>=take[l])continue;out.push_back(rg);n++;}}
+// The MINE feed: two rows per subject under its own divider, the next game
+// and then the last result (or the live game). A subject is a followed team, or
+// a league when no team is followed. Groups are ordered by what is coming:
+// anyone playing now, then by next kickoff, then those with nothing ahead by
+// their last result; as many fit `heightPx` as can.
+inline std::vector<RecentGame> recentGamesGrouped(const Snapshot* feeds[4],int heightPx,int rowH=56,int dividerH=28,const std::vector<Favorite>* only=nullptr){
+ struct Subject{int league;std::string id,name;};std::vector<Subject> subjects;
+ if(only&&!only->empty()){for(const auto& f:*only)subjects.push_back({f.league,f.id,f.name});}
+ else for(int l=0;l<4;l++)subjects.push_back({l,"",""});
+ struct Group{std::vector<RecentGame> rows;int rank=2;int64_t key=0;};std::vector<Group> groups;
+ for(const auto& s:subjects){const int l=s.league;if(l<0||l>3||!feeds[l])continue;const Game *next=nullptr,*last=nullptr,*live=nullptr;
+  for(const auto& g:feeds[l]->games){if(!s.id.empty()&&g.away.id!=s.id&&g.home.id!=s.id)continue;
+   if(g.state=="pre"){if(!next||isoEpoch(g.start)<isoEpoch(next->start))next=&g;}
+   else if(g.state=="in"){if(!live||isoEpoch(g.start)>isoEpoch(live->start))live=&g;}
+   else if(!last||isoEpoch(g.start)>isoEpoch(last->start))last=&g;}
+  Group grp;if(next)grp.rows.push_back({l,*next,true,s.name});
+  if(live)grp.rows.push_back({l,*live,false,s.name});else if(last)grp.rows.push_back({l,*last,false,s.name});
+  if(grp.rows.empty())continue;
+  if(live){grp.rank=0;grp.key=-isoEpoch(live->start);}else if(next){grp.rank=1;grp.key=isoEpoch(next->start);}else{grp.rank=2;grp.key=-isoEpoch(last->start);}
+  groups.push_back(grp);}
+ std::stable_sort(groups.begin(),groups.end(),[](const Group& x,const Group& y){return x.rank!=y.rank?x.rank<y.rank:x.key<y.key;});
+ std::vector<RecentGame> out;int used=0;
+ for(const auto& grp:groups){if(used+dividerH+rowH*int(grp.rows.size())>heightPx)return out;used+=dividerH+rowH*int(grp.rows.size());for(const auto& r:grp.rows)out.push_back(r);}
  return out;
 }
 // Standings: conferences (parent -1) and their divisions, each a ranked table.

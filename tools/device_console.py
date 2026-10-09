@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, capture, record, key, ask, say, bible, weather, location, update, devotional, devosync, character <name>, devotional-page, or sleep-preview."""
+"""Inspect Pockle over USB; commands u/d/s/b/h/r, ?, N (refresh scores and schedule), c (chime), capture, record, key, ask, say, bible, weather, location, update, devotional, devosync, character <name>, devotional-page, or sleep-preview."""
 import argparse,time,serial,pathlib
 p=argparse.ArgumentParser();p.add_argument('command',nargs='?',default='?');p.add_argument('--port',default='/dev/cu.usbmodem1101');p.add_argument('--seconds',type=float,default=8);p.add_argument('--text');args=p.parse_args()
 class PassiveSerial(serial.Serial):
@@ -74,7 +74,7 @@ elif args.command=='weather': # refetch the forecast now and print the result
    text=line.decode(errors='replace').rstrip();print(text)
    if text.startswith('FETCH weather'):break
 elif args.command=='character': # open a Bible character's card by name, as the voice would
- s.write(b'K'+(args.text or 'David').encode()+b'\n');deadline=time.monotonic()+6
+ s.write(b'C'+(args.text or 'David').encode()+b'\n');deadline=time.monotonic()+6
  while time.monotonic()<deadline:
   line=s.readline()
   if line:
