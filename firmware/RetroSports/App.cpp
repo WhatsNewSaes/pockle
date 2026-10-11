@@ -984,6 +984,14 @@ static void startAP(){
  server.onNotFound([]{logRequest();server.sendHeader("Location",SETUP_URL,true);server.send(302,"text/plain","");});server.begin();
  ui.ap=true;ui.joined=false;ui.apClients=0;apStarted=millis();ui.notice="Setup stays open for 10 minutes.";ui.page=Page::Wifi;ui.selected=0;dirty=true;
 }
+// The power journal: one line per boot and per sleep (clock, event, battery, seconds awake), kept on the
+// data partition and trimmed to its newest half past 24 KB, so a drain can be read back over USB (`E`).
+static void powerLog(const char* event){
+ if(!fsOK)return;char line[96];snprintf(line,sizeof(line),"%lld %s bat=%d awake=%lus\n",(long long)time(nullptr),event,batteryPercent(),(unsigned long)(millis()/1000));
+ {File f=LittleFS.open("/power.log",FILE_APPEND);if(!f)return;f.print(line);const size_t size=f.size();f.close();if(size<24*1024)return;}
+ File f=LittleFS.open("/power.log",FILE_READ);if(!f)return;String keep;f.seek(f.size()/2);f.readStringUntil('\n');while(f.available())keep+=f.readStringUntil('\n')+"\n";f.close();
+ File w=LittleFS.open("/power.log",FILE_WRITE);if(w){w.print(keep);w.close();}
+}
 static void sleepScreen(bool scheduled=false){
  ui.now=time(nullptr);loadDayScene();renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
@@ -992,12 +1000,14 @@ static void sleepScreen(bool scheduled=false){
  canvas.setCursor(240-int(line.size())*6,28);canvas.print(line.c_str());
  applyTheme(canvas.getBuffer());
  if(scheduled&&ui.clockValid)esp_sleep_enable_timer_wakeup((uint64_t)secondsUntilWake()*1000000ULL);
+ powerLog(scheduled?"sleep night":"sleep button");
  EPD_3IN97_WaitIdle();panelPending=false;
  EPD_3IN97_Init();EPD_3IN97_Display_Base(canvas.getBuffer());EPD_3IN97_Sleep();panelPower(false);
  WiFi.disconnect(true);powerDownForSleep();armWakeButtons();delay(100);esp_deep_sleep_start();
 }
 // Leave the current page on the panel with a banner explaining it is asleep, then sleep
 // until a button, the 15-minute refresh, or 6:30 am when it is night.
+static bool forcedSleep=false; // set when the awake cap, not quiet, is sending the board to sleep
 static void idleSleep(){
  ui.battery=batteryPercent();ui.now=time(nullptr);loadDayScene();renderer.sleepVerse(ui);
  canvas.fillRect(0,0,480,52,0);canvas.setTextColor(1);canvas.setTextSize(2);
@@ -1010,7 +1020,7 @@ static void idleSleep(){
  // Asleep, the panel shows the verse of the day, so scores need no refreshing until a button wakes it:
  // the only timed wake is 6:30 am (devotional, verse, weather, update check, and a full score refresh).
  const int64_t secs=secondsUntilWake();
- Serial.printf("SLEEP idle: wake at 6:30 in %llds (%.1f h) battery=%d%%\n",(long long)secs,secs/3600.0,b);
+ Serial.printf("SLEEP idle: wake at 6:30 in %llds (%.1f h) battery=%d%%\n",(long long)secs,secs/3600.0,b);powerLog(forcedSleep?"sleep forced":"sleep idle");
  WiFi.disconnect(true);esp_sleep_enable_timer_wakeup((uint64_t)secs*1000000ULL);powerDownForSleep();armWakeButtons();delay(100);esp_deep_sleep_start();
 }
 static void goBack(){
@@ -1280,6 +1290,7 @@ static void serialControl(){
  if(ch=='p'){Serial.println("FRAME_BEGIN");for(int i=0;i<48000;i++){Serial.printf("%02x",canvas.getBuffer()[i]);if(i%100==99)Serial.println();}Serial.println("FRAME_END");}
  if(ch=='w')startAP();
  if(ch=='c'){chime();Serial.println("CHIME");}
+ if(ch=='E'){File f=LittleFS.open("/power.log",FILE_READ);Serial.println("POWER_BEGIN");if(f){while(f.available())Serial.write(f.read());f.close();}Serial.println("POWER_END");}
  if(ch=='N'){upcomingForce=15;nextFetch=0;for(int l=0;l<4;l++)leagueFetched[l]=0;Serial.println("REFRESH scores and schedule");}
  if(ch=='Z'){int mask=0;const int64_t planned=planRefresh(mask);Serial.printf("WAKE in %lld s (%.1f h) battery=%d%% idle=%lus refreshWake=%d nextRefresh=%llds leagues=0x%x live=%d%d%d%d\n",(long long)secondsUntilWake(),secondsUntilWake()/3600.0,batteryPercent(),(unsigned long)((millis()-lastKeyAt)/1000),refreshWake,(long long)planned,mask,leagueLive[0],leagueLive[1],leagueLive[2],leagueLive[3]);}
  if(ch=='I'){Serial.println("SLEEP idle (forced)");lastKeyAt=0;idleSleep();}
@@ -1363,6 +1374,7 @@ void setupApp(){
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
   refreshDevoHash();if(refreshWake&&ui.clockValid&&devoSyncDue()){devoSyncPending=true;refreshPending++;} // the library sync rides on a wake every six hours
   if(refreshWake&&ui.clockValid&&ui.votd.valid()&&devotionalStale()){devotionalPending=true;refreshPending++;} // a new day's devotional rides on the wake // the 6:30 wake also looks for a new release
+  {char ev[40];snprintf(ev,sizeof(ev),"boot cause=%d refresh=%d",(int)cause,refreshWake);powerLog(ev);}
   Serial.printf("WAKE cause=%d refresh=%d leagues=0x%x pending=%d tab=%d sleeps=%d battery=%d%%\n",(int)cause,refreshWake,refreshMaskBits,refreshPending,ui.tab,rtcSleeps,batteryPercent());}
  ui.now=time(nullptr);renderer.render(ui);applyTheme(canvas.getBuffer());EPD_3IN97_Display_Base(canvas.getBuffer());dirty=false;
  if(shown)memcpy(shown,canvas.getBuffer(),48000);lastFullRefresh=millis();
@@ -1407,11 +1419,16 @@ void loopApp(){
  if(autoUpdateCheck&&ui.online&&ui.clockValid&&!requestBusy)requestUpdate(false);
  if(ui.online&&ui.clockValid&&!requestBusy&&devoSyncDue()&&(int32_t)(now-nextDevoSync)>=0)requestDevoSync();
  if(ui.online&&ui.clockValid&&!requestBusy&&devotionalStale()&&(int32_t)(now-nextDevotional)>=0)requestDevotional();
- if(ui.page!=Page::Wifi&&!ui.ap&&ui.voice==VoiceState::Idle&&!audio::playing()&&!audio::recording()&&!panelPending&&!updateBusy&&!restartAt&&!pendingVerify){
+ // A screen left alone goes to sleep, the setup page included once its hotspot has closed, and a voice answer
+ // or error still showing; only a hotspot that is open, a question in flight, sound, or an update keeps the board up.
+ const bool voiceBusy=ui.voice!=VoiceState::Idle&&ui.voice!=VoiceState::Answer&&ui.voice!=VoiceState::Error;
+ if(!ui.ap&&!voiceBusy&&!audio::playing()&&!audio::recording()&&!panelPending&&!updateBusy&&!restartAt&&!pendingVerify){
   const uint32_t quiet=now-std::max(lastKeyAt,(uint32_t)0);
   if(refreshWake&&((refreshPending<=0&&!requestBusy)||now-refreshStarted>60000))idleSleep();
   if(!refreshWake&&quiet>IDLE_MS&&now>IDLE_MS&&!requestBusy)idleSleep();
  }
+ // The cap: nothing a kid can leave on the screen, and no request that never answered, keeps the board awake past an hour without a press.
+ if(!updateBusy&&!restartAt&&!audio::recording()&&!ui.ap&&now-lastKeyAt>6*IDLE_MS&&now>6*IDLE_MS){Serial.println("SLEEP forced: an hour without a press");forcedSleep=true;idleSleep();}
  // Bedtime: at 11 pm local the board sleeps until 6:30 am (or a BOOT press). Only the
  // 11 pm transition triggers it, so waking it by hand at night keeps it awake.
  if(nightSleep&&ui.clockValid&&ui.page!=Page::Wifi&&!ui.ap){tm lt{};localtime_r((const time_t*)&ui.now,&lt);

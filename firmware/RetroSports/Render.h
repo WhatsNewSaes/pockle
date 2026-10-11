@@ -94,7 +94,7 @@ inline GamesLayout layoutGames(const UI& u){
  else{L.top=L.team?y+76:L.feedLeague?y+50:y+78;L.avail=(L.team?620:768)-L.top;}
  // Live games first, then what is next, then results; section headers when there is more than one
  // section, with football's week dividers inside the sections.
- {const std::vector<int> raw=visibleGames(u);const auto order=sectionedOrder(u.snapshot,raw);
+ {const std::vector<int> raw=visibleGames(u);const auto order=sectionedOrder(u.snapshot,raw,!L.team);
   bool multi=false;for(size_t i=1;i<order.size();i++)if(order[i].section!=order[0].section)multi=true;
   std::string lastWeek;Section lastSection=Section::Live;bool first=true;
   for(const auto& o:order){const Game& g=u.snapshot.games[raw[o.pos]];const std::string week=weekLabel(u.league,g);

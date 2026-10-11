@@ -150,6 +150,9 @@ int main(){
    for(Game* g:{&a,&b,&c,&d,&e}){g->away={"1","A","AAA","0"};g->home={"2","B","BBB","0"};}
    s.games={b,a,d,c,e};std::vector<int> ids{0,1,2,3,4};const auto order=sectionedOrder(s,ids);
    assert(order.size()==5&&order[0].section==Section::Live&&s.games[ids[order[0].pos]].id=="live"&&s.games[ids[order[1].pos]].id=="next1"&&s.games[ids[order[2].pos]].id=="next2"&&s.games[ids[order[3].pos]].id=="old"&&s.games[ids[order[4].pos]].id=="older");
+   {Game f=b;f.id="nextweek";f.start="2026-10-08T00:15Z";f.week=5;Snapshot w=s;w.games.push_back(f);std::vector<int> all{0,1,2,3,4,5};
+    assert(sectionedOrder(w,all).size()==6&&sectionedOrder(w,all,true).size()==5); // the league scoreboard holds week 5 back while week 4 is in play; a team page shows it
+    for(auto& g:w.games)if(g.week==4)g.state="post";assert(sectionedOrder(w,all,true).size()==6&&w.games[all[sectionedOrder(w,all,true)[0].pos]].id=="nextweek");} // week 4 done: week 5 is next
    assert(currentWeek(s)==4);Snapshot done=s;done.games={d,e};assert(currentWeek(done)==4);assert(sectionName(Section::Next)==std::string("UP NEXT"));
    const Snapshot* f[4]={nullptr,&s,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(rows.size()==2&&rows[0].next&&rows[0].game.id=="next1"&&rows[1].game.id=="live"&&!rows[1].next); // the soonest upcoming, then the live game
    Snapshot part;Game n;n.id="wk5";n.state="pre";n.start="2026-10-11T17:00Z";n.week=5;n.seasonType=2;n.away=a.away;n.home=a.home;Game far;far=n;far.id="far";far.start="2026-10-25T17:00Z";part.games={n,far,b};

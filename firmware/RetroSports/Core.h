@@ -157,11 +157,15 @@ inline int currentWeek(const Snapshot& s){
  return open?open:played?played+1:0;
 }
 // List order for a scoreboard: live games first, then what is next (soonest first), then results (newest first).
+// On a league scoreboard (`thisWeek`), football's UP NEXT holds only the week in progress: the
+// coming week appears once every game of this one is played. A team page keeps its next game.
 enum class Section { Live, Next, Results };
 struct Ordered { Section section; int pos; }; // pos indexes the caller's id list
-inline std::vector<Ordered> sectionedOrder(const Snapshot& s,const std::vector<int>& ids){
- std::vector<Ordered> live,next,results;
- for(size_t p=0;p<ids.size();p++){const Game& g=s.games[ids[p]];if(g.state=="in")live.push_back({Section::Live,(int)p});else if(g.state=="pre")next.push_back({Section::Next,(int)p});else results.push_back({Section::Results,(int)p});}
+inline std::vector<Ordered> sectionedOrder(const Snapshot& s,const std::vector<int>& ids,bool thisWeek=false){
+ std::vector<Ordered> live,next,results;const int week=thisWeek?currentWeek(s):0;
+ for(size_t p=0;p<ids.size();p++){const Game& g=s.games[ids[p]];if(g.state=="in")live.push_back({Section::Live,(int)p});
+  else if(g.state=="pre"){if(week&&g.seasonType==2&&g.week>week)continue;next.push_back({Section::Next,(int)p});}
+  else results.push_back({Section::Results,(int)p});}
  auto by=[&](bool asc){return [&,asc](const Ordered& a,const Ordered& b){const int64_t x=isoEpoch(s.games[ids[a.pos]].start),y=isoEpoch(s.games[ids[b.pos]].start);return asc?x<y:x>y;};};
  std::stable_sort(live.begin(),live.end(),by(true));std::stable_sort(next.begin(),next.end(),by(true));std::stable_sort(results.begin(),results.end(),by(false));
  std::vector<Ordered> out=live;out.insert(out.end(),next.begin(),next.end());out.insert(out.end(),results.begin(),results.end());return out;
