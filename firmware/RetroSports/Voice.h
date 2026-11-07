@@ -6,6 +6,7 @@
 #include <climits>
 #include "Core.h"
 #include "Bible.h"
+#include "TeamDirectory.h"
 // Voice questions go to one chat-completion request on OpenRouter carrying the
 // recorded WAV plus the device's saved scores as the only allowed knowledge.
 namespace retro {
@@ -43,7 +44,8 @@ inline std::string voiceSystemPrompt(){
   "You only talk about sports, the Bible and the weather: for anything else use action \"answer\" with the answer \"I only know about sports, the Bible and the weather. Ask me about a team, a game, or a verse!\" "
   "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_character\"|\"open_weather\"|\"open_schedule\"|\"follow_team\"|\"unfollow_team\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
   "\"book\": <Bible book name or null>, \"chapter\": <number or null>, \"verse\": <number or null>, \"daily\": <true or false>, \"read\": <true or false>, "
-  "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|null>, \"team\": <team abbreviation exactly as in the saved scores, or null>, "
+  "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|null; whenever a team is named, the league that team plays in (the Cavs are NBA, the Guardians MLB, the Browns NFL)>, \"team\": <team abbreviation exactly as in the saved scores, or its usual abbreviation when it has no saved game, or null>, "
+  "\"team_name\": <the team's full name with its city or school, e.g. \"Cleveland Cavaliers\", or null>, "
   "\"opponent\": <opponent abbreviation if a specific matchup was named, else null>, \"name\": <the Bible person's name for open_character, else null>, "
   "\"answer\": <the answer for fact/answer, under 220 characters; otherwise a short confirmation>, \"needs_lookup\": <true or false>}";
 }
@@ -84,6 +86,25 @@ inline bool findGame(const Snapshot* feeds[4],int league,const std::string& team
  return false;
 }
 inline int leagueIndex(std::string s){for(auto& c:s)c=toupper((unsigned char)c);if(s=="MLB")return 0;if(s=="NFL")return 1;if(s=="NBA")return 2;if(s=="CFB"||s=="NCAA"||s=="COLLEGE")return 3;return -1;}
+// Bundled teams matching a spoken team, for following one with no saved game. A full name
+// ("Cleveland Cavaliers") or nickname ("Cavaliers") picks one team; an abbreviation such as
+// CLE is three teams until a league narrows it.
+inline std::vector<const TeamEntry*> directoryTeams(int league,const std::string& abbr,const std::string& name){
+ std::vector<const TeamEntry*> out;const std::string k=groupKey(name);
+ if(!k.empty())for(const auto& t:teamDirectory)if((league<0||t.league==league)&&(k==groupKey(t.name)||k==groupKey(t.nickname)))out.push_back(&t);
+ if(out.empty()&&!abbr.empty())for(const auto& t:teamDirectory)if((league<0||t.league==league)&&upperAbbr(t.abbr)==abbr)out.push_back(&t);
+ return out;
+}
+// Teams whose full name or nickname appears as whole words in what was heard ("follow the
+// Cavaliers"), longest name first, for when the model names no team the directory knows.
+inline std::vector<const TeamEntry*> heardTeams(int league,const std::string& heard){
+ auto words=[](const std::string& x){std::string o=" ";for(unsigned char c:x)o+=isalnum(c)?(char)toupper(c):' ';return o+" ";};
+ const std::string h=words(heard);std::vector<const TeamEntry*> out;size_t best=0;
+ for(const auto& t:teamDirectory){if(league>=0&&t.league!=league)continue;
+  for(const char* n:{t.name,t.nickname}){const std::string w=words(n);if(w.size()<5||h.find(w)==std::string::npos)continue; // " X " is too short to mean a team
+   if(w.size()>best){best=w.size();out.clear();}if(w.size()==best&&(out.empty()||out.back()!=&t))out.push_back(&t);}}
+ return out;
+}
 // Parses OpenRouter's chat completion; the model's JSON sits in message.content.
 inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]){
  VoiceReply r;
@@ -126,8 +147,13 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
  if(r.action==VoiceAction::OpenGame){int l=r.league;std::string id;if(!r.teamAbbr.empty()&&findGame(feeds,r.league,r.teamAbbr,opponent,l,id)){r.league=l;r.gameId=id;}else r.action=VoiceAction::OpenTeam;}
  if(r.action==VoiceAction::OpenTeam&&r.teamId.empty())r.action=VoiceAction::OpenLeague;
  if(r.action==VoiceAction::Follow||r.action==VoiceAction::Unfollow){ // a team is known only through the saved games; the confirmation names it
-  if(askedLeague>=0&&r.league!=askedLeague)r.teamId.clear(); // "CHI" in the NFL must not land on the Bulls because only the Bulls have a saved game
-  if(r.teamId.empty()){r.action=VoiceAction::Answer;r.answer="I can't find that team in the saved scores yet. Ask again on a game day.";}
+  // The bundled directory knows every team, saved game or not; the saved games are the fallback for a team it lacks.
+  auto found=directoryTeams(askedLeague,abbr,str("team_name"));
+  if(found.size()!=1){const auto said=heardTeams(askedLeague,r.heard);if(said.size()==1)found=said;}
+  if(found.size()==1){r.league=found[0]->league;r.teamId=found[0]->id;r.teamName=found[0]->name;r.teamAbbr=found[0]->abbr;}
+  else if(askedLeague>=0&&r.league!=askedLeague)r.teamId.clear(); // "CHI" in the NFL must not land on the Bulls because only the Bulls have a saved game
+  else if(found.size()>1)r.teamId.clear(); // CLE with no league: not whichever Cleveland team happens to have a saved game
+  if(r.teamId.empty()){r.action=VoiceAction::Answer;if(found.size()>1){r.answer="Which one: ";for(size_t i=0;i<found.size()&&i<3;i++)r.answer+=std::string(i?(i+1==std::min<size_t>(found.size(),3)?" or ":", "):"the ")+found[i]->name;r.answer+="?";}else r.answer="I don't know that team. Try saying its whole name.";}
   else r.answer=r.action==VoiceAction::Follow?"Added the "+r.teamName+" to your favorites tab on the home screen.":"Removing the "+r.teamName+" from your favorites."; }
  if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.scope=cfbConferenceId(r.group); // college standings are per conference
  if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.action=VoiceAction::Answer;
