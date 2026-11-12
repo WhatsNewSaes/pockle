@@ -151,8 +151,8 @@ class Renderer {
  // A five-point star, filled: the followed-teams tab.
  void star(int cx,int cy,int r,int ink){int px[10],py[10];for(int i=0;i<10;i++){const double a=-1.5707963+i*0.6283185;const double rr=i%2?r*0.42:r;px[i]=cx+int(std::round(rr*cos(a)));py[i]=cy+int(std::round(rr*sin(a)));}
   for(int i=0;i<10;i+=2)c.fillTriangle(px[i],py[i],px[(i+1)%10],py[(i+1)%10],px[(i+9)%10],py[(i+9)%10],ink);c.fillTriangle(px[1],py[1],px[3],py[3],px[5],py[5],ink);c.fillTriangle(px[1],py[1],px[5],py[5],px[7],py[7],ink);c.fillTriangle(px[1],py[1],px[7],py[7],px[9],py[9],ink);}
- void tabStrip(int y,int activeTab,int cursor){
-  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;static const char* shortNames[4]={"MLB","NFL","NBA","CFB"};const char* label=i==0?"MINE":shortNames[tabLeague(i)];
+ void tabStrip(int y,int activeTab,int cursor,int64_t now){
+  for(int i=0;i<HOME_TABS;i++){int x=12+i*79;bool active=activeTab==i,cur=cursor==i;const char* label=i==0?"MINE":leagues[tabLeague(i,now)].tab;
    c.fillRect(x,y,79,40,active?0:1);c.drawRect(x,y,79,40,0);if(cur&&!active)c.drawRect(x+2,y+2,75,36,0);
    if(cur&&active)c.drawRect(x+3,y+3,73,34,1);
    if(i==0)star(x+39,y+20,12,active?1:0);else{int w=int(strlen(label))*12;text(x+(79-w)/2,y+12,label,2,active?1:0);}}
@@ -254,7 +254,7 @@ class Renderer {
   auto label=[&](const StandingsGroup& x){return upperAbbrLabel(x.parent<0&&x.abbr.size()>=2?x.abbr:x.name);};
   c.fillRect(12,y,456,40,0);std::string title=clean(label(g),18);text(24,y+12,title,2,1,18);
   if(u.standingsAlt>=0){std::string hint=clean("UP/DOWN: "+label(u.standings.groups[u.standingsAlt]),(440-int(title.size())*12-24)/12);text(460-int(hint.size())*12,y+12,hint,2,1,36);}
-  const bool college=u.league==3,nfl=u.league==1;
+  const bool college=isCollege(u.league),nfl=u.league==1;
   small(20,y+48,"#");small(88,y+48,"TEAM");small(224,y+48,college?"OVERALL":"W-L");small(304,y+48,college?"CONF":nfl?"PCT":"GB");small(388,y+48,"STRK");
   c.drawFastHLine(16,y+62,448,0);
   int ry=y+66;const int rowH=36;
@@ -315,7 +315,7 @@ class Renderer {
   if(u.page==Page::Home){
    // Tabs: all sports or one league. Moving onto a tab switches the list; pressing a league tab opens its full scoreboard.
    const bool inLeagueList=u.tab>0&&u.selected>=HOME_PREV; // the paging bar replaces the tab row while browsing a league
-   if(!inLeagueList)tabStrip(20,u.tab,u.selected<=HOME_GEAR?u.selected:-1);
+   if(!inLeagueList)tabStrip(20,u.tab,u.selected<=HOME_GEAR?u.selected:-1,u.now);
    if(u.tab==0)recentList(u,68,HOME_ALL_ROW);
    else{ // a league tab: the full scoreboard with PREV / NEXT buttons, then the rows
     const GamesLayout L=layoutGames(u);const int pages=(int)L.pages.size();
@@ -549,7 +549,7 @@ class Renderer {
     if(u.votd.valid()){int y=o+98;for(const auto& line:launcherVerseLines(u)){read(12,y+1,line);y+=READ_LINE;}}
     else read(12,o+98,"Bible files missing: run tools/upload_bible.sh");
    }
-   tabStrip(launcherSportsBar(u),u.tab,u.selected>=LAUNCH_TAB0?u.selected-LAUNCH_TAB0:-1); // press a tab to open its scoreboard
+   tabStrip(launcherSportsBar(u),u.tab,u.selected>=LAUNCH_TAB0?u.selected-LAUNCH_TAB0:-1,u.now); // press a tab to open its scoreboard
    if(u.tab==0)recentList(u,launcherScoresTop(u),-1);else leaguePage(u);
    if(!u.online)small(380,776,"WI-FI OFF");
   }else if(u.page==Page::Weather){ // now, then seven days

@@ -22,7 +22,7 @@ inline std::string jsonEscape(const std::string& s){
 // the fallback for requests no page can satisfy.
 inline std::string voiceSystemPrompt(){
  return "You are the voice control of a small e-paper sports scoreboard used by a child. It has these pages: "
-  "a league scoreboard (all recent games of MLB, NFL, NBA or CFB), a team page (a team's recent results and next game), "
+  "a league scoreboard (all recent games of MLB, NFL, NBA, CFB college football or CBB men's college basketball, Top 25 and followed teams), a team page (a team's recent results and next game), "
   "a matchup page (one game with its score and stats), a Bible reader (Berean Standard Bible) with a verse of the day, and a 7-day weather forecast page. For anything about current or recent games use ONLY the saved scores provided. "
   "Choose the action that best satisfies the request: "
   "\"open_game\" when they ask about a team's game or score (its most recent game, or a specific opponent if named); "
@@ -44,16 +44,17 @@ inline std::string voiceSystemPrompt(){
   "You only talk about sports, the Bible and the weather: for anything else use action \"answer\" with the answer \"I only know about sports, the Bible and the weather. Ask me about a team, a game, or a verse!\" "
   "Reply with strict JSON: {\"heard\": <what the user said, briefly>, \"action\": <\"open_game\"|\"open_team\"|\"open_league\"|\"open_standings\"|\"open_bible\"|\"open_devotional\"|\"open_character\"|\"open_weather\"|\"open_schedule\"|\"follow_team\"|\"unfollow_team\"|\"fact\"|\"answer\">, \"group\": <division or conference name for standings, else null>, "
   "\"book\": <Bible book name or null>, \"chapter\": <number or null>, \"verse\": <number or null>, \"daily\": <true or false>, \"read\": <true or false>, "
-  "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|null; whenever a team is named, the league that team plays in (the Cavs are NBA, the Guardians MLB, the Browns NFL)>, \"team\": <team abbreviation exactly as in the saved scores, or its usual abbreviation when it has no saved game, or null>, "
+  "\"league\": <\"MLB\"|\"NFL\"|\"NBA\"|\"CFB\"|\"CBB\"|null; whenever a team is named, the league that team plays in (the Cavs are NBA, the Guardians MLB, the Browns NFL); a college team is CBB when they mean basketball (hoops, March Madness, the Final Four) and CFB when they mean football; null when they did not say which>, \"team\": <team abbreviation exactly as in the saved scores, or its usual abbreviation when it has no saved game, or null>, "
   "\"team_name\": <the team's full name with its city or school, e.g. \"Cleveland Cavaliers\", or null>, "
   "\"opponent\": <opponent abbreviation if a specific matchup was named, else null>, \"name\": <the Bible person's name for open_character, else null>, "
   "\"answer\": <the answer for fact/answer, under 220 characters; otherwise a short confirmation>, \"needs_lookup\": <true or false>}";
 }
 // Compact, newest-first summary of what the device has saved.
-inline std::string voiceContext(const Snapshot* feeds[4],const std::vector<Favorite>& favorites,int64_t now,const std::string& weather="",size_t perLeague=14){
- static const char* names[]={"MLB","NFL","NBA","CFB"};
+inline std::string voiceContext(const Snapshot* feeds[LEAGUES],const std::vector<Favorite>& favorites,int64_t now,const std::string& weather="",size_t perLeague=14){
+ static const char* names[]={"MLB","NFL","NBA","CFB","CBB"};
  std::string ctx="Now: "+stamp(now)+" ("+dayLabel(now,now)+" is today). ";if(!weather.empty())ctx+="Weather (7-day forecast): "+weather+". ";ctx+="Saved scores, newest first:\n";
- for(int l=0;l<4;l++){
+ for(int l=0;l<LEAGUES;l++){
+  if(!inSeason(l,now))continue; // the off-season half of the MLB / college basketball tab is not on the board
   const Snapshot* f=feeds[l];ctx+=names[l];ctx+=": ";
   if(!f||f->games.empty()){ctx+="nothing saved\n";continue;}
   size_t n=0;
@@ -61,7 +62,7 @@ inline std::string voiceContext(const Snapshot* feeds[4],const std::vector<Favor
    const int64_t start=isoEpoch(g.start);
    // Spell out who won: "PHI 7 @ CHI 27" alone was misread as a Bears loss.
    ctx+=g.away.abbr+" (away) "+score(g,g.away)+" at "+g.home.abbr+" (home) "+score(g,g.home)+" ("+(g.state=="pre"?"scheduled "+clockLabel(start):compactStatus(g.status))+", "+dayLabel(start,now);
-   if(g.week>0&&(l==1||l==3))ctx+=", week "+std::to_string(g.week);
+   if(g.week>0&&isFootball(l))ctx+=", week "+std::to_string(g.week);
    if(g.state=="post"){int a=atoi(g.away.score.c_str()),h=atoi(g.home.score.c_str());if(!g.away.score.empty()&&!g.home.score.empty())ctx+=a>h?", "+g.away.abbr+" won":h>a?", "+g.home.abbr+" won":", tie";}
    ctx+="); ";
   }
@@ -74,8 +75,8 @@ enum class VoiceAction {Answer,OpenGame,OpenTeam,OpenLeague,Fact,OpenStandings,O
 struct VoiceReply { bool ok=false,lookup=false; VoiceAction action=VoiceAction::Answer; std::string heard,answer,error; int league=-1; std::string teamAbbr,teamId,teamName,gameId,group,scope,name; BibleRef bible; bool daily=false,read=false; };
 inline std::string upperAbbr(std::string s){for(auto& c:s)c=toupper((unsigned char)c);return s;}
 // Newest game in the feeds involving `team` (and `opponent` if given), preferring `league`.
-inline bool findGame(const Snapshot* feeds[4],int league,const std::string& team,const std::string& opponent,int& outLeague,std::string& outId){
- for(int pass=0;pass<2;pass++)for(int l=0;l<4;l++){
+inline bool findGame(const Snapshot* feeds[LEAGUES],int league,const std::string& team,const std::string& opponent,int& outLeague,std::string& outId){
+ for(int pass=0;pass<2;pass++)for(int l=0;l<LEAGUES;l++){
   if((pass==0)!=(l==league))continue;if(!feeds[l])continue;
   for(const auto& g:feeds[l]->games){
    const bool has=upperAbbr(g.away.abbr)==team||upperAbbr(g.home.abbr)==team;
@@ -85,7 +86,7 @@ inline bool findGame(const Snapshot* feeds[4],int league,const std::string& team
  }
  return false;
 }
-inline int leagueIndex(std::string s){for(auto& c:s)c=toupper((unsigned char)c);if(s=="MLB")return 0;if(s=="NFL")return 1;if(s=="NBA")return 2;if(s=="CFB"||s=="NCAA"||s=="COLLEGE")return 3;return -1;}
+inline int leagueIndex(std::string s){for(auto& c:s)c=toupper((unsigned char)c);if(s=="MLB")return 0;if(s=="NFL")return 1;if(s=="NBA")return 2;if(s=="CFB"||s=="NCAA"||s=="COLLEGE"||s=="NCAAF")return 3;if(s=="CBB"||s=="NCAAB"||s=="NCAAM"||s=="COLLEGE BASKETBALL")return 4;return -1;}
 // Bundled teams matching a spoken team, for following one with no saved game. A full name
 // ("Cleveland Cavaliers") or nickname ("Cavaliers") picks one team; an abbreviation such as
 // CLE is three teams until a league narrows it.
@@ -106,7 +107,7 @@ inline std::vector<const TeamEntry*> heardTeams(int league,const std::string& he
  return out;
 }
 // Parses OpenRouter's chat completion; the model's JSON sits in message.content.
-inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]){
+inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[LEAGUES]){
  VoiceReply r;
  if(!root["error"].isNull()){r.error=clean(root["error"]["message"].as<const char*>()?root["error"]["message"].as<const char*>():"service error",80);return r;}
  const char* content=root["choices"][0]["message"]["content"].as<const char*>();
@@ -137,7 +138,7 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
   else r.league=3;}
  std::string abbr=upperAbbr(str("team")),opponent=upperAbbr(str("opponent"));const int askedLeague=r.league;
  if(!abbr.empty()){ // resolve the abbreviation against saved games, preferring the named league
-  for(int pass=0;pass<2&&r.teamId.empty();pass++)for(int l=0;l<4&&r.teamId.empty();l++){
+  for(int pass=0;pass<2&&r.teamId.empty();pass++)for(int l=0;l<LEAGUES&&r.teamId.empty();l++){
    if(pass==0&&l!=r.league)continue;if(pass==1&&l==r.league)continue;if(!feeds[l])continue;
    for(const auto& g:feeds[l]->games){const Team* ts[]={&g.away,&g.home};for(const Team* t:ts){if(upperAbbr(t->abbr)==abbr){r.teamAbbr=abbr;r.teamId=t->id;r.teamName=t->name;r.scope=t->conf;r.league=l;break;}}if(!r.teamId.empty())break;}
   }
@@ -153,10 +154,11 @@ inline VoiceReply parseVoiceReply(JsonVariantConst root,const Snapshot* feeds[4]
   if(found.size()==1){r.league=found[0]->league;r.teamId=found[0]->id;r.teamName=found[0]->name;r.teamAbbr=found[0]->abbr;}
   else if(askedLeague>=0&&r.league!=askedLeague)r.teamId.clear(); // "CHI" in the NFL must not land on the Bulls because only the Bulls have a saved game
   else if(found.size()>1)r.teamId.clear(); // CLE with no league: not whichever Cleveland team happens to have a saved game
-  if(r.teamId.empty()){r.action=VoiceAction::Answer;if(found.size()>1){r.answer="Which one: ";for(size_t i=0;i<found.size()&&i<3;i++)r.answer+=std::string(i?(i+1==std::min<size_t>(found.size(),3)?" or ":", "):"the ")+found[i]->name;r.answer+="?";}else r.answer="I don't know that team. Try saying its whole name.";}
+  if(r.teamId.empty()){r.action=VoiceAction::Answer;if(found.size()>1){r.answer="Which one: ";for(size_t i=0;i<found.size()&&i<3;i++){bool twin=false;for(const auto* o:found)if(o!=found[i]&&!strcmp(o->name,found[i]->name))twin=true; // a school in both college leagues: "Duke football or Duke basketball"
+   r.answer+=std::string(i?(i+1==std::min<size_t>(found.size(),3)?" or ":", "):twin?"":"the ")+(twin?std::string(found[i]->nickname)+(found[i]->league==3?" football":" basketball"):std::string(found[i]->name));}r.answer+="?";}else r.answer="I don't know that team. Try saying its whole name.";}
   else r.answer=r.action==VoiceAction::Follow?"Added the "+r.teamName+" to your favorites tab on the home screen.":"Removing the "+r.teamName+" from your favorites."; }
- if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.scope=cfbConferenceId(r.group); // college standings are per conference
- if(r.action==VoiceAction::OpenStandings&&r.league==3&&r.scope.empty())r.action=VoiceAction::Answer;
+ if(r.action==VoiceAction::OpenStandings&&isCollege(r.league)&&r.scope.empty())r.scope=conferenceId(r.league,r.group); // college standings are per conference
+ if(r.action==VoiceAction::OpenStandings&&isCollege(r.league)&&r.scope.empty())r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenStandings&&r.league<0&&r.teamId.empty())r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenLeague&&r.league<0)r.action=VoiceAction::Answer;
  if(r.action==VoiceAction::OpenSchedule&&r.league<0){if(!r.teamId.empty())r.action=VoiceAction::OpenTeam;else r.action=VoiceAction::Answer;}

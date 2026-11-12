@@ -80,7 +80,7 @@ int main(){
  // Home feed: played/in-progress games from every league, newest first, capped.
  {Snapshot a;a.league=0;Game g1;g1.id="a1";g1.start="2026-09-29T22:00Z";g1.state="in";Game g2;g2.id="a2";g2.start="2026-09-30T23:00Z";g2.state="pre";a.games={g2,g1};
   Snapshot b;b.league=1;Game g3;g3.id="b1";g3.start="2026-09-28T00:15Z";g3.state="post";Game g4;g4.id="b2";g4.start="2026-09-29T23:15Z";g4.state="post";b.games={g4,g3};
-  const Snapshot* f[4]={&a,&b,nullptr,nullptr};auto rec=recentGames(f,10);assert(rec.size()==3&&rec[0].game.id=="b2"&&rec[1].game.id=="a1"&&rec[2].game.id=="b1"&&rec[0].league==1);assert(recentGames(f,2).size()==2);
+  const Snapshot* f[5]={&a,&b,nullptr,nullptr,nullptr};auto rec=recentGames(f,10);assert(rec.size()==3&&rec[0].game.id=="b2"&&rec[1].game.id=="a1"&&rec[2].game.id=="b1"&&rec[0].league==1);assert(recentGames(f,2).size()==2);
   // Nobody followed: per league, the next game above the last result (a live game in the result's place).
   auto grp=recentGamesGrouped(f,1000);assert(grp.size()==3&&grp[0].league==0&&grp[0].next&&grp[0].game.id=="a2"&&grp[1].game.id=="a1"&&grp[2].league==1&&grp[2].game.id=="b2"&&grp[0].header.empty()); // MLB's next game is the newest, so MLB leads: next, then the live game; NFL has only a result
   auto tight=recentGamesGrouped(f,28+56+56);assert(tight.size()==2&&tight[0].game.id=="a2"&&tight[1].game.id=="a1"); // MLB's pair fills it; the NFL group needs a divider and a row, which no longer fit
@@ -101,7 +101,7 @@ int main(){
  // Voice: JSON escaping, grounded context, reply parsing with team resolution, wrapping.
  {assert(jsonEscape("a\"b\\c\nd")=="a\\\"b\\\\c\\nd");
   Snapshot nfl;nfl.league=1;Game g;g.id="x";g.start="2026-09-27T20:25Z";g.state="post";g.status="Final";g.week=3;g.seasonType=2;g.away={"14","Los Angeles Rams","LAR","26"};g.home={"7","Denver Broncos","DEN","30"};nfl.games.push_back(g);
-  const Snapshot* feeds[4]={nullptr,&nfl,nullptr,nullptr};std::vector<Favorite> favs{{1,"3","Chicago Bears"}};
+  const Snapshot* feeds[5]={nullptr,&nfl,nullptr,nullptr,nullptr};std::vector<Favorite> favs{{1,"3","Chicago Bears"}};
   std::string ctx=voiceContext(feeds,favs,isoEpoch("2026-09-30T14:00Z"));
   assert(ctx.find("NFL: LAR (away) 26 at DEN (home) 30 (FINAL, SUN 9/27, week 3, DEN won)")!=std::string::npos);assert(ctx.find("MLB: nothing saved")!=std::string::npos);assert(ctx.find("Chicago Bears (NFL)")!=std::string::npos);
   const char* reply="{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\": \\\"Rams score\\\", \\\"action\\\": \\\"open_game\\\", \\\"league\\\": \\\"NFL\\\", \\\"team\\\": \\\"lar\\\", \\\"opponent\\\": null, \\\"answer\\\": \\\"Opening the Rams game\\\"}\"}}]}";
@@ -119,7 +119,7 @@ int main(){
   VoiceReply f6r=parseVoiceReply(f6,feeds);assert(f6r.ok&&f6r.action==VoiceAction::Follow&&f6r.league==1&&f6r.teamId=="14"&&f6r.answer=="Added the Los Angeles Rams to your favorites tab on the home screen."); // resolved through the saved game
   JsonDocument f7;deserializeJson(f7,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"stop following the Bears\\\",\\\"action\\\":\\\"unfollow_team\\\",\\\"league\\\":\\\"NFL\\\",\\\"team\\\":\\\"CHI\\\",\\\"answer\\\":\\\"ok\\\"}\"}}]}");
   VoiceReply f7r=parseVoiceReply(f7,feeds);assert(f7r.ok&&f7r.action==VoiceAction::Unfollow&&f7r.league==1&&f7r.teamId=="3"&&f7r.teamName=="Chicago Bears"); // no saved Bears game: the bundled directory knows them
-  Snapshot nba;nba.league=2;Game bulls=g;bulls.id="y";bulls.away={"4","Chicago Bulls","CHI","99"};bulls.home={"5","Boston Celtics","BOS","101"};nba.games.push_back(bulls);const Snapshot* two[4]={nullptr,&nfl,&nba,nullptr};
+  Snapshot nba;nba.league=2;Game bulls=g;bulls.id="y";bulls.away={"4","Chicago Bulls","CHI","99"};bulls.home={"5","Boston Celtics","BOS","101"};nba.games.push_back(bulls);const Snapshot* two[5]={nullptr,&nfl,&nba,nullptr,nullptr};
   VoiceReply f8r=parseVoiceReply(f7,two);assert(f8r.ok&&f8r.action==VoiceAction::Unfollow&&f8r.league==1&&f8r.teamId=="3"); // the Bulls share CHI but were not asked for
   auto cavs=[&](const char* content){JsonDocument x;deserializeJson(x,std::string("{\"choices\":[{\"message\":{\"content\":\"")+jsonEscape(content)+"\"}}]}");return parseVoiceReply(x,two);};
   VoiceReply c1=cavs("{\"heard\":\"favorite the Cavs\",\"action\":\"follow_team\",\"league\":\"NBA\",\"team\":\"CLE\",\"team_name\":\"Cleveland Cavaliers\"}");assert(c1.ok&&c1.action==VoiceAction::Follow&&c1.league==2&&c1.teamId=="5"&&c1.teamName=="Cleveland Cavaliers"); // no Cavs game saved
@@ -127,7 +127,7 @@ int main(){
   VoiceReply c5=cavs("{\"heard\":\"follow the Cavaliers\",\"action\":\"follow_team\",\"league\":null,\"team\":\"CAV\",\"team_name\":null}");assert(c5.ok&&c5.action==VoiceAction::Follow&&c5.league==2&&c5.teamId=="5"); // a made-up abbreviation: the heard words name the team
   VoiceReply c6=cavs("{\"heard\":\"add the Cleveland Cavaliers\",\"action\":\"follow_team\",\"league\":null,\"team\":\"CLE\",\"team_name\":null}");assert(c6.ok&&c6.league==2&&c6.teamId=="5"); // CLE is three teams; the heard name is one
   VoiceReply c3=cavs("{\"heard\":\"follow Cleveland\",\"action\":\"follow_team\",\"league\":null,\"team\":\"CLE\",\"team_name\":null}");assert(c3.ok&&c3.action==VoiceAction::Answer&&c3.answer=="Which one: the Cleveland Guardians, Cleveland Browns or Cleveland Cavaliers?"); // CLE alone is three teams
-  {Snapshot mlb;mlb.league=0;Game gu=g;gu.away={"5","Cleveland Guardians","CLE","3"};gu.home={"2","Boston Red Sox","BOS","4"};mlb.games.push_back(gu);const Snapshot* withMlb[4]={&mlb,&nfl,&nba,nullptr};
+  {Snapshot mlb;mlb.league=0;Game gu=g;gu.away={"5","Cleveland Guardians","CLE","3"};gu.home={"2","Boston Red Sox","BOS","4"};mlb.games.push_back(gu);const Snapshot* withMlb[5]={&mlb,&nfl,&nba,nullptr,nullptr};
    JsonDocument x;deserializeJson(x,std::string("{\"choices\":[{\"message\":{\"content\":\"")+jsonEscape("{\"heard\":\"follow the Cavs\",\"action\":\"follow_team\",\"league\":null,\"team\":\"CLE\",\"team_name\":\"Cleveland Cavaliers\"}")+"\"}}]}");
    VoiceReply c4=parseVoiceReply(x,withMlb);assert(c4.ok&&c4.action==VoiceAction::Follow&&c4.league==2&&c4.teamId=="5");} // a saved Guardians game does not capture the Cavs
   JsonDocument f9;deserializeJson(f9,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"follow the Bulls\\\",\\\"action\\\":\\\"follow_team\\\",\\\"league\\\":\\\"NBA\\\",\\\"team\\\":\\\"CHI\\\",\\\"answer\\\":\\\"ok\\\"}\"}}]}");
@@ -163,7 +163,7 @@ int main(){
     assert(sectionedOrder(w,all).size()==6&&sectionedOrder(w,all,true).size()==5); // the league scoreboard holds week 5 back while week 4 is in play; a team page shows it
     for(auto& g:w.games)if(g.week==4)g.state="post";assert(sectionedOrder(w,all,true).size()==6&&w.games[all[sectionedOrder(w,all,true)[0].pos]].id=="nextweek");} // week 4 done: week 5 is next
    assert(currentWeek(s)==4);Snapshot done=s;done.games={d,e};assert(currentWeek(done)==4);assert(sectionName(Section::Next)==std::string("UP NEXT"));
-   const Snapshot* f[4]={nullptr,&s,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(rows.size()==2&&rows[0].next&&rows[0].game.id=="next1"&&rows[1].game.id=="live"&&!rows[1].next); // the soonest upcoming, then the live game
+   const Snapshot* f[5]={nullptr,&s,nullptr,nullptr,nullptr};auto rows=recentGamesGrouped(f,28+56*4);assert(rows.size()==2&&rows[0].next&&rows[0].game.id=="next1"&&rows[1].game.id=="live"&&!rows[1].next); // the soonest upcoming, then the live game
    Snapshot part;Game n;n.id="wk5";n.state="pre";n.start="2026-10-11T17:00Z";n.week=5;n.seasonType=2;n.away=a.away;n.home=a.home;Game far;far=n;far.id="far";far.start="2026-10-25T17:00Z";part.games={n,far,b};
    mergeUpcoming(s,part,"20260930",14,1790800000);int pre=0;bool hasFar=false,hasWk5=false;for(const auto& g:s.games){if(g.state=="pre")pre++;if(g.id=="far")hasFar=true;if(g.id=="wk5")hasWk5=true;}
    assert(hasWk5&&!hasFar&&pre==2&&s.upcomingAt==1790800000); // next1 (today-dated, kept) + wk5; next2 was replaced by the fresh set which carried it... 
@@ -182,11 +182,11 @@ int main(){
    Game e;e.state="pre";e.start="2026-09-30T20:35Z";Snapshot imminent;imminent.updated=now;imminent.games={e};assert(leagueActive(imminent,now));
    Game f;f.state="pre";f.start="2026-09-30T18:00Z";Snapshot overdue=imminent;overdue.games={f};assert(leagueActive(overdue,now)); // should have started: the cache is behind
    assert(nextGameStart(soon,now)==isoEpoch("2026-09-30T21:30:00Z")&&nextGameStart(done,now)==0);
-   const Snapshot* a1[4]={&live,&done,nullptr,&later};assert(refreshDelay(a1,now)==900&&refreshMask(a1,now)==(1|4));
-   const Snapshot* a2[4]={&soon,&done,&later,nullptr};assert(refreshDelay(a2,now)==isoEpoch("2026-09-30T21:30:00Z")-now&&refreshMask(a2,now)==8);
-   const Snapshot* a3[4]={&done,&done,&done,&done};assert(refreshDelay(a3,now)==6*3600&&refreshMask(a3,now)==0);
-   const Snapshot* a4[4]={&old,&done,&done,&done};assert(refreshMask(a4,now)==1);
-   const Snapshot* a5[4]={&later,&done,&done,&done};assert(refreshDelay(a5,now)==6*3600);}
+   const Snapshot* a1[5]={&live,&done,nullptr,&later,nullptr};assert(refreshDelay(a1,now)==900&&refreshMask(a1,now)==(1|4));
+   const Snapshot* a2[5]={&soon,&done,&later,nullptr,nullptr};assert(refreshDelay(a2,now)==isoEpoch("2026-09-30T21:30:00Z")-now&&refreshMask(a2,now)==8);
+   const Snapshot* a3[5]={&done,&done,&done,&done,nullptr};assert(refreshDelay(a3,now)==6*3600&&refreshMask(a3,now)==0);
+   const Snapshot* a4[5]={&old,&done,&done,&done,nullptr};assert(refreshMask(a4,now)==1);
+   const Snapshot* a5[5]={&later,&done,&done,&done,nullptr};assert(refreshDelay(a5,now)==6*3600);}
   // Weather: Open-Meteo and ipinfo decoding, words, icons, cache roundtrip.
   {JsonDocument wj;deserializeJson(wj,"{\"current\":{\"time\":\"2026-09-30T20:45\",\"temperature_2m\":61.8,\"weather_code\":3,\"is_day\":0},\"daily\":{\"temperature_2m_max\":[64.7],\"temperature_2m_min\":[58.9],\"precipitation_probability_max\":[92]}}");
    Weather w;w.city="Williamsburg";assert(decodeWeather(wj,1790800000,w)&&w.valid&&w.temp==62&&w.high==65&&w.low==59&&w.rain==92&&w.code==3&&!w.day&&w.city=="Williamsburg");
@@ -201,7 +201,7 @@ int main(){
    assert(weatherUrl(la,lo).find("latitude=39.0542&longitude=-84.0530")!=std::string::npos);
    JsonDocument gj;deserializeJson(gj,"{\"results\":[{\"name\":\"Painesville\",\"latitude\":41.72449,\"longitude\":-81.24566,\"postcodes\":[\"44077\"]}]}");assert(decodeGeocode(gj,la,lo,ci)&&la=="41.7245"&&lo=="-81.2457"&&ci=="Painesville");
    JsonDocument ej;deserializeJson(ej,"{\"generationtime_ms\":0.1}");assert(!decodeGeocode(ej,la,lo,ci));assert(geocodeUrl("New York")=="https://geocoding-api.open-meteo.com/v1/search?name=New%20York&count=1&language=en&format=json");
-   const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};assert(voiceContext(nf,{},1790800000,weatherSpeech(w)).find("Weather (7-day forecast): now 62 F")!=std::string::npos);}
+   const Snapshot* nf[5]={nullptr,nullptr,nullptr,nullptr,nullptr};assert(voiceContext(nf,{},1790800000,weatherSpeech(w)).find("Weather (7-day forecast): now 62 F")!=std::string::npos);}
   // Devotional: the model reply, the NVS roundtrip, the spoken text.
   {std::ifstream df("tests/fixtures/devotional.json");std::string fixture((std::istreambuf_iterator<char>(df)),std::istreambuf_iterator<char>());assert(!fixture.empty());
    JsonDocument wrap;wrap["choices"][0]["message"]["content"]=fixture;Devotional d;BibleRef ref{19,119,9};
@@ -209,7 +209,7 @@ int main(){
    Devotional back;assert(decodeDevotional(encodeDevotional(d),back)&&back.valid&&back.ref.verse==9&&back.points[2]==d.points[2]&&back.prayer==d.prayer);
    const std::string speech=devotionalSpeech(d);assert(speech.find("Keep Your Way Pure")!=std::string::npos&&speech.find("Psalm 119:9 says")!=std::string::npos&&speech.find("Let's pray.")!=std::string::npos);
    assert(devotionalRequestBody(ref,d.verse,"context").find("Verse of the day: Psalm 119:9")!=std::string::npos);assert(!decodeDevotional("",back));
-   const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};JsonDocument vj;deserializeJson(vj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read today's devotional\\\",\\\"action\\\":\\\"open_devotional\\\",\\\"read\\\":true,\\\"answer\\\":\\\"ok\\\"}\"}}]}");
+   const Snapshot* nf[5]={nullptr,nullptr,nullptr,nullptr,nullptr};JsonDocument vj;deserializeJson(vj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read today's devotional\\\",\\\"action\\\":\\\"open_devotional\\\",\\\"read\\\":true,\\\"answer\\\":\\\"ok\\\"}\"}}]}");
    VoiceReply vr=parseVoiceReply(vj,nf);assert(vr.ok&&vr.action==VoiceAction::OpenDevotional&&vr.read);
    std::ifstream ff("devotionals/out/10-01.json");std::string file((std::istreambuf_iterator<char>(ff)),std::istreambuf_iterator<char>());assert(!file.empty());
    Devotional fd;auto verseFor=[](const BibleRef& r){return r.book==19&&r.chapter==119&&r.verse==9?std::string("How can a young man keep his way pure? By guarding it according to Your word."):std::string();};
@@ -229,7 +229,7 @@ int main(){
    assert(bibleSpeakText(verses,{43,3,16}).rfind("For God so loved",0)==0);assert(bibleSpeakText(verses,{43,3,0}).size()<=620);
    auto wrapped=wrapWidth(verses[15],width,456,10);assert(wrapped.size()>=2&&wrapped[0].size()*6<=456);assert(wrapWidth("a b c",width,456,1).size()==1);}
   assert(verseOfDay(0).book==43&&verseOfDay(1).book==19&&verseOfDay(365).valid()&&verseOfDay(1000).valid());assert(bibleRefLabel({43,3,16})=="JOHN 3:16"&&bibleRefLabel({62,1,0},false)=="1 John 1");
-  {const Snapshot* nf[4]={nullptr,nullptr,nullptr,nullptr};JsonDocument bj;deserializeJson(bj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read John 3:16\\\",\\\"action\\\":\\\"open_bible\\\",\\\"book\\\":\\\"John\\\",\\\"chapter\\\":\\\"3\\\",\\\"verse\\\":16,\\\"read\\\":true,\\\"daily\\\":false,\\\"answer\\\":\\\"Opening John 3:16\\\"}\"}}]}");
+  {const Snapshot* nf[5]={nullptr,nullptr,nullptr,nullptr,nullptr};JsonDocument bj;deserializeJson(bj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"read John 3:16\\\",\\\"action\\\":\\\"open_bible\\\",\\\"book\\\":\\\"John\\\",\\\"chapter\\\":\\\"3\\\",\\\"verse\\\":16,\\\"read\\\":true,\\\"daily\\\":false,\\\"answer\\\":\\\"Opening John 3:16\\\"}\"}}]}");
    VoiceReply v=parseVoiceReply(bj,nf);assert(v.ok&&v.action==VoiceAction::OpenBible&&v.bible.book==43&&v.bible.chapter==3&&v.bible.verse==16&&v.read&&!v.daily);
    JsonDocument dj;deserializeJson(dj,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"verse of the day\\\",\\\"action\\\":\\\"open_bible\\\",\\\"book\\\":null,\\\"daily\\\":true,\\\"answer\\\":\\\"ok\\\"}\"}}]}");
    VoiceReply d=parseVoiceReply(dj,nf);assert(d.ok&&d.action==VoiceAction::OpenBible&&d.daily&&d.bible.book==0);
@@ -237,5 +237,34 @@ int main(){
    VoiceReply h=parseVoiceReply(hj,nf);assert(h.ok&&h.bible.book==19&&h.bible.chapter==23);
    JsonDocument wj2;deserializeJson(wj2,"{\"choices\":[{\"message\":{\"content\":\"{\\\"heard\\\":\\\"will it rain tomorrow\\\",\\\"action\\\":\\\"open_weather\\\",\\\"answer\\\":\\\"Tomorrow looks dry, high 81 with a 30% chance of rain.\\\"}\"}}]}");
    VoiceReply wv=parseVoiceReply(wj2,nf);assert(wv.ok&&wv.action==VoiceAction::OpenWeather&&wv.answer.rfind("Tomorrow",0)==0);}
+ // College basketball: the seasonal tab, in-season refreshes, Top-25 plus followed teams, matchup stats, conferences, voice.
+ {const int64_t winter=isoEpoch("2026-11-12T17:00Z"),summer=isoEpoch("2026-07-01T17:00Z");
+  assert(seasonalLeague(winter)==4&&seasonalLeague(summer)==0&&seasonalLeague(isoEpoch("2027-04-08T20:00Z"))==4&&seasonalLeague(isoEpoch("2027-04-09T20:00Z"))==0&&seasonalLeague(isoEpoch("2026-10-31T20:00Z"))==0);
+  assert(tabLeague(1,winter)==1&&tabLeague(2,winter)==4&&tabLeague(2,summer)==0&&tabLeague(3,summer)==2&&tabLeague(4,winter)==3);
+  assert(leagueTab(0)==2&&leagueTab(4)==2&&leagueTab(1)==1&&leagueTab(3)==4);
+  assert(inSeason(4,winter)&&!inSeason(0,winter)&&inSeason(0,summer)&&!inSeason(4,summer)&&inSeason(1,summer)&&inSeason(3,winter));
+  const Snapshot* none[5]={nullptr,nullptr,nullptr,nullptr,nullptr};assert(refreshMask(none,winter)==(2|4|8|16)&&refreshMask(none,summer)==(1|2|4|8)); // the league out of season is never fetched
+  assert(isCollege(4)&&isBasketball(4)&&!isFootball(4)&&weekLabel(4,Game{})=="");
+  std::ifstream f("tests/fixtures/cbb-scoreboard.json");std::string body((std::istreambuf_iterator<char>(f)),std::istreambuf_iterator<char>());JsonDocument d;assert(!deserializeJson(d,body,DeserializationOption::NestingLimit(30)));
+  Snapshot top;assert(decodeScores(d,4,"20261110",1790800000,top,"20261108",false,true));assert(top.games.size()==1&&top.games[0].home.abbr=="CONN"&&top.games[0].home.rank==4&&top.games[0].home.conf=="4"); // the unranked game is dropped
+  const std::vector<std::string> keep{"2154"};Snapshot mine;assert(decodeScores(d,4,"20261110",1790800000,mine,"20261108",false,true,&keep));assert(mine.games.size()==2); // ... unless a followed team plays in it
+  // A followed team outside the Top 25 comes from its conference's board, merged in without duplicates.
+  assert(teamConference(4,"275")==7&&teamConference(3,"275")==5&&teamConference(4,"2681")==19&&teamConference(4,"112358")==19&&teamConference(4,"nope")==0&&teamConference(2,"1")==0); // Wisconsin: Big Ten hoops, Big Ten football (CFB id 5)
+  {std::ifstream nf("tests/fixtures/cbb-nec-scoreboard.json");std::string nb((std::istreambuf_iterator<char>(nf)),std::istreambuf_iterator<char>());JsonDocument nd;assert(!deserializeJson(nd,nb,DeserializationOption::NestingLimit(30)));
+   const std::vector<std::string> liu{"112358"};Snapshot nec;assert(decodeScores(nd,4,"20261110",1790800000,nec,"20261108",false,true,&liu));assert(nec.games.size()==2); // WAG @ #4 CONN (ranked) and LIU's game, not ELMR @ LEM
+   Snapshot day=top;addGames(day,nec);assert(day.games.size()==2);int liuGames=0,conn=0;for(auto& g:day.games){if(g.away.abbr=="LIU")liuGames++;if(g.home.abbr=="CONN")conn++;}assert(liuGames==1&&conn==1);
+   addGames(day,nec);assert(day.games.size()==2);} // idempotent
+  GameDetail det;assert(decodeDetail(d,"401920686",4,det));bool fg=false,pts=false;for(auto& st:det.stats){if(st.label=="FG%")fg=true;if(st.label=="PTS LDR")pts=!st.home.empty();}assert(fg&&pts&&det.homeLine.size()==2&&det.awayHits.empty());
+  assert(cbbConferenceId("SEC")=="23"&&cbbConferenceId("Big East")=="4"&&cbbConferenceId("Mid-American")=="14"&&cbbConferenceId("the American")=="62"&&cbbConferenceId("Big Ten")=="7"&&conferenceId(3,"SEC")=="8"&&conferenceId(4,"SEC")=="23");
+  assert(leagueIndex("CBB")==4&&leagueIndex("ncaab")==4&&leagueIndex("CFB")==3);
+  Snapshot cbb;cbb.league=4;cbb.games=top.games;const Snapshot* fw[5]={nullptr,nullptr,nullptr,nullptr,&cbb};
+  const std::string ctx=voiceContext(fw,{{4,"41","UConn Huskies"}},winter);assert(ctx.find("CBB: WAG (away) 41 at CONN (home) 83")!=std::string::npos&&ctx.find("MLB:")==std::string::npos&&ctx.find("UConn Huskies (CBB)")!=std::string::npos);
+  auto ask=[&](const char* content){JsonDocument x;deserializeJson(x,std::string("{\"choices\":[{\"message\":{\"content\":\"")+jsonEscape(content)+"\"}}]}");return parseVoiceReply(x,fw);};
+  VoiceReply z=ask("{\"heard\":\"follow Gonzaga\",\"action\":\"follow_team\",\"league\":null,\"team\":\"GONZ\",\"team_name\":\"Gonzaga Bulldogs\"}");assert(z.ok&&z.action==VoiceAction::Follow&&z.league==4&&z.teamId=="2250"); // no football team: one match
+  VoiceReply duke=ask("{\"heard\":\"follow Duke\",\"action\":\"follow_team\",\"league\":null,\"team\":\"DUKE\",\"team_name\":\"Duke Blue Devils\"}");
+  assert(duke.ok&&duke.action==VoiceAction::Answer&&duke.answer=="Which one: Duke football or Duke basketball?");
+  VoiceReply hoops=ask("{\"heard\":\"follow Duke basketball\",\"action\":\"follow_team\",\"league\":\"CBB\",\"team\":\"DUKE\",\"team_name\":\"Duke Blue Devils\"}");assert(hoops.ok&&hoops.action==VoiceAction::Follow&&hoops.league==4&&hoops.teamId=="150");
+  VoiceReply st=ask("{\"heard\":\"Big East standings\",\"action\":\"open_standings\",\"league\":\"CBB\",\"group\":\"Big East\",\"team\":null,\"answer\":\"ok\"}");assert(st.ok&&st.action==VoiceAction::OpenStandings&&st.league==4&&st.scope=="4");
+  VoiceReply uc=ask("{\"heard\":\"UConn score\",\"action\":\"open_game\",\"league\":\"CBB\",\"team\":\"CONN\",\"answer\":\"ok\"}");assert(uc.ok&&uc.action==VoiceAction::OpenGame&&uc.league==4&&uc.gameId=="401920686");}
  std::cout<<"PASS: debounce, hold exclusivity, dates/DST, ESPN normalization, cache roundtrip, malformed response retention, freshness, missing scores, recent-games feed merging, Bible references/layout, weather decoding, game-aware refresh planning, upcoming games, and the devotional\n";
 }

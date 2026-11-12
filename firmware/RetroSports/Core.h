@@ -8,22 +8,36 @@
 #include <algorithm>
 
 namespace retro {
-struct League { const char* name; const char* path; const char* subtitle; };
+struct League { const char* name; const char* path; const char* subtitle; const char* tab; const char* spoken; };
 static const League leagues[] = {
- {"MLB", "baseball/mlb", "MAJOR LEAGUE BASEBALL"},
- {"NFL", "football/nfl", "NATIONAL FOOTBALL LEAGUE"},
- {"NBA", "basketball/nba", "NATIONAL BASKETBALL ASSN."},
- {"COLLEGE FB", "football/college-football", "NCAA DIVISION I FBS"}
+ {"MLB", "baseball/mlb", "MAJOR LEAGUE BASEBALL", "MLB", "baseball"},
+ {"NFL", "football/nfl", "NATIONAL FOOTBALL LEAGUE", "NFL", "the NFL"},
+ {"NBA", "basketball/nba", "NATIONAL BASKETBALL ASSN.", "NBA", "the NBA"},
+ {"COLLEGE FB", "football/college-football", "NCAA DIVISION I FBS", "CFB", "college football"},
+ {"COLLEGE BB", "basketball/mens-college-basketball", "NCAA DIVISION I MEN'S", "CBB", "college basketball"}
 };
+// League indices are stable (caches, favorites and logos are keyed by them); college basketball is the newest, 4.
+constexpr int LEAGUES=5;
+inline bool isFootball(int l){return l==1||l==3;}
+inline bool isBasketball(int l){return l==2||l==4;}
+inline bool isCollege(int l){return l==3||l==4;}
+// MLB and college basketball share one tab: college basketball from November 1 through
+// April 8 (the season opens in early November; the national final is in the first week of
+// April), MLB the rest of the year. The league out of season is neither shown nor fetched.
+inline int seasonalLeague(int64_t now){
+ time_t t=now;tm b{};localtime_r(&t,&b);const int m=b.tm_mon+1;
+ return (m>=11||m<=3||(m==4&&b.tm_mday<=8))?4:0;
+}
+inline bool inSeason(int league,int64_t now){return (league!=0&&league!=4)||league==seasonalLeague(now);}
 struct Team { std::string id, name, abbr, score, conf; int rank=0; }; // conf: college conference id; rank: Top-25 rank or 0
 struct Game { std::string id, start, status, state, venue; Team away, home; bool complete=false; int week=0, seasonType=0; };
 // Recent-games window per league, in days back from today. ESPN's scoreboard
 // rejects date ranges, so the device walks days and merges them into one feed.
 // The NFL window spans four weeks so the week headers have something to divide.
-static const int feedDays[] = {7, 28, 7, 8};
+static const int feedDays[] = {7, 28, 7, 8, 7};
 // Football leagues group the scoreboard by week; other leagues have no week.
 inline std::string weekLabel(int league,const Game& g){
- if(g.week<=0||(league!=1&&league!=3))return "";
+ if(g.week<=0||!isFootball(league))return "";
  if(g.seasonType==1)return "PRESEASON WEEK "+std::to_string(g.week);
  if(g.seasonType==3){static const char* rounds[]={"","WILD CARD","DIVISIONAL ROUND","CONFERENCE FINALS","PRO BOWL","SUPER BOWL"};if(league==1&&g.week>=1&&g.week<=5)return rounds[g.week];return "POSTSEASON "+std::to_string(g.week);}
  return "WEEK "+std::to_string(g.week);
@@ -32,8 +46,8 @@ inline std::string weekLabel(int league,const Game& g){
 // first; `covered` lists the days already fetched so gaps can be backfilled.
 // `team` marks a team page: that team's season results plus its next game.
 struct Snapshot { int league=0; std::string date; int64_t updated=0; std::vector<Game> games; int span=0; std::vector<std::string> covered; std::string team; int64_t upcomingAt=0; }; // upcomingAt: when the schedule ahead was last fetched
-// How far ahead each league's feed carries upcoming games (days): MLB, NFL, NBA, CFB.
-static const int aheadDays[] = {2, 14, 2, 8};
+// How far ahead each league's feed carries upcoming games (days): MLB, NFL, NBA, CFB, CBB.
+static const int aheadDays[] = {2, 14, 2, 8, 2};
 struct Favorite { int league; std::string id,name; };
 // The setup page's name: a public A record to the hotspot's own address, so a phone on private DNS still lands on the board. Plain http; the board has no certificate.
 constexpr char SETUP_URL[]="http://setup.pockle.kids/";constexpr char SETUP_IP_URL[]="http://192.168.4.1/";
@@ -87,15 +101,15 @@ inline int64_t nextGameStart(const Snapshot& s,int64_t now){
 }
 // Seconds until the next refresh wake is worth it: 15 minutes while anything is
 // active, otherwise at the next scheduled start, and at most every six hours.
-inline int64_t refreshDelay(const Snapshot* feeds[4],int64_t now){
+inline int64_t refreshDelay(const Snapshot* feeds[LEAGUES],int64_t now){
  bool active=false;int64_t next=0;
- for(int l=0;l<4;l++){if(!feeds[l])continue;if(leagueActive(*feeds[l],now))active=true;const int64_t n=nextGameStart(*feeds[l],now);if(n&&(!next||n<next))next=n;}
+ for(int l=0;l<LEAGUES;l++){if(!feeds[l])continue;if(leagueActive(*feeds[l],now))active=true;const int64_t n=nextGameStart(*feeds[l],now);if(n&&(!next||n<next))next=n;}
  if(active)return 900;if(next)return std::max<int64_t>(900,std::min<int64_t>(next-now,6*3600));return 6*3600;
 }
 // Which feeds a wake should fetch: active leagues, plus any cache older than
-// twelve hours (or missing) so schedule changes still arrive.
-inline int refreshMask(const Snapshot* feeds[4],int64_t now){
- int m=0;for(int l=0;l<4;l++)if(!feeds[l]||now-feeds[l]->updated>12*3600||leagueActive(*feeds[l],now))m|=1<<l;
+// twelve hours (or missing) so schedule changes still arrive. Leagues out of season are skipped.
+inline int refreshMask(const Snapshot* feeds[LEAGUES],int64_t now){
+ int m=0;for(int l=0;l<LEAGUES;l++)if(inSeason(l,now)&&(!feeds[l]||now-feeds[l]->updated>12*3600||leagueActive(*feeds[l],now)))m|=1<<l;
  return m;
 }
 inline std::string dayLabel(int64_t epoch,int64_t now){
@@ -119,7 +133,7 @@ inline std::string leaderText(std::string name,const std::string& value,int leag
  std::vector<std::string> parts;size_t s=0;for(;;){size_t p=value.find(", ",s);parts.push_back(value.substr(s,p==std::string::npos?std::string::npos:p-s));if(p==std::string::npos)break;s=p+2;}
  {size_t p=name.rfind(". ");if(p!=std::string::npos&&p<4)name=name.substr(p+2);} // "J.K. Dobbins" -> "Dobbins"
  if(name.empty())name="?";const size_t max=13;
- if(league==1||league==3){for(auto& p:parts)if(p.find(" YDS")!=std::string::npos){name+=" "+p.substr(0,p.find(' '));break;}}
+ if(isFootball(league)){for(auto& p:parts)if(p.find(" YDS")!=std::string::npos){name+=" "+p.substr(0,p.find(' '));break;}}
  else{int n=0;for(auto& p:parts){if(n++==2||p.empty()||name.size()+1+p.size()>max)break;name+=" "+p;}}
  if(name.size()>max){size_t sp=name.rfind(' ');std::string tail=sp==std::string::npos?"":name.substr(sp);std::string head=name.substr(0,sp==std::string::npos?name.size():sp);if(head.size()+tail.size()>max)head=head.substr(0,max-tail.size());name=head+tail;}
  return clean(name,max);
@@ -141,6 +155,12 @@ inline void trimUpcoming(Snapshot& s){
  std::stable_sort(s.games.begin(),s.games.end(),[](const Game& a,const Game& b){return isoEpoch(a.start)>isoEpoch(b.start);});
  int64_t next=0;for(const auto& g:s.games)if(g.state=="pre"){int64_t e=isoEpoch(g.start);if(!next||e<next)next=e;}
  s.games.erase(std::remove_if(s.games.begin(),s.games.end(),[&](const Game& g){return g.state=="pre"&&isoEpoch(g.start)!=next;}),s.games.end());
+}
+// One day's board assembled from several scoreboards (college basketball's Top 25 plus a
+// followed team's conference): add the games not already there, kept in start order.
+inline void addGames(Snapshot& into,const Snapshot& part){
+ for(const auto& p:part.games){bool dup=false;for(const auto& g:into.games)if(g.id==p.id)dup=true;if(!dup)into.games.push_back(p);}
+ std::stable_sort(into.games.begin(),into.games.end(),[](const Game& a,const Game& b){return isoEpoch(a.start)<isoEpoch(b.start);});
 }
 // Replace the feed's upcoming games (dated after `today`) with a fresh set, kept to the horizon.
 inline void mergeUpcoming(Snapshot& feed,const Snapshot& part,const std::string& today,int ahead,int64_t now,size_t cap=150){
@@ -189,16 +209,16 @@ inline void mergeFeed(Snapshot& feed,const Snapshot& part,const std::string& fet
 }
 // Home page feed: the newest games already played (or in progress) across all
 // leagues, drawn from the cached league feeds.
-// Tab order on the home strip (tab 1..4): NFL first, then MLB, NBA and college football; league indices stay as they are.
-constexpr int TAB_LEAGUES[4]={1,0,2,3};
-inline int tabLeague(int tab){return tab>=1&&tab<=4?TAB_LEAGUES[tab-1]:0;}
-inline int leagueTab(int league){for(int i=0;i<4;i++)if(TAB_LEAGUES[i]==league)return i+1;return 1;}
+// Tab order on the home strip (tab 1..4): NFL first, then the seasonal slot (MLB or college
+// basketball), NBA and college football; league indices stay as they are.
+inline int tabLeague(int tab,int64_t now){static const int order[4]={1,-1,2,3};if(tab<1||tab>4)return 0;const int l=order[tab-1];return l<0?seasonalLeague(now):l;}
+inline int leagueTab(int league){static const int order[LEAGUES]={2,1,3,4,2};return league>=0&&league<LEAGUES?order[league]:1;}
 struct RecentGame { int league; Game game; bool next=false; std::string header; }; // next: an upcoming game; header: the followed team the row belongs to (empty: the league's row)
 inline bool followed(const std::vector<Favorite>& favs,int league,const Game& g){for(const auto& f:favs)if(f.league==league&&(f.id==g.away.id||f.id==g.home.id))return true;return false;}
 // `only`, when it names any team, keeps just that team's games (the MINE tab); empty or null means every game.
-inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit,const std::vector<Favorite>* only=nullptr){
+inline std::vector<RecentGame> recentGames(const Snapshot* feeds[LEAGUES],size_t limit,const std::vector<Favorite>* only=nullptr){
  std::vector<RecentGame> out;const bool mine=only&&!only->empty();
- for(int l=0;l<4;l++){if(!feeds[l])continue;for(const auto& g:feeds[l]->games)if(g.state!="pre"&&(!mine||followed(*only,l,g)))out.push_back({l,g});}
+ for(int l=0;l<LEAGUES;l++){if(!feeds[l])continue;for(const auto& g:feeds[l]->games)if(g.state!="pre"&&(!mine||followed(*only,l,g)))out.push_back({l,g});}
  std::stable_sort(out.begin(),out.end(),[](const RecentGame& a,const RecentGame& b){return isoEpoch(a.game.start)>isoEpoch(b.game.start);});
  if(out.size()>limit)out.resize(limit);
  return out;
@@ -208,12 +228,12 @@ inline std::vector<RecentGame> recentGames(const Snapshot* feeds[4],size_t limit
 // a league when no team is followed. Groups are ordered by what is coming:
 // anyone playing now, then by next kickoff, then those with nothing ahead by
 // their last result; as many fit `heightPx` as can.
-inline std::vector<RecentGame> recentGamesGrouped(const Snapshot* feeds[4],int heightPx,int rowH=56,int dividerH=28,const std::vector<Favorite>* only=nullptr){
+inline std::vector<RecentGame> recentGamesGrouped(const Snapshot* feeds[LEAGUES],int heightPx,int rowH=56,int dividerH=28,const std::vector<Favorite>* only=nullptr){
  struct Subject{int league;std::string id,name;};std::vector<Subject> subjects;
  if(only&&!only->empty()){for(const auto& f:*only)subjects.push_back({f.league,f.id,f.name});}
- else for(int l=0;l<4;l++)subjects.push_back({l,"",""});
+ else for(int l=0;l<LEAGUES;l++)subjects.push_back({l,"",""});
  struct Group{std::vector<RecentGame> rows;int rank=2;int64_t key=0;};std::vector<Group> groups;
- for(const auto& s:subjects){const int l=s.league;if(l<0||l>3||!feeds[l])continue;const Game *next=nullptr,*last=nullptr,*live=nullptr;
+ for(const auto& s:subjects){const int l=s.league;if(l<0||l>=LEAGUES||!feeds[l])continue;const Game *next=nullptr,*last=nullptr,*live=nullptr;
   for(const auto& g:feeds[l]->games){if(!s.id.empty()&&g.away.id!=s.id&&g.home.id!=s.id)continue;
    if(g.state=="pre"){if(!next||isoEpoch(g.start)<isoEpoch(next->start))next=&g;}
    else if(g.state=="in"){if(!live||isoEpoch(g.start)>isoEpoch(live->start))live=&g;}
@@ -242,6 +262,14 @@ inline std::string cfbConferenceId(const std::string& text){
  for(auto& row:table)if(k.find(row[0])!=std::string::npos)return row[1];
  return "";
 }
+// ESPN's men's college basketball conference ids (they differ from football's).
+inline std::string cbbConferenceId(const std::string& text){
+ const std::string k=groupKey(text);if(k.empty())return "";
+ static const char* table[][2]={{"MIDAMERICAN","14"},{"AMERICAN","62"},{"AAC","62"},{"MAC","14"},{"SEC","23"},{"SOUTHEASTERN","23"},{"BIGTEN","7"},{"BIG10","7"},{"B1G","7"},{"BIGEAST","4"},{"BIG12","8"},{"BIGTWELVE","8"},{"ACC","2"},{"ATLANTICCOAST","2"},{"PAC12","21"},{"PACTWELVE","21"},{"WESTCOAST","29"},{"WCC","29"},{"MOUNTAINWEST","44"},{"MWC","44"},{"ATLANTIC10","3"},{"A10","3"},{"MISSOURIVALLEY","18"},{"MVC","18"},{"IVY","12"},{"BIGWEST","9"},{"BIGSKY","5"},{"BIGSOUTH","6"},{"HORIZON","45"},{"SUMMIT","49"},{"SUNBELT","27"},{"CONFERENCEUSA","11"},{"CUSA","11"},{"SOUTHERN","24"},{"SOCON","24"},{"SOUTHLAND","25"},{"SWAC","26"},{"MEAC","16"},{"PATRIOT","22"},{"OHIOVALLEY","20"},{"OVC","20"},{"NORTHEAST","19"},{"AMERICAEAST","1"},{"ASUN","46"},{"ATLANTICSUN","46"},{"COASTAL","10"},{"CAA","10"},{"MAAC","13"},{"METRO","13"},{"UNITEDATHLETIC","30"},{"WAC","30"}};
+ for(auto& row:table)if(k.find(row[0])!=std::string::npos)return row[1];
+ return "";
+}
+inline std::string conferenceId(int league,const std::string& text){return league==4?cbbConferenceId(text):league==3?cfbConferenceId(text):"";}
 // The division and conference a team belongs to (either may be -1).
 inline void teamGroups(const Standings& st,const std::string& teamId,int& division,int& conference){
  division=conference=-1;

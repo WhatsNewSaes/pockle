@@ -38,14 +38,14 @@ inline bool decodeDetail(JsonVariantConst root,const std::string& gameId,int lea
   auto pick=[](const std::vector<std::pair<std::string,std::string>>& v,const char* k){for(auto& p:v)if(p.first==k)return p.second;return std::string();};
   auto stat=[&](const char* k,const char* label){std::string a=pick(stats[0],k),h=pick(stats[1],k);if(!a.empty()||!h.empty())d.stats.push_back({label,a,h});};
   auto lead=[&](const char* k,const char* label){std::string a=pick(leads[0],k),h=pick(leads[1],k);if(!a.empty()||!h.empty())d.stats.push_back({label,a,h});};
-  if(league==1||league==3){ // football leaders live on the competition, tagged by team
+  if(isFootball(league)){ // football leaders live on the competition, tagged by team
    const char* keys[]={"passingYards","rushingYards","receivingYards"};const char* labels[]={"PASS","RUSH","REC"};
    for(int k=0;k<3;k++){StatLine sl{labels[k],"",""};
     for(JsonObjectConst l:c["leaders"].as<JsonArrayConst>()){if(js(l["name"])!=keys[k])continue;
      for(JsonObjectConst x:l["leaders"].as<JsonArrayConst>()){std::string tid=js(x["team"]["id"]),txt=leaderText(js(x["athlete"]["shortName"]),js(x["displayValue"]),league);
       if(tid==ids[0]&&sl.away.empty())sl.away=txt;else if(tid==ids[1]&&sl.home.empty())sl.home=txt;}}
     if(!sl.away.empty()||!sl.home.empty())d.stats.push_back(sl);}
-  }else if(league==2){stat("fieldGoalPct","FG%");stat("threePointPct","3PT%");stat("rebounds","REBS");stat("assists","ASSISTS");lead("points","PTS LDR");lead("rebounds","REB LDR");}
+  }else if(isBasketball(league)){stat("fieldGoalPct","FG%");stat("threePointPct","3PT%");stat("rebounds","REBS");stat("assists","ASSISTS");lead("points","PTS LDR");lead("rebounds","REB LDR");}
   else{d.awayHits=pick(stats[0],"hits");d.homeHits=pick(stats[1],"hits");d.awayErrors=pick(stats[0],"errors");d.homeErrors=pick(stats[1],"errors");lead("homeRuns","HR");lead("RBIs","RBI");lead("avg","BATTING");}
   d.headline=clean(js(c["headlines"][0]["shortLinkText"]),108);
   out=std::move(d);return true;
@@ -54,9 +54,9 @@ inline bool decodeDetail(JsonVariantConst root,const std::string& gameId,int lea
 }
 // `start` widens the accepted window to [start, date]; empty keeps the exact day;
 // `allDates` keeps everything (team schedules span a season).
-// rankedOnly: keep only games with a Top-25 team (college football feeds).
-inline bool decodeScores(JsonVariantConst root,int league,const std::string& date,int64_t updated,Snapshot& output,const std::string& start="",bool allDates=false,bool rankedOnly=false){
- if(!root["events"].is<JsonArrayConst>() || league<0||league>3||!validDate(date)||updated<1700000000)return false;
+// rankedOnly: keep only games with a Top-25 team, or one of the `keep` team ids (followed teams), for college feeds.
+inline bool decodeScores(JsonVariantConst root,int league,const std::string& date,int64_t updated,Snapshot& output,const std::string& start="",bool allDates=false,bool rankedOnly=false,const std::vector<std::string>* keep=nullptr){
+ if(!root["events"].is<JsonArrayConst>() || league<0||league>=LEAGUES||!validDate(date)||updated<1700000000)return false;
  const std::string first=start.empty()?date:start;if(!allDates&&(!validDate(first)||first>date))return false;
  Snapshot next;next.league=league;next.date=date;next.updated=updated;
  auto events=root["events"].as<JsonArrayConst>();if(events.size()>200)return false;
@@ -76,7 +76,8 @@ inline bool decodeScores(JsonVariantConst root,int league,const std::string& dat
    if(js(p["homeAway"])=="home")g.home=t;else if(js(p["homeAway"])=="away")g.away=t;
   }
   if(g.home.id.empty()||g.away.id.empty()||g.home.name.empty()||g.away.name.empty())return false;
-  if(rankedOnly&&!g.home.rank&&!g.away.rank)continue;
+  auto kept=[&](const Team& t){return keep&&std::find(keep->begin(),keep->end(),t.id)!=keep->end();};
+  if(rankedOnly&&!g.home.rank&&!g.away.rank&&!kept(g.home)&&!kept(g.away))continue;
   next.games.push_back(g);
  }
  output=std::move(next);return true;
@@ -132,7 +133,7 @@ inline void standingsRows(JsonVariantConst node,int league,StandingsGroup& g){
    else if(n=="gamesBehind"){if(r.extra.empty())r.extra=v;}else if(n=="streak"){if(r.streak.empty()||r.streak=="-")r.streak=v;}else if(n=="playoffSeed"){if(!r.seed)r.seed=atoi(v.c_str());}else if(n=="overall")overall=v;else if(n=="vs. Conf.")confRec=v;
    else if(n=="leagueWinPercent"&&r.winPct==0)r.winPct=st["value"].as<double>();
    if(n=="winPercent")r.winPct=st["value"].as<double>();}
-  if(league==3){r.record=overall.empty()?wins+"-"+losses:overall;r.extra=confRec;r.pct="";} // college: overall, conference record
+  if(isCollege(league)){r.record=overall.empty()?wins+"-"+losses:overall;r.extra=confRec;r.pct="";} // college: overall, conference record
   else{r.record=wins+"-"+losses+(ties.empty()||ties=="0"?"":"-"+ties);if(league==1)r.extra="";}   // NFL shows pct, others games behind
   if(r.id.empty()||r.abbr.empty())continue;g.rows.push_back(r);if(g.rows.size()>=20)break;
  }
@@ -166,7 +167,7 @@ inline void encodeStandings(const Standings& s,JsonDocument& doc){
 }
 inline bool decodeStandingsCache(JsonVariantConst j,Standings& out){
  if(j["version"]!=1||!j["groups"].is<JsonArrayConst>())return false;
- Standings s;s.league=j["league"]|-1;s.updated=j["updated"]|int64_t(0);s.scope=js(j["scope"]);if(s.league<0||s.league>3)return false;
+ Standings s;s.league=j["league"]|-1;s.updated=j["updated"]|int64_t(0);s.scope=js(j["scope"]);if(s.league<0||s.league>=LEAGUES)return false;
  for(JsonObjectConst g:j["groups"].as<JsonArrayConst>()){StandingsGroup sg;sg.name=js(g["name"]);sg.abbr=js(g["abbr"]);sg.parent=g["parent"]|-1;
   for(JsonObjectConst r:g["rows"].as<JsonArrayConst>()){StandingRow x;x.id=js(r["id"]);x.abbr=js(r["abbr"]);x.name=js(r["name"]);x.record=js(r["rec"]);x.pct=js(r["pct"]);x.extra=js(r["extra"]);x.streak=js(r["strk"]);x.seed=r["seed"]|0;x.winPct=r["wp"]|0.0;if(!x.id.empty())sg.rows.push_back(x);}
   s.groups.push_back(sg);}
@@ -183,7 +184,7 @@ inline void encodeCache(const Snapshot& s,JsonDocument& doc){
 inline bool decodeCache(JsonVariantConst j,Snapshot& out){
  if(j["version"]!=4||!j["games"].is<JsonArrayConst>())return false;
  Snapshot s;s.league=j["league"]|-1;s.date=js(j["date"]);s.updated=j["updated"]|int64_t(0);
- if(s.league<0||s.league>3||!validDate(s.date)||s.updated<1700000000||j["games"].size()>200)return false;
+ if(s.league<0||s.league>=LEAGUES||!validDate(s.date)||s.updated<1700000000||j["games"].size()>200)return false;
  s.span=j["span"]|0;if(s.span<0||s.span>60)return false;s.team=clean(js(j["team"]),12);s.upcomingAt=j["upcomingAt"]|int64_t(0);
  if(j["covered"].is<JsonArrayConst>())for(JsonVariantConst v:j["covered"].as<JsonArrayConst>()){std::string d=js(v);if(validDate(d)&&s.covered.size()<64)s.covered.push_back(d);}
  for(JsonObjectConst v:j["games"].as<JsonArrayConst>()){

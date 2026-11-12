@@ -25,7 +25,7 @@ Status words: **on the board** (shipped), **next** (agreed, not built), **idea**
 - **Bible.** The whole Bible offline in three translations (Berean Standard, Free Bible Version, Bible in Basic English), book and chapter picker, position remembered, three text sizes, read aloud verse by verse with pause and resume.
 - **Daily devotional.** A page a day for ages 7 to 13 with a picture, the verse, a truth, three bullets, something to do, a prayer; read aloud; written in Markdown in the repo and synced over Wi-Fi; a missing day is written on the spot.
 - **Bible characters.** Cards from Adam and Eve to Priscilla and Aquila; "tell me about Esther" opens hers.
-- **Sports.** MLB, NFL, NBA and college football as a timeline (live, up next, results), matchup pages with box scores and leaders, team pages with standings; a MINE tab for the teams followed by voice.
+- **Sports.** NFL, NBA, college football, and MLB or men's college basketball (one seasonal tab: hoops November to early April) as a timeline (live, up next, results), matchup pages with box scores and leaders, team pages with standings; a MINE tab for the teams followed by voice.
 - **Weather.** Current conditions on the launcher, a seven-day forecast page.
 - **Voice.** Hold the rocker and ask; opens the right page or answers out loud; sticks to sports, the Bible and the weather.
 - **Settings and care.** Wi-Fi setup by QR code from a phone, spoken replies and voice, dark mode, nightly sleep, updates that install themselves each morning; weeks on a charge.

@@ -62,8 +62,9 @@ RTC_DATA_ATTR static int rtcTab=0;RTC_DATA_ATTR static int rtcSleeps=0;RTC_DATA_
 static int connFails=0; // fetches in a row that never connected (http<=0): two of them with little contiguous RAM left means TLS is starved
 static bool refreshWake=false;static int refreshPending=0,refreshMaskBits=0;static uint32_t refreshStarted=0;
 // While awake, a league is polled every minute only if it has a game on; idle leagues wait 15 minutes.
-static bool leagueLive[4]={false,false,false,false};static uint32_t leagueFetched[4]={0,0,0,0};static const uint32_t IDLE_POLL_MS=15*60*1000UL;
-static volatile uint8_t upcomingForce=0; // leagues whose schedule the next fetch must refresh (a manual refresh asks for all four)
+static bool leagueLive[LEAGUES]={};static uint32_t leagueFetched[LEAGUES]={};static const uint32_t IDLE_POLL_MS=15*60*1000UL;
+static volatile uint8_t upcomingForce=0; // leagues whose schedule the next fetch must refresh (a manual refresh asks for all of them)
+static constexpr uint8_t ALL_LEAGUES=(1<<LEAGUES)-1;
 static int pmuRead(uint8_t reg);
 static int batteryPercent(){int v=pmuRead(0xA4);return v<0?-1:(v&0x7f);} // AXP2101 fuel gauge
 static bool inNight(){if(!nightSleep||!ui.clockValid)return false;time_t now=time(nullptr);tm t{};localtime_r(&now,&t);return t.tm_hour>=23||t.tm_hour<6||(t.tm_hour==6&&t.tm_min<30);}
@@ -89,7 +90,7 @@ static bool sntpStarted=false;
 static String ssid,password,tz;
 static const char* zones[]={"EST5EDT,M3.2.0,M11.1.0","CST6CDT,M3.2.0,M11.1.0","MST7MDT,M3.2.0,M11.1.0","PST8PDT,M3.2.0,M11.1.0","UTC0"};
 static const char* zoneLabels[]={"Eastern","Central","Mountain","Pacific","UTC"};
-struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];bool standings;char scope[8];bool weather,update,devotional,devoSync;uint8_t book,chapter,verse;char key[96];};
+struct FetchRequest {int league;char date[9];bool feed;char team[12];char game[16];char away[12],home[12];bool standings;char scope[8];bool weather,update,devotional,devoSync;uint8_t book,chapter,verse;char key[96];};
 struct FetchResult {Snapshot snapshot;GameDetail detail;VoiceReply voice;Standings standings;Weather weather;int league;std::string date,team,game;bool feed=false,ok=false,stored=false,more=false,isDetail=false,isVoice=false,voiceInterim=false,isStandings=false,isWeather=false,isUpdate=false,installed=false,isDevotional=false,isDevoSync=false;std::string note;Devotional devotional;int fetched=0,code=0;};
 struct VoiceJob {uint8_t* pcm;size_t len;char favorites[400];char key[96];bool speak,warm;char say[1100];char weather[700];char voice[12];uint8_t votdBook,votdChapter,votdVerse;uint8_t readBook,readChapter,readFrom,readTo;}; // read*: a passage to read verse by verse
 struct Key {int button;ButtonEvent event;};
@@ -183,13 +184,18 @@ static bool saveCache(const Snapshot& s){
  if(n!=measureJson(d)){LittleFS.remove(tmp);return false;}
  if(!LittleFS.rename(tmp,path)){LittleFS.remove(tmp);return false;}pruneCaches();return true;
 }
+// Followed team ids per league, copied for the network task: college feeds keep their games even when unranked.
+static std::mutex followedMutex;static std::vector<std::string> followedIds[LEAGUES];
+static void syncFollowed(){std::lock_guard<std::mutex> lock(followedMutex);for(auto& v:followedIds)v.clear();for(const auto& f:ui.favorites)followedIds[f.league].push_back(f.id);}
+static std::vector<std::string> followedIn(int league){std::lock_guard<std::mutex> lock(followedMutex);return followedIds[league];}
 static void saveFavorites(){
- JsonDocument d;auto a=d.to<JsonArray>();for(auto& f:ui.favorites){auto o=a.add<JsonObject>();o["league"]=f.league;o["id"]=f.id;o["name"]=f.name;}
+ syncFollowed();JsonDocument d;auto a=d.to<JsonArray>();for(auto& f:ui.favorites){auto o=a.add<JsonObject>();o["league"]=f.league;o["id"]=f.id;o["name"]=f.name;}
  String s;serializeJson(d,s);prefs.putString("favorites",s);
 }
 static void loadFavorites(){
  JsonDocument d;if(deserializeJson(d,prefs.getString("favorites","[]")))return;
- for(JsonObject f:d.as<JsonArray>()){int l=f["league"]|-1;if(l>=0&&l<4&&!js(f["id"]).empty()&&ui.favorites.size()<40)ui.favorites.push_back({l,js(f["id"]),clean(js(f["name"]))});}
+ for(JsonObject f:d.as<JsonArray>()){int l=f["league"]|-1;if(l>=0&&l<LEAGUES&&!js(f["id"]).empty()&&ui.favorites.size()<40)ui.favorites.push_back({l,js(f["id"]),clean(js(f["name"]))});}
+ syncFollowed();
 }
 // Following by voice ("follow the Bears"): a team is followed once, in its league; both report what is true afterwards.
 static bool followTeam(int league,const std::string& id,const std::string& name){
@@ -199,6 +205,10 @@ static bool followTeam(int league,const std::string& id,const std::string& name)
 static bool unfollowTeam(int league,const std::string& id){
  for(auto i=ui.favorites.begin();i!=ui.favorites.end();++i)if(i->league==league&&i->id==id){ui.favorites.erase(i);saveFavorites();return true;}
  return false;
+}
+// The saved feeds of the leagues in season (the other half of the MLB / college basketball tab stays null).
+static void loadFeeds(Snapshot feeds[LEAGUES],const Snapshot* fp[LEAGUES],const std::string& today,int64_t now){
+ for(int l=0;l<LEAGUES;l++)fp[l]=inSeason(l,now)&&loadCache(l,today,true,"",feeds[l])?&feeds[l]:nullptr;
 }
 // One ESPN request decoded into a snapshot. Games are kept for [start, date]
 // (start empty = exactly `date`) since some leagues return a week, or all of
@@ -218,42 +228,72 @@ static bool fetchBody(const String& url,ScoreBody& body,int& code){
  }else Serial.printf("FETCH FAIL begin url=%s heap=%u\n",url.c_str(),ESP.getFreeHeap());
  return ok;
 }
-static bool fetchJson(const String& url,const char* what,int league,const std::string& date,const std::string& start,bool allDates,Snapshot& out,int& code,bool rankedOnly=false){
+static bool fetchJson(const String& url,const char* what,int league,const std::string& date,const std::string& start,bool allDates,Snapshot& out,int& code,bool rankedOnly=false,const std::vector<std::string>* keep=nullptr){
  ScoreBody body;if(!fetchBody(url,body,code))return false;
  ScoreJsonAllocator allocator;JsonDocument document(&allocator),filter;makeScoreFilter(filter);
  auto error=deserializeJson(document,(const char*)body.data,body.length,DeserializationOption::Filter(filter),DeserializationOption::NestingLimit(30));
- bool ok=!error&&decodeScores(document,league,date,time(nullptr),out,start,allDates,rankedOnly);
+ bool ok=!error&&decodeScores(document,league,date,time(nullptr),out,start,allDates,rankedOnly,keep);
  Serial.printf("SCORE %s error=%s events=%u kept=%u valid=%d bytes=%u heap=%u\n",what,error.c_str(),(unsigned)document["events"].size(),(unsigned)out.games.size(),ok,(unsigned)body.length,ESP.getFreeHeap());
  return ok;
 }
 // Matchup detail: the scoreboard for the game's day, keeping one event's extras.
 // Football uses the game summary (leaders per team, team totals); other
 // leagues take the extras from that day's scoreboard.
-static bool fetchDetail(int league,const std::string& date,const std::string& game,GameDetail& out,int& code){
- const bool football=league==1||league==3;
+// College basketball's default scoreboard carries only Top-25 games; another game is on its
+// teams' conference boards (followed teams first), and all of Division I (groups=50, megabytes
+// on a busy day) is the last resort.
+static std::vector<int> followedConferences(int league,bool& unknown){
+ std::vector<int> out;unknown=false;
+ for(const auto& id:followedIn(league)){const int c=teamConference(league,id);if(!c)unknown=true;else if(std::find(out.begin(),out.end(),c)==out.end())out.push_back(c);}
+ return out;
+}
+static bool fetchDetailFrom(int league,const std::string& date,const std::string& game,GameDetail& out,int& code,int group){
+ const bool football=isFootball(league);
  String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;
- if(football){url+="/summary?event=";url+=game.c_str();}else{url+="/scoreboard?dates=";url+=date.c_str();url+="&limit=200";}
+ if(football){url+="/summary?event=";url+=game.c_str();}else{url+="/scoreboard?dates=";url+=date.c_str();url+="&limit=200";if(group)url+="&groups="+String(group);}
  ScoreBody body;if(!fetchBody(url,body,code))return false;
  ScoreJsonAllocator allocator;JsonDocument document(&allocator),filter;if(football)makeSummaryFilter(filter);else makeDetailFilter(filter);
  auto error=deserializeJson(document,(const char*)body.data,body.length,DeserializationOption::Filter(filter),DeserializationOption::NestingLimit(30));
  bool ok=!error&&(football?decodeSummary(document,game,league,out):decodeDetail(document,game,league,out));
- Serial.printf("DETAIL game=%s error=%s ok=%d stats=%u line=%u bytes=%u heap=%u\n",game.c_str(),error.c_str(),ok,(unsigned)out.stats.size(),(unsigned)out.awayLine.size(),(unsigned)body.length,ESP.getFreeHeap());
+ Serial.printf("DETAIL game=%s group=%d error=%s ok=%d stats=%u line=%u bytes=%u heap=%u\n",game.c_str(),group,error.c_str(),ok,(unsigned)out.stats.size(),(unsigned)out.awayLine.size(),(unsigned)body.length,ESP.getFreeHeap());
  return ok;
 }
+static bool fetchDetail(int league,const std::string& date,const std::string& game,const std::string& away,const std::string& home,GameDetail& out,int& code){
+ const bool ok=fetchDetailFrom(league,date,game,out,code,0);
+ if(ok||league!=4||code!=200)return ok; // not on the Top-25 board: try the teams' conferences
+ std::vector<int> groups;for(const auto& id:{away,home}){const int c=teamConference(league,id);if(c&&std::find(groups.begin(),groups.end(),c)==groups.end())groups.push_back(c);}
+ for(int g:groups)if(fetchDetailFrom(league,date,game,out,code,g))return true;else if(code!=200)return false;
+ return fetchDetailFrom(league,date,game,out,code,50);
+}
+// One day of a league's scoreboard. College feeds keep Top-25 games plus followed teams'
+// games. Football asks for all of FBS (groups=80, about 60 games on a Saturday). Basketball
+// takes its default board (the Top 25) plus one conference board per followed team's
+// conference (15-130 KB, including members' non-conference games) rather than all of
+// Division I (groups=50, up to 2.6 MB), which stays only for a followed team with no known conference.
 static bool fetchDay(int league,const std::string& day,const std::string& date,const std::string& start,Snapshot& out,int& code){
- String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;url+="/scoreboard?dates=";url+=day.c_str();url+="&limit=200";if(league==3)url+="&groups=80";
- return fetchJson(url,("day="+day).c_str(),league,date,start,false,out,code,league==3); // college feeds keep Top-25 games only
+ const std::vector<std::string> keep=isCollege(league)?followedIn(league):std::vector<std::string>{};
+ String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;url+="/scoreboard?dates=";url+=day.c_str();url+="&limit=200";
+ bool unknown=false;const std::vector<int> groups=league==4?followedConferences(league,unknown):std::vector<int>{};
+ if(league==3)url+="&groups=80";else if(league==4&&unknown)url+="&groups=50";
+ if(!fetchJson(url,("day="+day).c_str(),league,date,start,false,out,code,isCollege(league),&keep))return false;
+ if(league!=4||unknown)return true;
+ for(int g:groups){ // a partial day is a failed day: the caller retries rather than saving it
+  Snapshot part;if(!fetchJson(url+"&groups="+String(g),("day="+day+" group="+std::to_string(g)).c_str(),league,date,start,false,part,code,true,&keep))return false;
+  addGames(out,part);
+ }
+ return true;
 }
 // The schedule ahead: football by week number (this week and next), daily sports by tomorrow's date.
 static bool fetchUpcoming(int league,const std::string& today,Snapshot& feed,int& code){
  Snapshot all;all.league=league;bool any=false;
- if(league==1||league==3){
+ if(isFootball(league)){
+  const std::vector<std::string> keep=followedIn(league);
   int week=currentWeek(feed);if(!week)return false;tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);const int year=lt.tm_year+1900-(lt.tm_mon<2?1:0);
   bool open=false;for(const auto& g:feed.games)if(g.seasonType==2&&g.week>0&&g.state!="post")open=true;
   if(!open&&week>1)week--; // every saved game is played: the week may still have games the feed has not seen, so start there
   for(int w=week;w<=week+1&&w<=18+(league==3?-2:0);w++){
    String url="https://site.api.espn.com/apis/site/v2/sports/";url+=leagues[league].path;url+="/scoreboard?dates="+String(year)+"&seasontype=2&week="+String(w)+"&limit=200";if(league==3)url+="&groups=80";
-   Snapshot part;if(!fetchJson(url,("week="+std::to_string(w)).c_str(),league,today,"",true,part,code,league==3))continue;
+   Snapshot part;if(!fetchJson(url,("week="+std::to_string(w)).c_str(),league,today,"",true,part,code,league==3,&keep))continue;
    for(const auto& g:part.games)all.games.push_back(g);any=true;}
  }else{
   const std::string tomorrow=shiftDate(today,1);Snapshot part;
@@ -296,8 +336,8 @@ static VoiceReply askVoice(const VoiceJob& job){
  VoiceReply r;
  if(WiFi.status()!=WL_CONNECTED){r.error="VOICE NEEDS INTERNET";return r;}
  if(!job.key[0]){r.error="ADD A VOICE KEY IN WI-FI SETUP";return r;}
- Snapshot feeds[4];const Snapshot* fp[4];const std::string today=localDate(time(nullptr));
- for(int l=0;l<4;l++)fp[l]=loadCache(l,today,true,"",feeds[l])?&feeds[l]:nullptr;
+ Snapshot feeds[LEAGUES];const Snapshot* fp[LEAGUES];const std::string today=localDate(time(nullptr));
+ loadFeeds(feeds,fp,today,time(nullptr));
  std::vector<Favorite> favs;{std::string all=job.favorites;size_t p=0;while(p<all.size()){size_t q=all.find('\n',p);std::string item=all.substr(p,q==std::string::npos?std::string::npos:q-p);size_t bar=item.find('|');if(bar!=std::string::npos)favs.push_back({atoi(item.substr(0,bar).c_str()),"",item.substr(bar+1)});if(q==std::string::npos)break;p=q+1;}}
  const std::string ctx=voiceContext(fp,favs,time(nullptr),job.weather);
  const std::string head="{\"model\":\""+std::string(VOICE_MODEL)+"\",\"response_format\":{\"type\":\"json_object\"},\"max_tokens\":300,\"temperature\":0.2,\"messages\":[{\"role\":\"system\",\"content\":\""+jsonEscape(voiceSystemPrompt())+"\"},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\""+jsonEscape(ctx+"\nThe spoken request is attached as audio.")+"\"},{\"type\":\"input_audio\",\"input_audio\":{\"format\":\"wav\",\"data\":\"";
@@ -465,7 +505,7 @@ static void voiceTask(void*){
  }
 }
 static bool fetchStandings(int league,const std::string& scope,Standings& out,int& code){
- String url="https://site.api.espn.com/apis/v2/sports/";url+=leagues[league].path;url+="/standings?";if(league==3)url+="group="+String(scope.c_str());else url+="level=3";
+ String url="https://site.api.espn.com/apis/v2/sports/";url+=leagues[league].path;url+="/standings?";if(isCollege(league))url+="group="+String(scope.c_str());else url+="level=3";
  ScoreBody body;uint32_t t=millis();if(!fetchBody(url,body,code))return false;
  ScoreJsonAllocator allocator;JsonDocument document(&allocator),filter;makeStandingsFilter(filter);
  auto error=deserializeJson(document,(const char*)body.data,body.length,DeserializationOption::Filter(filter),DeserializationOption::NestingLimit(30));
@@ -580,7 +620,7 @@ static void networkTask(void*){
   }else if(req.standings){
    result->isStandings=true;result->ok=fetchStandings(req.league,req.scope,result->standings,result->code);if(result->ok)result->stored=saveStandings(result->standings);
   }else if(req.game[0]){
-   result->isDetail=true;result->ok=fetchDetail(req.league,req.date,req.game,result->detail,result->code);
+   result->isDetail=true;result->ok=fetchDetail(req.league,req.date,req.game,req.away,req.home,result->detail,result->code);
   }else if(req.team[0]){
    result->ok=fetchTeam(req.league,req.team,req.date,result->snapshot,result->code);
   }else if(!req.feed){
@@ -613,7 +653,7 @@ static void inputTask(void*){
 // Which pages fetch only their own league (the rest rotate through the leagues in the background).
 static bool viewPage(){return ui.page==Page::Games||ui.page==Page::Detail||((ui.page==Page::Home||ui.page==Page::Launcher||ui.page==Page::Schedule)&&ui.tab>0);}
 // A league wants a background fetch: never fetched since the wake, live and a minute old, or idle and fifteen minutes old (on a refresh wake, the planned ones).
-static bool leagueWanted(int x,uint32_t now){if(refreshWake)return ((refreshMaskBits>>x)&1)!=0;return leagueFetched[x]==0||(leagueLive[x]&&now-leagueFetched[x]>60000)||now-leagueFetched[x]>IDLE_POLL_MS;}
+static bool leagueWanted(int x,uint32_t now){if(!inSeason(x,time(nullptr)))return false;if(refreshWake)return ((refreshMaskBits>>x)&1)!=0;return leagueFetched[x]==0||(leagueLive[x]&&now-leagueFetched[x]>60000)||now-leagueFetched[x]>IDLE_POLL_MS;}
 static bool sameView(int league,const std::string& date,bool feed,const std::string& team){
  return league==ui.league&&team==ui.filter&&(!team.empty()||(date==ui.date&&feed==ui.feed));
 }
@@ -642,10 +682,11 @@ static void requestDetail(const Game& g){
  const std::string date=gameDate(g);
  if(requestBusy||!ui.online||!ui.clockValid||!validDate(date)||g.id.empty()||g.id.size()>=sizeof(FetchRequest::game))return;
  FetchRequest r{};r.league=ui.league;snprintf(r.date,sizeof(r.date),"%s",date.c_str());snprintf(r.game,sizeof(r.game),"%s",g.id.c_str());
+ snprintf(r.away,sizeof(r.away),"%s",g.away.id.c_str());snprintf(r.home,sizeof(r.home),"%s",g.home.id.c_str());
  if(xQueueSend(requestQueue,&r,0)==pdTRUE)requestBusy=true;
 }
 static void requestStandings(int league,const std::string& scope){
- if(requestBusy||!ui.online||!ui.clockValid||(league==3&&scope.empty()))return;
+ if(requestBusy||!ui.online||!ui.clockValid||(isCollege(league)&&scope.empty()))return;
  FetchRequest r{};r.league=league;r.standings=true;snprintf(r.date,sizeof(r.date),"%s",localDate(time(nullptr)).c_str());snprintf(r.scope,sizeof(r.scope),"%s",scope.c_str());
  if(xQueueSend(requestQueue,&r,0)==pdTRUE){requestBusy=true;ui.standingsLoading=true;}
 }
@@ -664,7 +705,7 @@ static void ensureStandings(int league,const std::string& scope){
 static void standingsUpkeep(){
  if(standingsLeagueWanted<0||ui.standingsLoading||requestBusy)return;
  const bool relevant=ui.page==Page::Standings||(ui.page==Page::Games&&!ui.filter.empty());if(!relevant){standingsLeagueWanted=-1;return;}
- if(standingsLeagueWanted==3&&ui.page==Page::Games){std::string c=teamConference(ui.filter);if(!c.empty())standingsScopeWanted=c;} // a college team's conference is known once its games load
+ if(isCollege(standingsLeagueWanted)&&ui.page==Page::Games){std::string c=teamConference(ui.filter);if(!c.empty())standingsScopeWanted=c;} // a college team's conference is known once its games load
  const bool stale=ui.standings.league!=standingsLeagueWanted||ui.standings.scope!=standingsScopeWanted||time(nullptr)-ui.standings.updated>6*3600;
  if(stale)requestStandings(standingsLeagueWanted,standingsScopeWanted);
 }
@@ -676,7 +717,7 @@ static void aimStandings(){
 }
 static void openStandings(int league,const std::string& teamId,const std::string& want,const std::string& scope,bool conferenceFirst){
  ui.league=league;ui.filter=teamId;ui.standingsWant=want;ui.page=Page::Standings;ui.selected=0;
- ensureStandings(league,league==3?scope:"");aimStandings();
+ ensureStandings(league,isCollege(league)?scope:"");aimStandings();
  if(conferenceFirst&&ui.standingsAlt>=0)std::swap(ui.standingsGroup,ui.standingsAlt);
  dirty=true;
 }
@@ -691,14 +732,13 @@ static void loadView(){
 // Latest games across the four saved feeds, packed into `avail` pixels.
 static void loadRecent(int avail){
  const std::string today=ui.clockValid?localDate(time(nullptr)):ui.date;
- Snapshot feeds[4];const Snapshot* fp[4]={nullptr,nullptr,nullptr,nullptr};
- for(int l=0;l<4;l++)fp[l]=loadCache(l,today,true,"",feeds[l])?&feeds[l]:nullptr;
+ Snapshot feeds[LEAGUES];const Snapshot* fp[LEAGUES];loadFeeds(feeds,fp,today,time(nullptr));
  ui.recent=recentGamesGrouped(fp,avail,56,28,&ui.favorites); // followed teams only, once any are followed
 }
 // A league tab's feed into ui.snapshot (shared by the launcher and the sports home).
 static void loadLeagueTab(){
  const std::string today=ui.clockValid?localDate(time(nullptr)):ui.date;
- ui.recent.clear();ui.league=tabLeague(ui.tab);ui.filter.clear();ui.feed=true;ui.date=today;followToday=true;
+ ui.recent.clear();ui.league=tabLeague(ui.tab,time(nullptr));ui.filter.clear();ui.feed=true;ui.date=today;followToday=true;
  ui.snapshot=Snapshot{};ui.snapshot.league=ui.league;ui.snapshot.date=today;ui.snapshot.span=feedDays[ui.league];
  loadCache(ui.league,today,true,"",ui.snapshot);ui.failed=false;ui.fetching=false;
 }
@@ -706,8 +746,7 @@ static void buildLauncher(){if(ui.tab==0)loadRecent(780-launcherScoresTop(ui)-mi
 // Reads the saved feeds to plan the next refresh wake: how long to sleep and which leagues to fetch.
 static int64_t planRefresh(int& mask){
  const std::string today=ui.clockValid?localDate(time(nullptr)):ui.date;const int64_t now=time(nullptr);
- Snapshot feeds[4];const Snapshot* fp[4]={nullptr,nullptr,nullptr,nullptr};
- for(int l=0;l<4;l++)fp[l]=loadCache(l,today,true,"",feeds[l])?&feeds[l]:nullptr;
+ Snapshot feeds[LEAGUES];const Snapshot* fp[LEAGUES];loadFeeds(feeds,fp,today,now);
  mask=refreshMask(fp,now);return refreshDelay(fp,now);
 }
 static void goLauncher(int sel=-1){ui.page=Page::Launcher;ui.selected=sel<0?LAUNCH_TAB0+ui.tab:sel;ui.filter.clear();ui.detailFromHome=false;buildLauncher();dirty=true;}
@@ -877,7 +916,7 @@ static void goHome(){ui.page=Page::Home;ui.selected=ui.tab;ui.filter.clear();ui.
 // Open a team's page, remembering where to return.
 static void openTeam(const Team& team,Page from,const std::string& gameId){
  ui.origin={from,ui.league,ui.date,gameId,ui.feed};
- ui.filter=team.id;ui.filterName=team.name;ui.page=Page::Games;loadView();ensureStandings(ui.league,ui.league==3?teamConference(team.id):"");
+ ui.filter=team.id;ui.filterName=team.name;ui.page=Page::Games;loadView();ensureStandings(ui.league,isCollege(ui.league)?teamConference(team.id):"");
 }
 // Rocker held: start listening, or explain why voice cannot run right now.
 static void startVoice(){
@@ -1153,7 +1192,7 @@ static void keyActionInner(const Key& k){
   else {auto ids=visibleGames(ui);if(ui.selected<=(int)ids.size()){ui.gameIndex=ids[ui.selected-1];ui.page=Page::Detail;ui.selected=0;}}break;
  case Page::Date:ui.date=shiftDate(ui.date,ui.dateOffset);ui.feed=false;followToday=ui.clockValid&&ui.date==localDate(time(nullptr));ui.page=Page::Games;loadView();break;
  case Page::Detail:if(ui.selected>0&&ui.gameIndex<(int)ui.snapshot.games.size()){Game g=ui.snapshot.games[ui.gameIndex];openTeam(ui.selected==1?g.away:g.home,Page::Detail,g.id);}break;
- case Page::Settings:if(ui.selected==0){wifiFromLauncher=false;startAP();}else if(ui.selected==1){upcomingForce=15;nextFetch=0;for(int l=0;l<4;l++)leagueFetched[l]=0;goHome();} // scores and the schedule aheadelse if(ui.selected==2)sleepScreen();else if(ui.selected==3){speakReplies=!speakReplies;prefs.putBool("speak",speakReplies);ui.speak=speakReplies;}else if(ui.selected==4){darkMode=!darkMode;prefs.putBool("dark",darkMode);ui.dark=darkMode;}else if(ui.selected==5){nightSleep=!nightSleep;prefs.putBool("night",nightSleep);ui.nightSleep=nightSleep;}
+ case Page::Settings:if(ui.selected==0){wifiFromLauncher=false;startAP();}else if(ui.selected==1){upcomingForce=ALL_LEAGUES;nextFetch=0;for(int l=0;l<LEAGUES;l++)leagueFetched[l]=0;goHome();} // scores and the schedule aheadelse if(ui.selected==2)sleepScreen();else if(ui.selected==3){speakReplies=!speakReplies;prefs.putBool("speak",speakReplies);ui.speak=speakReplies;}else if(ui.selected==4){darkMode=!darkMode;prefs.putBool("dark",darkMode);ui.dark=darkMode;}else if(ui.selected==5){nightSleep=!nightSleep;prefs.putBool("night",nightSleep);ui.nightSleep=nightSleep;}
   else if(ui.selected==6){ // next voice, saved, and a sample line in it
    ttsVoice=TTS_VOICES[(ttsVoiceIndex(ttsVoice.c_str())+1)%TTS_VOICE_COUNT];prefs.putString("voice",ttsVoice);ui.ttsVoice=ttsVoice.c_str();
    if(!voiceKey.isEmpty()&&!audio::playing()){static VoiceJob job;memset(&job,0,sizeof(job));std::string name=ttsVoice.c_str();name[0]=toupper(name[0]);snprintf(job.say,sizeof(job.say),"Hi, I'm %s. Bears twenty seven, Eagles seven. For God so loved the world.",name.c_str());snprintf(job.key,sizeof(job.key),"%s",voiceKey.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());snprintf(job.voice,sizeof(job.voice),"%s",ttsVoice.c_str());xQueueSend(voiceQueue,&job,0);}}
@@ -1208,6 +1247,9 @@ static void handleResults(){
     Serial.printf("VOICE %s %s (%s) changed=%d following=%u\n",v.action==VoiceAction::Follow?"follow":"unfollow",v.teamName.c_str(),v.teamId.c_str(),(int)changed,(unsigned)ui.favorites.size());}
    else if(v.action==VoiceAction::OpenDevotional){ui.voice=VoiceState::Idle;openDevotionalPage();Serial.println("VOICE opened devotional");}
    else if(v.action==VoiceAction::OpenCharacter){if(openCharacterNamed(v.name)){ui.voice=VoiceState::Idle;Serial.printf("VOICE opened character %s\n",v.name.c_str());}else{ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceAnswer="I don't have a card for "+v.name+" yet.";}}
+   else if((v.action==VoiceAction::OpenSchedule||v.action==VoiceAction::OpenLeague)&&!inSeason(v.league,time(nullptr))){ // MLB and college basketball share a tab; the one out of season has no scoreboard
+    ui.voice=VoiceState::Answer;ui.voiceHeard=v.heard;ui.voiceLeague=-1;ui.voiceTeamId.clear();
+    ui.voiceAnswer=v.league==0?"Baseball is between seasons. Its tab shows college basketball until April.":"College basketball is between seasons. Its tab shows baseball until November.";}
    else if(v.action==VoiceAction::OpenSchedule){ui.voice=VoiceState::Idle;ui.tab=leagueTab(v.league);loadLeagueTab();ui.page=Page::Schedule;ui.listPage=0;ui.selected=0;nextFetch=0;Serial.printf("VOICE opened schedule league=%d\n",v.league);}
    else if(v.action==VoiceAction::OpenWeather){ui.voice=VoiceState::Idle;ui.page=Page::Weather;ui.selected=0;if(!ui.weather.valid)nextWeather=0;Serial.println("VOICE opened weather");}
    else if(v.action==VoiceAction::OpenBible){ui.voice=VoiceState::Idle;ui.readPaused=false;openBible(v.daily?ui.votd:v.bible);Serial.printf("VOICE opened bible %s\n",bibleRefLabel(v.daily?ui.votd:v.bible).c_str());}
@@ -1279,7 +1321,7 @@ static void handleResults(){
  }
  // A feed with days still to backfill continues almost immediately.
  bool other=(ui.page==Page::Games||ui.page==Page::Detail)&&!sameView(r->league,r->date,r->feed,r->team);
- bool pending=false;if(!viewPage()){const uint32_t now=millis();for(int x=0;x<4;x++)if(leagueWanted(x,now))pending=true;} // another league is stale or still unfetched since the wake
+ bool pending=false;if(!viewPage()){const uint32_t now=millis();for(int x=0;x<LEAGUES;x++)if(leagueWanted(x,now))pending=true;} // another league is stale or still unfetched since the wake
  nextFetch=other?0:millis()+(r->ok?(r->more||pending?1500:60000):120000);delete r;
 }
 static void serialControl(){
@@ -1291,7 +1333,7 @@ static void serialControl(){
  if(ch=='w')startAP();
  if(ch=='c'){chime();Serial.println("CHIME");}
  if(ch=='E'){File f=LittleFS.open("/power.log",FILE_READ);Serial.println("POWER_BEGIN");if(f){while(f.available())Serial.write(f.read());f.close();}Serial.println("POWER_END");}
- if(ch=='N'){upcomingForce=15;nextFetch=0;for(int l=0;l<4;l++)leagueFetched[l]=0;Serial.println("REFRESH scores and schedule");}
+ if(ch=='N'){upcomingForce=ALL_LEAGUES;nextFetch=0;for(int l=0;l<LEAGUES;l++)leagueFetched[l]=0;Serial.println("REFRESH scores and schedule");}
  if(ch=='Z'){int mask=0;const int64_t planned=planRefresh(mask);Serial.printf("WAKE in %lld s (%.1f h) battery=%d%% idle=%lus refreshWake=%d nextRefresh=%llds leagues=0x%x live=%d%d%d%d\n",(long long)secondsUntilWake(),secondsUntilWake()/3600.0,batteryPercent(),(unsigned long)((millis()-lastKeyAt)/1000),refreshWake,(long long)planned,mask,leagueLive[0],leagueLive[1],leagueLive[2],leagueLive[3]);}
  if(ch=='I'){Serial.println("SLEEP idle (forced)");lastKeyAt=0;idleSleep();}
  if(ch=='L'){String v=Serial.readStringUntil('\n');v.trim();setLocation(v);}
@@ -1369,7 +1411,7 @@ void setupApp(){
   if(cause==ESP_SLEEP_WAKEUP_TIMER||cause==ESP_SLEEP_WAKEUP_EXT1||rtcSelfHeal){ui.tab=rtcTab;if(ui.tab<0||ui.tab>=HOME_TABS)ui.tab=0;}
   if(rtcSelfHeal){Serial.printf("SELF-HEAL restarted, back on tab %d\n",ui.tab);rtcSelfHeal=0;}
   refreshMaskBits=15;refreshPending=4; // the morning wake (or a button) refreshes every league
-  if(ui.clockValid){Snapshot f;const std::string today=localDate(time(nullptr));for(int l=0;l<4;l++)leagueLive[l]=loadCache(l,today,true,"",f)&&leagueActive(f,time(nullptr));} // live leagues (from the caches) are fetched first after a wake
+  if(ui.clockValid){Snapshot f;const std::string today=localDate(time(nullptr));for(int l=0;l<LEAGUES;l++)leagueLive[l]=loadCache(l,today,true,"",f)&&leagueActive(f,time(nullptr));} // live leagues (from the caches) are fetched first after a wake
   if(refreshWake&&(!ui.weather.valid||time(nullptr)-ui.weather.fetched>3000))refreshPending++; // only leagues with a game on (or a stale cache), plus the weather when stale
   {tm lt{};time_t t=time(nullptr);localtime_r(&t,&lt);autoUpdateCheck=refreshWake&&ui.clockValid&&lt.tm_hour==6;if(autoUpdateCheck)refreshPending++;}
   refreshDevoHash();if(refreshWake&&ui.clockValid&&devoSyncDue()){devoSyncPending=true;refreshPending++;} // the library sync rides on a wake every six hours
@@ -1455,8 +1497,8 @@ void loopApp(){
   if(viewPage())requestScores(ui.league,ui.date,ui.feed,ui.filter);
   else { // background rotation: on a refresh wake only the planned leagues; awake, back to back until every league is fresh, then live leagues each minute and idle ones every 15
    int l=-1;
-   for(int pass=0;pass<2&&l<0;pass++)for(int t=0;t<4&&l<0;t++){const int x=(backgroundLeague+t)%4;if(leagueWanted(x,now)&&(pass==1||leagueLive[x]))l=x;} // live leagues first
-   if(l>=0){requestScores(l,localDate(ui.now),true);backgroundLeague=(l+1)%4;}else nextFetch=now+60000;
+   for(int pass=0;pass<2&&l<0;pass++)for(int t=0;t<LEAGUES&&l<0;t++){const int x=(backgroundLeague+t)%LEAGUES;if(leagueWanted(x,now)&&(pass==1||leagueLive[x]))l=x;} // live leagues first
+   if(l>=0){requestScores(l,localDate(ui.now),true);backgroundLeague=(l+1)%LEAGUES;}else nextFetch=now+60000;
   }
  }
  static bool wasFresh=false;bool isFresh=fresh(ui.snapshot,ui.now,ui.online,ui.failed);if(wasFresh!=isFresh){wasFresh=isFresh;if(ui.page==Page::Games||ui.page==Page::Detail)dirty=true;}

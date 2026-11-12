@@ -33,10 +33,10 @@ A small e-paper companion for a kid's desk: the day's Bible verse and devotional
 - Written as Markdown files in `characters/`; "tell me about Esther" opens her card by voice
 
 **Sports scores**
-- MLB, NFL, NBA and college football
+- NFL, NBA, college football, and a seasonal tab: men's college basketball from November 1 to April 8, MLB the rest of the year
 - Every scoreboard reads as a timeline: LIVE, then UP NEXT (soonest first, with kickoff times), then RESULTS — so after the week's last game you see the coming slate without any extra clicks
 - A MINE tab for the teams you follow, their games across every league with each team's next game on top; follow a team by voice ("follow the Bears")
-- NFL and college football carry this week and next; MLB and NBA carry today and tomorrow; college football shows Top-25 games only, with ranks on the rows
+- NFL and college football carry this week and next; MLB, NBA and college basketball carry today and tomorrow; the college leagues show Top-25 games plus the games of followed teams, with ranks on the rows
 - The launcher's MINE tab shows two rows per followed team, its next game above its last result; with nobody followed, the same two rows per league
 - Dense rows grouped by league and week, with team logos
 - Matchup pages: box score, team leaders, headline
